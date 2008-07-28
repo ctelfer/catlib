@@ -1,0 +1,81 @@
+/*
+ * cat/pool.h -- memory pool implementation with caching and auto release
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003, See accompanying license
+ *
+ */
+
+#ifndef __cat_pool_h
+#define __cat_pool_h
+
+#include <cat/aux.h>
+#include <cat/list.h>
+
+#ifndef CAT_ALIGN
+#define CAT_ALIGN	unsigned long
+#endif
+
+typedef CAT_ALIGN	cat_align_t;
+
+struct pool {
+
+  unsigned long		siz;		/* size of allocation unit */
+  unsigned long		pgsiz;		/* "page" size */
+
+  int			wat;		/* high watermark */
+  int			max;		/* maximum number of pages */
+  int			upp;		/* units per page head */
+  int			upi;		/* units per item */
+  int			ipp;		/* items per page */
+  int			np;		/* number of pages */
+
+  memctl_f		memctl;		/* to get more pages */
+
+  struct list		apages;		/* available pages */
+  struct list		epages;		/* empty pages */
+
+} ;
+
+
+
+struct phead {
+  struct list		entry;
+  struct list		items;
+  struct pool *		pool;
+  int			avail;
+};
+
+
+
+union cat_pitem {
+  struct list		list;
+  struct phead *	head;
+  cat_align_t		align;
+};
+
+
+
+union cat_paitem {
+  struct phead *	head;
+  cat_align_t		align;
+};
+
+
+
+int    pl_init(struct pool *p, unsigned long asiz, unsigned long pgsiz, 
+               int wat, int max, memctl_f mctl);
+
+void * pl_alloc(struct pool *p);
+void   pl_add(struct pool *p, void *page);
+void   pl_free(void *data);
+void   pl_freeall(struct pool *p);
+
+
+#ifdef CAT_DEF_IMPL
+void * pl_xalloc(struct pool *p);
+#endif
+
+
+#endif /* __cat_pool_h */

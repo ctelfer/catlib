@@ -1,0 +1,92 @@
+TESTS=	testlist testhash testtcpc testtcps testudpc testudps testpool \
+	testreplace testheap testhw testtime testavl testpack testdl \
+	testpcache testuemux testrb markov markov2 teststr netpipe \
+	testmatch
+	
+CFILES= testlist.c testhash.c testtcpc.c testtcps.c testudpc.c testudps.c \
+	testpool.c testreplace.c testheap.c testhw.c testtime.c testavl.c \
+	testpack.c testdl.c testpcache.c testuemux.c testrb.c markov.c	\
+	markov2.c teststr.c netpipe.c testmatch.c
+
+CC=gcc
+
+INC= -I ../include
+LIB= -L../lib -lcata
+#LIB= -L../lib -lcat
+LIBDEP=../lib/libcata.a
+#CF= -O2
+CF= -g -DCAT_USE_INLINE=0
+
+all: $(TESTS)
+
+clean:
+	rm -f $(TESTS) *.core
+
+$(LIBDEP):
+	( cd ../src ; make )
+
+testlist: testlist.c $(LIBDEP)
+	$(CC) $(CF) -o testlist testlist.c $(INC) $(LIB)
+
+testhash: testhash.c $(LIBDEP)
+	$(CC) $(CF) -o testhash testhash.c $(INC) $(LIB)
+
+testavl: testavl.c $(LIBDEP)
+	$(CC) $(CF) -o testavl testavl.c $(INC) $(LIB)
+
+testreplace: testreplace.c $(LIBDEP)
+	$(CC) $(CF) -o testreplace testreplace.c $(INC) $(LIB)
+
+testtcpc: testtcpc.c $(LIBDEP)
+	$(CC) $(CF) -o testtcpc testtcpc.c $(INC) $(LIB)
+
+testtcps: testtcps.c $(LIBDEP)
+	$(CC) $(CF) -o testtcps testtcps.c $(INC) $(LIB)
+
+testudpc: testudpc.c $(LIBDEP)
+	$(CC) $(CF) -o testudpc testudpc.c $(INC) $(LIB)
+
+testudps: testudps.c $(LIBDEP)
+	$(CC) $(CF) -o testudps testudps.c $(INC) $(LIB)
+
+testpool: testpool.c $(LIBDEP)
+	$(CC) $(CF) -o testpool testpool.c $(INC) $(LIB)
+
+testpcache: testpcache.c $(LIBDEP)
+	$(CC) $(CF) -o testpcache testpcache.c $(INC) $(LIB)
+
+testheap: testheap.c $(LIBDEP)
+	$(CC) $(CF) -o testheap testheap.c $(INC) $(LIB)
+
+testtime: testtime.c $(LIBDEP)
+	$(CC) $(CF) -o testtime testtime.c $(INC) $(LIB)
+
+testpack: testpack.c $(LIBDEP)
+	$(CC) $(CF) -o testpack testpack.c $(INC) $(LIB)
+
+testdl: testdl.c $(LIBDEP)
+	$(CC) $(CF) -o testdl testdl.c $(INC) $(LIB)
+
+testuemux: testuemux.c $(LIBDEP)
+	$(CC) $(CF) -o testuemux testuemux.c $(INC) $(LIB)
+
+testrb: testrb.c $(LIBDEP)
+	$(CC) $(CF) -o testrb testrb.c $(INC) $(LIB)
+
+testhw: testhw.c 
+	$(CC) -O2 -o testhw testhw.c 
+
+markov: markov.c $(LIBDEP)
+	$(CC) $(CF) -o markov markov.c $(INC) $(LIB)
+
+markov2: markov2.c $(LIBDEP)
+	$(CC) $(CF) -o markov2 markov2.c $(INC) $(LIB)
+
+teststr: teststr.c $(LIBDEP)
+	$(CC) $(CF) -o teststr teststr.c $(INC) $(LIB)
+
+netpipe: netpipe.c $(LIBDEP)
+	$(CC) $(CF) -o netpipe netpipe.c $(INC) $(LIB)
+
+testmatch: testmatch.c $(LIBDEP)
+	$(CC) $(CF) -o testmatch testmatch.c $(INC) $(LIB)

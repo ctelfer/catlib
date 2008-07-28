@@ -1,0 +1,255 @@
+CFILES=	cat.c aux.c err.c cb.c grow.c io.c mem.c net.c pack.c ring.c pcache.c \
+	uevent.c raw.c match.c csv.c stduse.c stdcsv.c graph.c shell.c \
+	str.c dbgmem.c emit.c emit_format.c emit_file.c emalloc.c catstr.c \
+	bitops.c list.c hash.c avl.c heap.c dlist.c pool.c rbtree.c time.c \
+	splay.c bitset.c catstdlib.c catstdio.c pspawn.c
+
+LCATODIR=  ../obj/libcat
+LCATOF= $(LCATODIR)/cat.o \
+	$(LCATODIR)/aux.o  \
+	$(LCATODIR)/err.o  \
+	$(LCATODIR)/cb.o  \
+	$(LCATODIR)/grow.o  \
+	$(LCATODIR)/io.o  \
+	$(LCATODIR)/mem.o  \
+	$(LCATODIR)/net.o  \
+	$(LCATODIR)/pack.o  \
+	$(LCATODIR)/ring.o  \
+	$(LCATODIR)/pcache.o  \
+	$(LCATODIR)/uevent.o  \
+	$(LCATODIR)/raw.o  \
+	$(LCATODIR)/match.o  \
+	$(LCATODIR)/csv.o  \
+	$(LCATODIR)/stduse.o  \
+	$(LCATODIR)/stdcsv.o  \
+	$(LCATODIR)/graph.o  \
+	$(LCATODIR)/shell.o  \
+	$(LCATODIR)/str.o  \
+	$(LCATODIR)/dbgmem.o  \
+	$(LCATODIR)/emit.o  \
+	$(LCATODIR)/emit_format.o  \
+	$(LCATODIR)/emit_file.o  \
+	$(LCATODIR)/emalloc.o  \
+	$(LCATODIR)/catstr.o  \
+	$(LCATODIR)/bitops.o \
+	$(LCATODIR)/pspawn.o
+
+LCATAODIR=  ../obj/libcata
+LCATAOF=$(LCATAODIR)/cat.o \
+	$(LCATAODIR)/aux.o  \
+	$(LCATAODIR)/err.o  \
+	$(LCATAODIR)/cb.o  \
+	$(LCATAODIR)/grow.o  \
+	$(LCATAODIR)/io.o  \
+	$(LCATAODIR)/mem.o  \
+	$(LCATAODIR)/net.o  \
+	$(LCATAODIR)/pack.o  \
+	$(LCATAODIR)/ring.o  \
+	$(LCATAODIR)/pcache.o  \
+	$(LCATAODIR)/uevent.o  \
+	$(LCATAODIR)/raw.o  \
+	$(LCATAODIR)/match.o  \
+	$(LCATAODIR)/csv.o  \
+	$(LCATAODIR)/stduse.o  \
+	$(LCATAODIR)/stdcsv.o  \
+	$(LCATAODIR)/graph.o  \
+	$(LCATAODIR)/shell.o  \
+	$(LCATAODIR)/str.o  \
+	$(LCATAODIR)/dbgmem.o  \
+	$(LCATAODIR)/emit.o  \
+	$(LCATAODIR)/emit_format.o  \
+	$(LCATAODIR)/emit_file.o  \
+	$(LCATAODIR)/emalloc.o  \
+	$(LCATAODIR)/catstr.o  \
+	$(LCATAODIR)/bitset.o  \
+	$(LCATAODIR)/bitops.o \
+	$(LCATAODIR)/list.o \
+	$(LCATAODIR)/hash.o \
+	$(LCATAODIR)/avl.o \
+	$(LCATAODIR)/heap.o \
+	$(LCATAODIR)/dlist.o \
+	$(LCATAODIR)/pool.o \
+	$(LCATAODIR)/rbtree.o \
+	$(LCATAODIR)/time.o \
+	$(LCATAODIR)/splay.o \
+	$(LCATAODIR)/bitset.o \
+	$(LCATAODIR)/pspawn.o
+
+
+LCAT_DBG_ODIR= ../obj/libcat_dbg
+LCAT_DBG_OF=$(LCAT_DBG_ODIR)/cat.o \
+	$(LCAT_DBG_ODIR)/aux.o  \
+	$(LCAT_DBG_ODIR)/err.o  \
+	$(LCAT_DBG_ODIR)/cb.o  \
+	$(LCAT_DBG_ODIR)/grow.o  \
+	$(LCAT_DBG_ODIR)/io.o  \
+	$(LCAT_DBG_ODIR)/mem.o  \
+	$(LCAT_DBG_ODIR)/net.o  \
+	$(LCAT_DBG_ODIR)/pack.o  \
+	$(LCAT_DBG_ODIR)/ring.o  \
+	$(LCAT_DBG_ODIR)/pcache.o  \
+	$(LCAT_DBG_ODIR)/uevent.o  \
+	$(LCAT_DBG_ODIR)/raw.o  \
+	$(LCAT_DBG_ODIR)/match.o  \
+	$(LCAT_DBG_ODIR)/csv.o  \
+	$(LCAT_DBG_ODIR)/stduse.o  \
+	$(LCAT_DBG_ODIR)/stdcsv.o  \
+	$(LCAT_DBG_ODIR)/graph.o  \
+	$(LCAT_DBG_ODIR)/shell.o  \
+	$(LCAT_DBG_ODIR)/str.o  \
+	$(LCAT_DBG_ODIR)/dbgmem.o  \
+	$(LCAT_DBG_ODIR)/emit.o  \
+	$(LCAT_DBG_ODIR)/emit_format.o  \
+	$(LCAT_DBG_ODIR)/emit_file.o  \
+	$(LCAT_DBG_ODIR)/emalloc.o  \
+	$(LCAT_DBG_ODIR)/catstr.o  \
+	$(LCAT_DBG_ODIR)/bitset.o  \
+	$(LCAT_DBG_ODIR)/bitops.o \
+	$(LCAT_DBG_ODIR)/list.o \
+	$(LCAT_DBG_ODIR)/hash.o \
+	$(LCAT_DBG_ODIR)/avl.o \
+	$(LCAT_DBG_ODIR)/heap.o \
+	$(LCAT_DBG_ODIR)/dlist.o \
+	$(LCAT_DBG_ODIR)/pool.o \
+	$(LCAT_DBG_ODIR)/rbtree.o \
+	$(LCAT_DBG_ODIR)/time.o \
+	$(LCAT_DBG_ODIR)/splay.o \
+	$(LCAT_DBG_ODIR)/bitset.o \
+	$(LCAT_DBG_ODIR)/pspawn.o
+	
+
+LCAT_NO_LIBC_ODIR=  ../obj/libcat_nolibc
+LCAT_NO_LIBC_OF= \
+	$(LCAT_NO_LIBC_ODIR)/catstdio.o \
+	$(LCAT_NO_LIBC_ODIR)/catstdlib.o \
+	$(LCAT_NO_LIBC_ODIR)/cat.o \
+	$(LCAT_NO_LIBC_ODIR)/aux.o  \
+	$(LCAT_NO_LIBC_ODIR)/err.o  \
+	$(LCAT_NO_LIBC_ODIR)/cb.o  \
+	$(LCAT_NO_LIBC_ODIR)/io.o  \
+	$(LCAT_NO_LIBC_ODIR)/mem.o  \
+	$(LCAT_NO_LIBC_ODIR)/pack.o  \
+	$(LCAT_NO_LIBC_ODIR)/ring.o  \
+	$(LCAT_NO_LIBC_ODIR)/pcache.o  \
+	$(LCAT_NO_LIBC_ODIR)/raw.o  \
+	$(LCAT_NO_LIBC_ODIR)/match.o  \
+	$(LCAT_NO_LIBC_ODIR)/csv.o  \
+	$(LCAT_NO_LIBC_ODIR)/stdcsv.o  \
+	$(LCAT_NO_LIBC_ODIR)/graph.o  \
+	$(LCAT_NO_LIBC_ODIR)/str.o  \
+	$(LCAT_NO_LIBC_ODIR)/dbgmem.o  \
+	$(LCAT_NO_LIBC_ODIR)/emit.o  \
+	$(LCAT_NO_LIBC_ODIR)/emit_format.o  \
+	$(LCAT_NO_LIBC_ODIR)/emit_file.o  \
+	$(LCAT_NO_LIBC_ODIR)/emalloc.o  \
+	$(LCAT_NO_LIBC_ODIR)/catstr.o  \
+	$(LCAT_NO_LIBC_ODIR)/bitset.o  \
+	$(LCAT_NO_LIBC_ODIR)/list.o \
+	$(LCAT_NO_LIBC_ODIR)/hash.o \
+	$(LCAT_NO_LIBC_ODIR)/avl.o \
+	$(LCAT_NO_LIBC_ODIR)/heap.o \
+	$(LCAT_NO_LIBC_ODIR)/dlist.o \
+	$(LCAT_NO_LIBC_ODIR)/pool.o \
+	$(LCAT_NO_LIBC_ODIR)/rbtree.o \
+	$(LCAT_NO_LIBC_ODIR)/time.o \
+	$(LCAT_NO_LIBC_ODIR)/splay.o \
+	$(LCAT_NO_LIBC_ODIR)/stduse.o 
+
+CC=gcc
+
+# Flags for libcat
+DEFS=
+CFLAGS= -O3 -Wall $(DEFS)
+IFLAGS= -I../include
+
+# Choose one option from the next two for libcata
+# Option 1: ANSI compliant
+ADEFS= -DCAT_USE_INLINE=0 -DCAT_HAS_LONGLONG=0 -D_POSIX_C_SOURCE=200112L \
+	-D_BSD_SOURCE
+#	 -D_POSIX_C_SOURCE=200112L -D_XOPEN_SOURCE=600
+ACFLAGS= -Wall -ansi -pedantic $(ADEFS)
+AIFLAGS= -I../include
+
+# Option 2: ANSI compliant + no libc
+#CFILES += catstdlib.c catstdio.c
+#OFILES += catstdlib.o catstdio.o
+#ACFLAGS= -O3 -Wall -ansi -pedantic -DCAT_USE_INLINE=0 -DCAT_HAS_LONGLONG=0 \
+#	-DCAT_USE_STDLIB=0 -DCAT_HAS_POSIX=0 \
+#	-D_POSIX_C_SOURCE=200112L -D_BSD_SOURCE 
+#	-D_POSIX_C_SOURCE=200112L -D_XOPEN_SOURCE=600
+
+# Compile for debugging and profiling
+DBG_DEFS= -DCAT_USE_INLINE=0 -DCAT_HAS_LONGLONG=1 
+DBG_CFLAGS= -Wall -g -pg $(DBG_DEFS)
+DBG_IFLAGS= -I../include
+
+# Compile without libc
+NOLIBC_DEFS=-DCAT_HAS_POSIX=0 -DCAT_USE_STDLIB=0 -DCAT_HAS_LONGLONG=0
+NOLIBC_CFLAGS=-Wall -pedantic $(NOLIBC_DEFS)
+NOLIBC_IFLAGS= -I../include -I../include/std
+
+all: ../lib/libcat.a ../lib/libcata.a ../lib/libcat_dbg.a ../lib/libcat_nostdc.a
+
+../lib/libcat.a: $(LCATOF)
+	ar rv libcat.a $(LCATOF)
+	ranlib libcat.a
+	mv libcat.a ../lib
+
+../lib/libcata.a: $(LCATAOF) 
+	ar rv libcata.a $(LCATAOF)
+	ranlib libcata.a
+	mv libcata.a ../lib
+
+../lib/libcat_dbg.a: $(LCAT_DBG_OF) 
+	ar rv libcat_dbg.a $(LCAT_DBG_OF)
+	ranlib libcat_dbg.a
+	mv libcat_dbg.a ../lib
+
+../lib/libcat_nostdc.a: $(LCAT_NO_LIBC_OF) 
+	ar rv libcat_nostdc.a $(LCAT_NO_LIBC_OF)
+	ranlib libcat_nostdc.a
+	mv libcat_nostdc.a ../lib
+
+clean:
+	rm -f $(LCATODIR)/*.o $(LCATAODIR)/*.o $(LCAT_NO_LIBC_ODIR)/*.o \
+		../lib/libcat.a ../lib/libcata.a ../lib/libcat_nolibc.a
+
+veryclean:
+	rm -f $(LCATODIR)/*.o $(LCATAODIR)/*.o $(LCAT_NO_LIBC_ODIR)/*.o \
+		../lib/libcat.a ../lib/libcata.a ../lib/libcat_nolibc.a .depend
+	rm -f Makefile
+	@echo "**** Makefile Destroyed ****"
+	@echo "**** Run buildmake.sh to regenerate it ****"
+
+depend: .depend
+
+.depend: Makefile.tmpl
+	sed -e '/^#---- DO NOT DELETE ----/,$$ d' Makefile.tmpl > .tmp.makefile
+	echo '#---- DO NOT DELETE ----' >> .tmp.makefile
+	for i in $(CFILES) ; do \
+		$(CC) $(IFLAGS) $(DEFS) -M $$i > .dep; \
+		sed -e '1 s|^|$(LCATODIR)/|' .dep >> .tmp.makefile; \
+		echo '	$$(CC) $$(CFLAGS) -o $$@ -c'" $$i"' $$(IFLAGS)' >> \
+			.tmp.makefile; \
+		echo >> .tmp.makefile; \
+		$(CC) $(AIFLAGS) $(ADEFS) -M $$i > .dep; \
+		sed -e '1 s|^|$(LCATAODIR)/|' .dep >> .tmp.makefile; \
+		echo '	$$(CC) $$(ACFLAGS) -o $$@ -c'" $$i"' $$(AIFLAGS)' >> \
+			.tmp.makefile; \
+		echo >> .tmp.makefile; \
+		$(CC) $(DBG_IFLAGS) $(DBG_DEFS) -M $$i > .dep; \
+		sed -e '1 s|^|$(LCAT_DBG_ODIR)/|' .dep >> .tmp.makefile; \
+		echo '	$$(CC) $$(DBG_CFLAGS) -o $$@ -c'" $$i"' \
+			$$(DBG_IFLAGS)' >> .tmp.makefile; \
+		echo >> .tmp.makefile; \
+		$(CC) $(NOLIBC_IFLAGS) $(NOLIBC_DEFS) -M $$i > .dep; \
+		sed -e '1 s|^|$(LCAT_NO_LIBC_ODIR)/|' .dep >> .tmp.makefile; \
+		echo '	$$(CC) $$(NOLIBC_CFLAGS) -o $$@ -c'" $$i"' \
+			$$(NOLIBC_IFLAGS)' >> .tmp.makefile; \
+		echo >> .tmp.makefile; \
+		rm .dep; \
+	done
+	mv .tmp.makefile Makefile
+	echo > .depend
+
+#---- DO NOT DELETE ----

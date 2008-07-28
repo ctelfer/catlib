@@ -1,0 +1,214 @@
+/*
+ * pool.c -- Memory pools with automatic refill, caching and release
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003, See accompanying license
+ *
+ */
+
+#include <stdlib.h>
+#include <cat/pool.h>
+
+
+#if defined(CAT_USE_INLINE) && CAT_USE_INLINE
+#define DECL static inline
+#else /* CAT_USE_INLINE */
+#define DECL static
+#endif /* CAT_USE_INLINE */
+
+DECL void pl_addpage(struct pool *p, char *pg);
+
+
+int pl_init(struct pool *p, unsigned long siz, unsigned long psiz,
+            int wat, int max, memctl_f mctl)
+{
+  Assert(p);
+  Assert(siz > 0);
+
+  p->upp = (sizeof(struct phead) - 1) / sizeof(cat_align_t) + 1;
+  p->upi = (siz + sizeof(struct phead *) - 1) / sizeof(cat_align_t) + 1;
+  if ( p->upi < sizeof(union cat_pitem) )
+    p->upi = sizeof(union cat_pitem);
+
+  if ( psiz <= (p->upi + p->upp) * sizeof(cat_align_t) )
+    psiz = (p->upi + p->upp) * sizeof(cat_align_t);
+
+  p->ipp = ( psiz - p->upp * sizeof(cat_align_t)) / 
+           (p->upi * sizeof(cat_align_t));
+
+  if ( wat < 2 ) 
+    wat = 2;
+
+  if ( max < 0 )
+    max = 0;
+
+  p->siz   = siz;
+  p->pgsiz = psiz;
+  p->wat   = wat;
+  p->max   = max;
+  p->np    = 0;
+
+  p->memctl = mctl;
+  l_init(&p->apages);
+  l_init(&p->epages);
+
+  return 0;
+}
+
+
+
+
+void * pl_alloc(struct pool *p)
+{
+  struct list *item;
+  struct phead *ph;
+  void *newpage;
+
+  Assert(p);
+
+  /* if we have no more empty pages */
+  if ( l_isempty(&p->apages) ) {
+
+    if ( p->max && (p->np >= p->max) ) 
+      return NULL;
+
+    if ( ( !p->memctl ) || ( !(newpage = p->memctl(NULL, p->pgsiz)) ) )
+      return NULL;
+
+    pl_addpage(p, newpage);
+  }
+
+
+  ph = (struct phead*)(p->apages.next);
+  item = ph->items.next;
+
+  l_rem(item);
+
+  if ( ! --ph->avail ) {
+    l_rem(&ph->entry);
+    l_ins(&p->epages, &ph->entry);
+  }
+
+  *(struct phead **)item = ph;
+
+  return ((char *)item) + sizeof(union cat_paitem);
+}
+
+
+
+
+void pl_free(void *data)
+{
+  struct list *item;
+  struct phead *ph;
+  struct pool *p = NULL;
+
+  Assert(data);
+
+  item = (struct list *)(((char *)data) - sizeof(union cat_paitem));
+  ph = *(struct phead **)item;
+
+  /* should do l_init(), but this is faster.  A good compiler would */
+  /* take care of the extra overhead, but I'm not relying on it */
+  l_ins(&ph->items, item);
+
+  p = ph->pool;
+  if ( ! ph->avail++ ) {
+    l_rem(&ph->entry);
+    l_enq(&p->apages, &ph->entry);
+  }
+
+  if ( ph->avail == p->ipp ) {	/* check if the page is full */
+    if ( p->np >= p->wat ) {	/* check if over high-watermark of full pages */
+      l_rem(&ph->entry);
+      p->memctl(ph, 0);
+      p->np--;
+    }
+  }
+}
+
+
+
+
+void pl_freeall(struct pool *p)
+{
+  struct list *l;
+
+  Assert(p);
+
+  while ( (l = l_pop(&p->epages)) )
+    p->memctl(l, 0);
+
+  while ( (l = l_pop(&p->apages)) )
+    p->memctl(l, 0);
+}
+
+
+
+
+void pl_add(struct pool *p, void *page)
+{
+  Assert(p);
+  Assert(page);
+
+  if ( p->max )
+    p->max++;
+  pl_addpage(p, page);
+}
+
+
+
+
+DECL void pl_addpage(struct pool *p, char *pg)
+{
+  struct phead *ph;
+  struct list *lp;
+  int i;
+
+  Assert(p);
+  Assert(pg);
+
+  ph = (struct phead *)pg;
+  l_init(&ph->entry);
+  l_init(&ph->items);
+  ph->pool = p;
+
+  pg += p->upp * sizeof(cat_align_t);
+  for ( i = 0 ; i < p->ipp ; ++i, pg += p->upi * sizeof(cat_align_t) ) {
+    lp = (struct list *)pg;
+    l_init(lp);
+    l_ins(ph->items.prev, lp);
+  }
+
+  ph->avail = p->ipp;
+
+  l_enq(&p->apages, &ph->entry);
+  p->np++;
+}
+
+
+
+#ifdef CAT_DEF_IMPL
+
+#include <cat/err.h>
+
+void * pl_xalloc(struct pool *p)
+{
+  void *data;
+
+  Assert(p);
+
+  data = pl_alloc(p);
+
+  if ( ! data ) {
+    if ( p->max && p->np >= p->max )
+      err("pl_xalloc:  maximum number of allocations reached!\n");
+    else
+      errsys("pl_xalloc:\n\t");
+  }
+
+  return data;
+}
+
+#endif

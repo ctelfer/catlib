@@ -1,0 +1,191 @@
+/*
+ * io.c -- Input/Output functions
+ *
+ * Christopher Adam Telfer
+ *
+ * Copyright 1999 - 2007  (see accompanying license) 
+ *
+ */
+
+#include <cat/cat.h>
+
+#if CAT_HAS_POSIX
+
+#include <cat/io.h>
+
+#if CAT_USE_STDLIB
+#include <stdlib.h>
+#include <string.h>
+#else /* CAT_USE_STDLIB */
+#include <cat/catstdlib.h>
+#endif /* CAT_USE_STDLIB */
+
+#include <sys/types.h>
+#include <sys/time.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
+
+int io_read(int fd, void *buf, int nb) 
+{ 
+	unsigned char *p = buf; 
+	int nr = 0;
+	int n;
+
+	if ( fd < 0 || !buf || nb < 0 )
+		return -2;
+
+	while (nr < nb) { 
+		if ( (n = read(fd, p, nb - nr)) < 0) {
+			if ( (errno == EINTR) || (errno == EAGAIN) )
+				continue; 
+			else 
+				return -1;
+		} else if (n == 0)
+			break; 
+
+		nr += n;
+		p += n; 
+	} 
+
+	return nr;
+}
+
+
+int io_write(int fd, void *buf, int nb) 
+{ 
+	unsigned char *p = buf; 
+	int nw = 0;
+	int n;
+
+	if ( fd < 0 || !buf || nb < 0 )
+		return -2;
+
+	while (nw < nb) { 
+		if ( (n = write(fd, p, nb - nw)) < 0) {
+			if ( (errno == EINTR) || (errno == EAGAIN) )
+				continue; 
+			else 
+				return -1;
+		} else if ( n == 0 )
+			break;
+
+		nw += n;
+		p += n; 
+	} 
+
+	return nw;
+}
+
+
+int io_try_read(int fd, void *buf, int nb) 
+{ 
+	unsigned char *p = buf; 
+	int n;
+
+	if ( fd < 0 || !buf || nb < 0 )
+		return -2;
+
+	while ( ((n = read(fd, p, nb)) == -1) && (errno == EINTR) )
+		;
+
+	return n;
+}
+
+
+int io_try_write(int fd, void *buf, int nb) 
+{ 
+	unsigned char *p = buf; 
+	int n;
+
+	if ( fd < 0 || !buf || nb < 0 )
+		return -2;
+
+	while ( ((n = write(fd, p, nb)) == -1) && (errno == EINTR) )
+		;
+
+	return n;
+}
+
+
+int io_check_ready(int fd, int type, double timeout)
+{
+	fd_set set, *rp = NULL, *wp = NULL, *ep = NULL;
+	struct timeval tv, tvcopy = { 0 }, *tvp = NULL;
+
+	if ( fd < 0 ) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	FD_ZERO(&set);
+	FD_SET(fd, &set);
+	if ( timeout > 0 ) {
+		tvcopy.tv_sec = (long)timeout;
+		timeout -= (long)timeout;
+		tvcopy.tv_usec = (long)(timeout * 1000000.0);
+		tvp = &tv;
+	}
+
+	if ( type == CAT_IOT_READ )
+		rp = &set;
+	else if ( type == CAT_IOT_WRITE )
+		wp = &set;
+	else if ( type == CAT_IOT_EXCEPT )
+		ep = &set;
+	else {
+		errno = EINVAL;
+		return -1;
+	}
+
+again:
+	tv = tvcopy;
+	if ( select(fd + 1, rp, wp, ep, tvp) < 0 ) {
+		if ( errno == EINTR )
+			goto again;
+		else
+			return -1;
+	}
+
+	return FD_ISSET(fd, &set) ? 1 : 0;
+}
+
+
+int io_setnblk(int fd)
+{
+	int flags;
+
+	abort_unless(fd >= 0);
+
+	flags = fcntl(fd, F_GETFL);
+	if ( flags < 0 )
+		return -1;
+
+	flags |= O_NONBLOCK;
+
+	if ( fcntl(fd, F_SETFL, flags) < 0 )
+		return -1;
+	else
+		return 0;
+}
+
+
+int io_clrnblk(int fd)
+{
+	int flags;
+
+	abort_unless(fd >= 0);
+
+	flags = fcntl(fd, F_GETFL);
+	if ( flags < 0 )
+		return -1;
+
+	flags &= ~O_NONBLOCK;
+
+	if ( fcntl(fd, F_SETFL, flags) < 0 )
+		return -1;
+	else
+		return 0;
+}
+
+#endif /* CAT_HAS_POSIX */
