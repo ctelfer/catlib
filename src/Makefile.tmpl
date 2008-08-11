@@ -2,7 +2,7 @@ CFILES=	cat.c aux.c err.c cb.c grow.c io.c mem.c net.c pack.c ring.c pcache.c \
 	uevent.c raw.c match.c csv.c stduse.c stdcsv.c graph.c shell.c \
 	str.c dbgmem.c emit.c emit_format.c emit_file.c emalloc.c catstr.c \
 	bitops.c list.c hash.c avl.c heap.c dlist.c pool.c rbtree.c time.c \
-	splay.c bitset.c catstdlib.c catstdio.c pspawn.c
+	splay.c bitset.c catstdlib.c catstdio.c pspawn.c dynmem.c
 
 LCATODIR=  ../obj/libcat
 LCATOF= $(LCATODIR)/cat.o \
@@ -32,7 +32,8 @@ LCATOF= $(LCATODIR)/cat.o \
 	$(LCATODIR)/emalloc.o  \
 	$(LCATODIR)/catstr.o  \
 	$(LCATODIR)/bitops.o \
-	$(LCATODIR)/pspawn.o
+	$(LCATODIR)/pspawn.o \
+	$(LCATODIR)/dynmem.o 
 
 LCATAODIR=  ../obj/libcata
 LCATAOF=$(LCATAODIR)/cat.o \
@@ -73,7 +74,8 @@ LCATAOF=$(LCATAODIR)/cat.o \
 	$(LCATAODIR)/time.o \
 	$(LCATAODIR)/splay.o \
 	$(LCATAODIR)/bitset.o \
-	$(LCATAODIR)/pspawn.o
+	$(LCATAODIR)/pspawn.o \
+	$(LCATAODIR)/dynmem.o
 
 
 LCAT_DBG_ODIR= ../obj/libcat_dbg
@@ -115,7 +117,8 @@ LCAT_DBG_OF=$(LCAT_DBG_ODIR)/cat.o \
 	$(LCAT_DBG_ODIR)/time.o \
 	$(LCAT_DBG_ODIR)/splay.o \
 	$(LCAT_DBG_ODIR)/bitset.o \
-	$(LCAT_DBG_ODIR)/pspawn.o
+	$(LCAT_DBG_ODIR)/pspawn.o \
+	$(LCAT_DBG_ODIR)/dynmem.o
 	
 
 LCAT_NO_LIBC_ODIR=  ../obj/libcat_nolibc
@@ -153,7 +156,8 @@ LCAT_NO_LIBC_OF= \
 	$(LCAT_NO_LIBC_ODIR)/rbtree.o \
 	$(LCAT_NO_LIBC_ODIR)/time.o \
 	$(LCAT_NO_LIBC_ODIR)/splay.o \
-	$(LCAT_NO_LIBC_ODIR)/stduse.o 
+	$(LCAT_NO_LIBC_ODIR)/stduse.o \
+	$(LCAT_NO_LIBC_ODIR)/dynmem.o 
 
 CC=gcc
 
