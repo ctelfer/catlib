@@ -401,8 +401,11 @@ double strtod(const char *start, char **cpp)
 #include <cat/list.h>
 
 
-/* Core address type in integral form */
-/* Assumption: flat address space */
+/* 
+   Core address type in integral form.
+   Assumption: flat address space -> not needed if there is another way to
+   guarantee alignment of the initial memory block.
+*/
 typedef unsigned long cat_addr_t;
 
 /* core alignment type */
@@ -417,17 +420,29 @@ union align_u {
 };
 
 
-#define sizetonu(n) (((n)+sizeof(union align_u)-1) / sizeof(union align_u))
+/* XXX assumes that alignment is a power of 2 */
+#define UNITSIZE		sizeof(union align_u)
+#define sizetonu(n)	(((size_t)(n) + UNITSIZE - 1) / UNITSIZE)
+#define nutosize(n)	((size_t)(n) * UNITSIZE)
+#define round2u(n)	(nutosize(sizetonu(n)))
 
-struct memobj {
-	union align_u		mo_len;
-	struct list		mo_entry;
+struct memblk {
+	union align_u		mb_len;
+	struct list		mb_entry;
 };
 
-#define MINNU 		sizetonu(sizeof(struct memobj))
-#define NUMOBJ		(MINNU * sizeof(union align_u))
-#define moaddr(mo)	((cat_addr_t)mo)
-#define mo2ptr(mo)	((void *)((union align_u *)mo + 1))
+#define MINNU 		sizetonu(sizeof(struct memblk)+UNITSIZE)
+#define MINSZ		(MINNU * UNITSIZE)
+#define MINASZ		(nutosize(MINNU + nutosize(2)))
+#define mb2ptr(mb)	((void *)((union align_u *)(mb) + 1))
+#define ptr2mb(ptr)	((struct memblk *)((union align_u *)(ptr) - 1))
+#define ALLOC_BIT	((size_t)1)
+#define PREV_ALLOC_BIT	((size_t)2)
+#define CTLBMASK	(ALLOC_BIT|PREV_ALLOC_BIT)
+#define MAX_ALLOC	round2u((size_t)~0 - UNITSIZE)
+#define MBSIZE(p)	(((union align_u *)(p))->sz & ~CTLBMASK)
+#define PTR2U(p, o)	((union align_u *)((char *)(p) + (o)))
+
 
 /* global data structures including ~2 million align_u elements of memory */
 /* this number is obviously configurable */
@@ -436,50 +451,53 @@ struct memobj {
 #endif /* CAT_MALLOC_MEM */
 
 #ifndef CAT_MIN_MOREMEM	
-#define CAT_MIN_MOREMEM	4096
+#define CAT_MIN_MOREMEM	8192
 #endif /* CAT_MIN_MOREMEM */
 
-#define CAT_SIZE_MAX ((size_t)~0)
-
+/* global data structures */
 static union align_u memblob[CAT_MALLOC_MEM];
 static struct list memlist_struct;
-static struct list *memlist = NULL;
+static struct list *memlist = NULL, *curpos;
 void *(*add_mem_func)(size_t len) = NULL;
 
 
 /* XXX check alignment assumptions here */
-void *align_heap_mem(void *mem, size_t *len)
+void align_heap_mem(void **mem, size_t *len)
 {
-	cat_addr_t mask = sizeof(union align_u) - 1;
-	cat_addr_t maddr = (size_t)mem;
-	if ( maddr & mask ) {
-		cat_addr_t naddr;
-		naddr = (maddr & mask) + 1;
-		*len -= naddr - maddr;
-		abort_unless(*len >= sizeof(struct memobj));
+	cat_addr_t maddr = (size_t)*mem, rem, naddr;
+
+	rem = maddr % sizeof(union align_u);
+	if ( rem ) {
+		naddr = (maddr - rem) + sizeof(union align_u);
+		*len -= rem;
 		maddr = naddr;
 	}
 
-	if ( *len % sizeof(union align_u) ) {
-		*len -= *len % sizeof(struct memobj);
-		abort_unless(*len >= sizeof(struct memobj));
-	}
-	return (void *)maddr;
+	rem = *len % sizeof(union align_u);
+	if ( rem )
+		*len -= rem;
+	abort_unless(*len >= MINASZ);
+	*mem = (void *)maddr;
 }
 
 
 static void add_heap_memory(void *mem, size_t len)
 {
-	struct memobj *obj;
-	void free(void *mem);
+	struct memblk *obj;
 
 	abort_unless(memlist);
-	abort_unless(len >= sizeof(struct memobj));
+	abort_unless(len >= MINASZ);
 
-	obj = (struct memobj *)align_heap_mem(mem, &len);
-	obj->mo_len.sz = len;
+	align_heap_mem(&mem, &len);
+	/* next 3 lines add sentinel values around the memory to ensure */
+	/* that we don't merge past the end of the arena */
+	PTR2U(mem, 0)->sz = ALLOC_BIT;
+	PTR2U(mem, len - UNITSIZE)->sz = ALLOC_BIT;
 
-	free(mo2ptr(obj));
+	obj = (struct memblk *)((union align_u *)mem + 1);
+	obj->mb_len.sz = (len - nutosize(2)) | PREV_ALLOC_BIT;
+
+	free(mb2ptr(obj));
 }
 
 
@@ -487,56 +505,81 @@ static void initmem(void)
 {
 	l_init(&memlist_struct);
 	memlist = &memlist_struct;
+	curpos = memlist;
 	add_heap_memory(memblob, sizeof(memblob));
+}
+
+
+static void set_free_mb(struct memblk *mb, size_t size, size_t bits)
+{
+	mb->mb_len.sz = size | bits;
+	PTR2U(mb, size - UNITSIZE)->sz = size;
+}
+
+
+static struct memblk *split_block(struct memblk *mb, size_t amt)
+{
+	struct memblk *nmb;
+
+	/* caller must assure that amt is a multiple of UNITSIZE */
+	abort_unless(amt % UNITSIZE == 0);
+
+	nmb = (struct memblk *)PTR2U(mb, amt);
+	set_free_mb(nmb, MBSIZE(mb) - amt, 0);
+	l_ins(&mb->mb_entry, &nmb->mb_entry);
+	set_free_mb(mb, amt, mb->mb_len.sz & PREV_ALLOC_BIT);
+	return mb;
 }
 
 
 void *malloc(size_t amt)
 {
 	struct list *t;
-	struct memobj *mo, *nmo = NULL;
-	struct list *prev;
-	size_t nu;
+	struct memblk *mb;
 	void *mm = NULL;
 	size_t moreamt;
 
 	if ( !memlist )
 		initmem();
 
-	if ( amt > CAT_SIZE_MAX - sizeof(union align_u) )
+	/* the first condition tests for overflow */
+	amt += UNITSIZE;
+	if ( amt < UNITSIZE || amt > MAX_ALLOC )
 		return NULL;
-	amt += sizeof(union align_u);
 
-	nu = sizetonu(amt);
-	if ( nu < MINNU ) {
-		nu = MINNU;
-		amt = MINNU * sizeof(union align_u);
-	}
+	if ( amt < MINSZ )
+		amt = MINSZ;
+	else
+		amt = round2u(amt); /* round up size */
 
 again:
-	for ( t = l_head(memlist) ; t != l_end(memlist) ; t = t->next ) {
-		mo = container(t, struct memobj, mo_entry);
-		if ( mo->mo_len.sz >= amt ) {
-			if ( mo->mo_len.sz > amt + NUMOBJ ) {
-				nmo = (struct memobj *)
-					((union align_u *)mo + nu);
-				nmo->mo_len.sz = 
-					mo->mo_len.sz - 
-					nu * sizeof(union align_u);
-				prev = mo->mo_entry.prev;
-				mo->mo_len.sz = nu * sizeof(union align_u);
-			}
-			l_rem(&mo->mo_entry);
-			if ( nmo )
-				l_ins(prev, &nmo->mo_entry);
-			return mo2ptr(mo);
+	/* first fit search that starts at the previous allocation */
+	t = curpos;
+	do { 
+		if ( t == memlist ) {
+			t = t->next;
+			continue;
 		}
-	}
+		mb = container(t, struct memblk, mb_entry);
+		if ( MBSIZE(mb) >= amt ) {
+			if ( MBSIZE(mb) > amt + MINSZ )
+				mb = split_block(mb, amt);
+			else
+				amt = MBSIZE(mb);
+			l_rem(&mb->mb_entry);
+			mb->mb_len.sz &= ~ALLOC_BIT;
+			PTR2U(mb, amt)->sz |= PREV_ALLOC_BIT;
+			curpos = mb->mb_entry.next;
+			return mb2ptr(mb);
+		}
+		t = t->next;
+	} while ( t != curpos );
 
 	abort_unless(mm == NULL);
 
 	if ( add_mem_func ) {
-		moreamt = amt;
+		/* add 2 units for boundary sentinels */
+		moreamt = amt + nutosize(2);
 		if ( moreamt < CAT_MIN_MOREMEM )
 			moreamt = CAT_MIN_MOREMEM;
 		mm = (*add_mem_func)(moreamt);
@@ -553,50 +596,54 @@ again:
 
 void free(void *mem)
 {
-	struct memobj *mo, *mo2;
-	struct list *t;
-	cat_addr_t maddr;
+	int reinsert = 1;
+	struct memblk *mb, *mb2;
+	union align_u *lenp;
+	size_t sz;
 
+	/* we should not be called before initializing the "heap" */
+	abort_unless(memlist);
 	if ( mem == NULL )
 		return;
 
-	abort_unless(memlist);
-	mo = (struct memobj *)((union align_u *)mem - 1);
-	maddr = (cat_addr_t)mo;
+	mb = ptr2mb(mem);
+	sz = MBSIZE(mb);	
+	/* note, we set the original PREV_ALLOC_BIT, but clear the ALLOC_BIT */
+	set_free_mb(mb, sz, mb->mb_len.sz & PREV_ALLOC_BIT);
 
-	for ( t = l_tail(memlist) ; t != l_end(memlist) ; t = t->prev ) {
-		mo2 = container(t, struct memobj, mo_entry);
-		if ( moaddr(mo2) < moaddr(mo) )
-			break;
+	if ( !(mb->mb_len.sz & PREV_ALLOC_BIT) ) {
+		lenp = (union align_u *)mb - 1;
+		mb = (struct memblk *)((char *)mb - lenp->sz);
+		sz += lenp->sz;
+		set_free_mb(mb, sz, PREV_ALLOC_BIT);
+		reinsert = 0;
 	}
 
-	if ( t->next != l_end(memlist) ) {
-		mo2 = container(t, struct memobj, mo_entry);
-		if ( maddr + mo->mo_len.sz == moaddr(mo2) ) {
-			l_rem(&mo2->mo_entry);
-			mo->mo_len.sz += mo2->mo_len.sz;
-		}
+	lenp = PTR2U(mb, sz);
+	if ( !(lenp->sz & ALLOC_BIT) ) {
+		mb2 = (struct memblk *)lenp;
+		l_rem(&mb2->mb_entry);
+		sz += MBSIZE(mb2);
+		set_free_mb(mb, sz, PREV_ALLOC_BIT);
+	} else {
+		lenp->sz &= ~PREV_ALLOC_BIT;
 	}
 
-	if ( t->prev != l_end(memlist) ) {
-		mo2 = container(t, struct memobj, mo_entry);
-		if ( moaddr(mo2) + mo2->mo_len.sz == maddr ) {
-			mo2->mo_len.sz += mo->mo_len.sz;
-			mo = NULL;
-		}
-	}
-
-	if ( mo )
-		l_ins(t->prev, &mo->mo_entry);
+	if ( reinsert )
+		l_ins(curpos->prev, &mb->mb_entry);
 }
 
 
 void *calloc(size_t nmem, size_t osiz)
 {
-	size_t len;
+	size_t len, tsz;
 	void *m;
 
-	if ( osiz > CAT_SIZE_MAX / nmem )
+	if ( nmem == 0 )
+		return NULL;
+
+	tsz = round2u(MAX_ALLOC / nmem);
+	if ( osiz > tsz )
 		return NULL;
 	len = osiz * nmem;
 	m = malloc(len);
@@ -606,10 +653,44 @@ void *calloc(size_t nmem, size_t osiz)
 }
 
 
+#ifndef CAT_MIN_ALLOC_SHRINK
+#define CAT_MIN_ALLOC_SHRINK 128
+#endif  /* CAT_MIN_ALLOC_SHRINK */
+static void shrink_alloc_block(struct memblk *mb, size_t sz)
+{
+	size_t nbsz;
+	struct memblk *nmb;
+	union align_u *lenp;
+
+	/* caller should assure that sz is a multiple of UNITSIZE */
+	abort_unless(sz % UNITSIZE == 0);
+	nbsz = MBSIZE(mb) - sz;
+	if ( nbsz < MINSZ )
+		return;
+
+	lenp = PTR2U(mb, MBSIZE(mb));
+	if ( !(lenp->sz & ALLOC_BIT) ) {
+		/* expand the next block?  OK if small since no fragmentation */
+		nbsz += MBSIZE(lenp);
+		l_rem(&((struct memblk *)lenp)->mb_entry);
+		/* remove the block and fall through to create the new one */
+	} else if ( nbsz < CAT_MIN_ALLOC_SHRINK ) {
+		/* only shrink current block if size savings is worth it */
+		return;
+	} 
+	nmb = (struct memblk *)PTR2U(mb, sz);
+	set_free_mb(nmb, nbsz, PREV_ALLOC_BIT);
+	l_ins(curpos, &nmb->mb_entry);
+	mb->mb_len.sz = sz | (mb->mb_len.sz & CTLBMASK);
+}
+
+
 void *realloc(void *omem, size_t newamt)
 {
-	void *nmem;
-	struct memobj *mo;
+	void *nmem = NULL;
+	struct memblk *mb;
+	union align_u *lenp;
+	size_t tsz;
 
 	if ( newamt == 0 ) {
 		free(omem);
@@ -619,18 +700,34 @@ void *realloc(void *omem, size_t newamt)
 	if ( !omem )
 		return malloc(newamt);
 
-	if ( newamt > CAT_SIZE_MAX - sizeof(union align_u) )
+	tsz = round2u(newamt);
+	if ( (tsz < newamt) || (tsz > MAX_ALLOC - UNITSIZE) )
 		return NULL;
+	newamt = tsz + UNITSIZE;
 
-	mo = (struct memobj *)((union align_u *)omem - 1);
-	if ( mo->mo_len.sz >= newamt + sizeof(union align_u) )
+	mb = ptr2mb(omem);
+	if ( mb->mb_len.sz >= newamt ) {
+		shrink_alloc_block(mb, newamt);
 		return omem;
+	}
 
+	/* See if we can just add the next adjacent block */
+	lenp = PTR2U(mb, MBSIZE(mb));
+	if ( !(lenp->sz & ALLOC_BIT) )  {
+		tsz = MBSIZE(mb) + MBSIZE(lenp);
+		if ( tsz > newamt ) {
+			set_free_mb(mb, tsz, mb->mb_len.sz & CTLBMASK);
+			return mb2ptr(mb);
+		}
+	}
+
+	/* at this point we need a completely new block and must copy */
 	nmem = malloc(newamt);
-	if ( !nmem )
-		return NULL;
-	memcpy(nmem, omem, mo->mo_len.sz);
-	free(omem);
+	if ( nmem ) { 
+		/* may copy more than the original alloc, but still in bounds */
+		memcpy(nmem, omem, MBSIZE(mb));
+		free(omem);
+	}
 
 	return nmem;
 }
