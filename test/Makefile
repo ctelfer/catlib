@@ -25,6 +25,11 @@ CATA_CF= -g -DCAT_USE_INLINE=0 -DCAT_HAS_LONGLONG=0 -ansi -pedantic \
     -D_POSIX_C_SOURCE=200112L -D_USE_BSD
 CATA_LIB= -L../lib -lcata
 
+# Debug library
+CAT_DBG_LIBDEP=../lib/libcat_dbg.a
+CAT_DBG_CF= -g -pg
+CAT_DBG_LIB= -L../lib -lcat_dbg
+
 # TODO: Use no-libc version
 
 
@@ -114,8 +119,8 @@ testshell: testshell.c $(CATA_LIBDEP)
 testgraph: testgraph.c $(CATA_LIBDEP)
 	$(CC) $(CATA_CF) -o testgraph testgraph.c $(INC) $(CATA_LIB)
 
-testprintf: testprintf.c $(CATA_LIBDEP)
-	$(CC) $(CATA_CF) -o testprintf testprintf.c $(INC) $(CATA_LIB)
+testprintf: testprintf.c $(CAT_LIBDEP)
+	$(CC) $(CAT_CF) -g -o testprintf testprintf.c $(INC) $(CAT_LIB)
 
 teststr: teststr.c $(CATA_LIBDEP)
 	$(CC) $(CATA_CF) -o teststr teststr.c $(INC) $(CATA_LIB)
