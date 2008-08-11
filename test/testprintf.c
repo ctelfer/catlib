@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
-
+#include <sys/time.h>
 
 
 int ntests = 0, npassed = 0;
@@ -53,6 +53,44 @@ void test_extension(const char *fmt, ...)
 }
 
 
+#define NREPS 100000
+void speed_test(const char *fmt, ...)
+{
+	va_list ap, ap2;
+	char buf1[256];
+	char buf2[256];
+	int rv1, rv2, passed, i;
+	struct timeval start, end;
+	double delta;
+
+	gettimeofday(&start, NULL);
+	for (i = 0; i < NREPS; i++) { 
+		va_start(ap, fmt);
+		rv1 = vsnprintf(buf1, sizeof(buf1), fmt, ap);
+		va_end(ap);
+	}
+	gettimeofday(&end, NULL);
+	delta = (end.tv_sec - start.tv_sec) * 1000000.0 + 
+		end.tv_usec - start.tv_usec;
+	delta *= 1000.0;
+	printf("vsnprintf(\"%s\",...); -> %lf nanoseconds\n", fmt, 
+		delta / (double)NREPS);
+
+	gettimeofday(&start, NULL);
+	for (i = 0; i < NREPS; i++) { 
+		va_start(ap2, fmt);
+		rv2 = str_vfmt(buf2, sizeof(buf2), fmt, ap2);
+		va_end(ap2);
+	}
+	gettimeofday(&end, NULL);
+	delta = (end.tv_sec - start.tv_sec) * 1000000.0 + 
+		end.tv_usec - start.tv_usec;
+	delta *= 1000.0;
+	printf("str_vfmt(\"%s\",...); -> %lf nanoseconds\n", fmt, 
+		delta / (double)NREPS);
+}
+
+
 int main(int argc, char *argv[])
 {
 	test_printf("hi");
@@ -91,5 +129,13 @@ int main(int argc, char *argv[])
 	test_extension("%b", 0x58);
 
 	printf("%d / %d tests passed\n", npassed, ntests);
+
+	printf("\nSpeed Tests\n");
+	speed_test("Hello World");
+	speed_test("hell%c w%crld", 'o', 'o');
+	speed_test("abc - %s - def", "goodbye");
+	speed_test("%7.3e", .0123);
+	speed_test("%17d", 12345678);
+
 	return npassed == ntests ? 0 : ntests;
 }
