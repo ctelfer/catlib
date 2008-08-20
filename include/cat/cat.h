@@ -81,6 +81,7 @@ typedef unsigned long long u_longlong;
 #endif
 #define container(ptr, type, field) \
 	((type *)((char*)(ptr)-offsetof(type,field)))
+#define array_length(arr) (sizeof(arr) / sizeof(arr[0]))
 
 /* generic binary data container */
 struct raw {

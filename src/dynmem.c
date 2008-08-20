@@ -158,10 +158,10 @@ again:
 				mb = split_block(mb, amt);
 			else
 				amt = MBSIZE(mb);
-			l_rem(&mb->mb_entry);
-			mb->mb_len.sz &= ~ALLOC_BIT;
-			PTR2U(mb, amt)->sz |= PREV_ALLOC_BIT;
 			dm->dm_current = mb->mb_entry.next;
+			l_rem(&mb->mb_entry);
+			mb->mb_len.sz |= ALLOC_BIT;
+			PTR2U(mb, amt)->sz |= PREV_ALLOC_BIT;
 			return mb2ptr(mb);
 		}
 		t = t->next;

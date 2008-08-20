@@ -2,13 +2,14 @@ TESTS=	testlist testhash testtcpc testtcps testudpc testudps testpool \
 	testheap testmem testhw testtime testavl testpack testdl \
 	testpcache testuemux testrb markov markov2 testmatch \
 	testsplay testcsv testbitset testshell testgraph testprintf teststr \
-	testbitops testpspawn
+	testbitops testpspawn testdynmem
 	
 CFILES= testlist.c testhash.c testtcpc.c testtcps.c testudpc.c testudps.c \
 	testpool.c testmem.c testheap.c testhw.c testtime.c testavl.c \
 	testpack.c testdl.c testpcache.c testuemux.c testrb.c markov.c	\
 	markov2.c testmatch.c testsplay.c testcsv.c testbitset.c \
-	testshell.c testgraph.c testprintf.c teststr.c testbitops.c
+	testshell.c testgraph.c testprintf.c teststr.c testbitops.c \
+	testdynmem.c
 
 CC=gcc
 
@@ -129,4 +130,7 @@ testbitops: testbitops.c $(CAT_LIBDEP)
 	$(CC) $(CAT_CF) -o testbitops testbitops.c $(INC) $(CAT_LIB)
 
 testpspawn: testpspawn.c $(CAT_LIBDEP)
-	$(CC) $(CATA_CF) -o testpspawn testpspawn.c $(INC) $(CATA_LIB)
+	$(CC) $(CAT_CF) -o testpspawn testpspawn.c $(INC) $(CAT_LIB)
+
+testdynmem: testdynmem.c $(CAT_DBG_LIBDEP)
+	$(CC) $(CAT_DBG_CF) -o testdynmem testdynmem.c $(INC) $(CAT_DBG_LIB)
