@@ -6,9 +6,9 @@
 #include <time.h>
 
 #define NWORDS		(1024 * 1024 * 2)
-#define MAXALLOCS	128
-#define NITER		32
-#define PRINTPERIOD	4
+#define MAXALLOCS	32
+#define NITER		128
+#define PRINTPERIOD	1
 
 unsigned long Memory[NWORDS];
 struct dynmem Dm;
@@ -93,25 +93,27 @@ void doit()
 
 void doit2()
 {
-	int i, nops, len, idx;
+	int i, nops, len, idx, op;
 	struct raw allocs[MAXALLOCS] = { 0 };
 	printmem(&Dm, "Initial state");
 	char str[256];
 
 	for (i = 1; i <= NITER; i++) { 
 		idx = abs(rand()) % MAXALLOCS;
-		if ((rand() % 2) == 0) {  /* alloc */
+		op = abs(rand()) % 2;
+		sprintf(str, "Iter %d -> %s %d, (%u)", i, 
+			op ? 
+				"free" : 
+				(allocs[idx].data ? "free/alloc" : "alloc"), 
+			idx, len);
+		if (op == 0) {  /* alloc */
 			len = abs(rand()) % 8192;
-			printf("here: len = %x, idx = %d\n", len, idx);
 			getmem(&Dm, &allocs[idx], len);
 		} else { 
+			len = 0;
 			freemem(&Dm, &allocs[idx]);
-
 		}
-		if (i % PRINTPERIOD == 0) {
-			sprintf(str, "Iter %d", i);
-			printmem(&Dm, str);
-		}
+		printmem(&Dm, str);
 	}
 
 	printmem(&Dm, "Final before clear");

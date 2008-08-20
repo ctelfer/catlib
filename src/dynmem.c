@@ -220,6 +220,9 @@ void dynmem_free(struct dynmem *dm, void *mem)
 		sz += MBSIZE(mb2);
 		/* See note at previous set_free_mb() */
 		set_free_mb(mb, sz, PREV_ALLOC_BIT);
+		/* if the following block was "dm_current" adjust */
+		if (dm->dm_current == &mb2->mb_entry)
+			dm->dm_current = &mb->mb_entry;
 	} else {
 		unitp->sz &= ~PREV_ALLOC_BIT;
 	}
