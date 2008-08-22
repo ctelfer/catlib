@@ -69,6 +69,16 @@ void freeallmem(struct dynmem *dm, struct raw *rarr, size_t ralen)
 }
 
 
+void printraw(struct raw *r, size_t ralen)
+{
+	unsigned int i;
+	printf("Allocated slots\n");
+	for ( i = 0; i < ralen; i++ )
+		if (r[i].data != NULL)
+			printf("\tSlot %d: %p:%u\n", i, r[i].data, r[i].len);
+}
+
+
 void doit()
 {
 
@@ -113,6 +123,7 @@ void doit2()
 			len = 0;
 			freemem(&Dm, &allocs[idx]);
 		}
+		printraw(allocs, array_length(allocs));
 		printmem(&Dm, str);
 	}
 
@@ -126,7 +137,7 @@ int main(int argc, char *argv[])
 {
 	srand(time(NULL));
 	dynmem_init(&Dm);
-	add_dynmempool(&Dm, Memory, sizeof(Memory));
+	dynmem_add_pool(&Dm, Memory, sizeof(Memory));
 
 	doit();
 	doit2();

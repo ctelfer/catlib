@@ -45,18 +45,85 @@ struct memblk {
 #define PTR2U(p, o)	((union align_u *)((char *)(p) + (o)))
 
 
-/* global data structures including ~2 million align_u elements of memory */
-/* this number is obviously configurable */
-#ifndef CAT_MALLOC_MEM
-#define CAT_MALLOC_MEM	(2ul * 1024 * 1024)
-#endif /* CAT_MALLOC_MEM */
-
 #ifndef CAT_MIN_MOREMEM	
 #define CAT_MIN_MOREMEM	8192
 #endif /* CAT_MIN_MOREMEM */
 
 /* global data structures */
 void *(*add_mem_func)(size_t len) = NULL;
+
+
+static void set_free_mb(struct memblk *mb, size_t size, size_t bits)
+{
+	mb->mb_len.sz = size | bits;
+	PTR2U(mb, size - UNITSIZE)->sz = size;
+}
+
+
+static struct memblk *split_block(struct memblk *mb, size_t amt)
+{
+	struct memblk *nmb;
+	size_t flags;
+
+	/* caller must assure that amt is a multiple of UNITSIZE */
+	abort_unless(amt % UNITSIZE == 0);
+
+	flags = mb->mb_len.sz & CTLBMASK;
+	nmb = (struct memblk *)PTR2U(mb, amt);
+	set_free_mb(nmb, MBSIZE(mb) - amt, flags);
+	l_ins(&mb->mb_entry, &nmb->mb_entry);
+	set_free_mb(mb, amt, flags);
+	return mb;
+}
+
+
+static void mark_free(struct memblk *mb)
+{
+	abort_unless(mb);
+	/* note, we set the original PREV_ALLOC_BIT, but clear the ALLOC_BIT */
+	set_free_mb(mb, MBSIZE(mb), mb->mb_len.sz & PREV_ALLOC_BIT);
+}
+
+
+#define MERGEBACK	1
+#define MERGEFRONT	2
+static int coalesce(struct memblk **mbparam)
+{
+	struct memblk *mb, *nmb;
+	union align_u *unitp;
+	size_t sz;
+	int rv = 0;
+
+	abort_unless(mbparam && *mbparam);
+	mb = *mbparam;
+	sz = MBSIZE(mb);	
+
+	if ( !(mb->mb_len.sz & PREV_ALLOC_BIT) ) {
+		unitp = (union align_u *)mb - 1;
+		mb = (struct memblk *)((char *)mb - unitp->sz);
+		sz += unitp->sz;
+		/* note that we are using aggressive coalescing, so this */
+		/* the prev alloc bit must always be set here: be safe   */
+		/* in case we decide to do delayed coalescing some time later */
+		set_free_mb(mb, sz, mb->mb_len.sz & CTLBMASK);
+		rv |= MERGEBACK;
+	}
+
+	unitp = PTR2U(mb, sz);
+	if ( !(unitp->sz & ALLOC_BIT) ) {
+		nmb = (struct memblk *)unitp;
+		l_rem(&nmb->mb_entry);
+		sz += MBSIZE(nmb);
+		set_free_mb(mb, sz, mb->mb_len.sz & CTLBMASK);
+		rv |= MERGEFRONT;
+	} else {
+		unitp->sz &= ~PREV_ALLOC_BIT;
+	}
+
+	*mbparam = mb;
+
+	return rv;
+}
 
 
 void dynmem_init(struct dynmem *dm)
@@ -68,7 +135,7 @@ void dynmem_init(struct dynmem *dm)
 }
 
 
-static void init_dynmem_pool(struct dynmempool *pool, struct dynmem *dm,
+static void dynmem_init_pool(struct dynmempool *pool, struct dynmem *dm,
 			     size_t tlen, size_t ulen, union align_u *start)
 {
 	l_ins(dm->dm_pools.prev, &pool->dmp_entry);
@@ -78,7 +145,7 @@ static void init_dynmem_pool(struct dynmempool *pool, struct dynmem *dm,
 }
 
 
-void add_dynmempool(struct dynmem *dm, void *mem, size_t len)
+void dynmem_add_pool(struct dynmem *dm, void *mem, size_t len)
 {
 	struct memblk *obj;
 	union dynmempool_u *pool_u;
@@ -92,7 +159,7 @@ void add_dynmempool(struct dynmem *dm, void *mem, size_t len)
 	pool_u = mem;
 	unitp = (union align_u *)(pool_u + 1);
 	ulen -= sizeof(*pool_u) + UNITSIZE;
-	init_dynmem_pool(&pool_u->p, dm, len, ulen, unitp);
+	dynmem_init_pool(&pool_u->p, dm, len, ulen, unitp);
 	
 	/* add sentiel at the end */
 	PTR2U(unitp, ulen)->sz = ALLOC_BIT;
@@ -100,28 +167,6 @@ void add_dynmempool(struct dynmem *dm, void *mem, size_t len)
 	obj->mb_len.sz = ulen | PREV_ALLOC_BIT;
 
 	dynmem_free(dm, mb2ptr(obj));
-}
-
-
-static void set_free_mb(struct memblk *mb, size_t size, size_t bits)
-{
-	mb->mb_len.sz = size | bits;
-	PTR2U(mb, size - UNITSIZE)->sz = size;
-}
-
-
-static struct memblk *split_block(struct memblk *mb, size_t amt)
-{
-	struct memblk *nmb;
-
-	/* caller must assure that amt is a multiple of UNITSIZE */
-	abort_unless(amt % UNITSIZE == 0);
-
-	nmb = (struct memblk *)PTR2U(mb, amt);
-	set_free_mb(nmb, MBSIZE(mb) - amt, 0);
-	l_ins(&mb->mb_entry, &nmb->mb_entry);
-	set_free_mb(mb, amt, mb->mb_len.sz & PREV_ALLOC_BIT);
-	return mb;
 }
 
 
@@ -179,7 +224,7 @@ again:
 		if ( !mm )
 			return NULL;
 		else
-			add_dynmempool(dm, mm, moreamt);
+			dynmem_add_pool(dm, mm, moreamt);
 		goto again;
 	}
 	
@@ -189,45 +234,21 @@ again:
 
 void dynmem_free(struct dynmem *dm, void *mem)
 {
-	int reinsert = 1;
-	struct memblk *mb, *mb2;
-	union align_u *unitp;
-	size_t sz;
+	int rv;
+	struct memblk *mb;
 
 	abort_unless(dm);
 	if ( mem == NULL )
 		return;
 
 	mb = ptr2mb(mem);
-	sz = MBSIZE(mb);	
-	/* note, we set the original PREV_ALLOC_BIT, but clear the ALLOC_BIT */
-	set_free_mb(mb, sz, mb->mb_len.sz & PREV_ALLOC_BIT);
-
-	if ( !(mb->mb_len.sz & PREV_ALLOC_BIT) ) {
-		unitp = (union align_u *)mb - 1;
-		mb = (struct memblk *)((char *)mb - unitp->sz);
-		sz += unitp->sz;
-		/* note that we are using aggressive coalescing, so this */
-		/* the prev alloc bit must always be set here */
-		set_free_mb(mb, sz, PREV_ALLOC_BIT);
-		reinsert = 0;
-	}
-
-	unitp = PTR2U(mb, sz);
-	if ( !(unitp->sz & ALLOC_BIT) ) {
-		mb2 = (struct memblk *)unitp;
-		l_rem(&mb2->mb_entry);
-		sz += MBSIZE(mb2);
-		/* See note at previous set_free_mb() */
-		set_free_mb(mb, sz, PREV_ALLOC_BIT);
-		/* if the following block was "dm_current" adjust */
-		if (dm->dm_current == &mb2->mb_entry)
-			dm->dm_current = &mb->mb_entry;
-	} else {
-		unitp->sz &= ~PREV_ALLOC_BIT;
-	}
-
-	if ( reinsert )
+	mark_free(mb);
+	rv = coalesce(&mb);
+	/* if the following block was "dm_current" adjust */
+	if (((char *)dm->dm_current >= (char *)mb) && 
+            ((char *)dm->dm_current <  ((char *)mb + MBSIZE(mb))))
+		dm->dm_current = &mb->mb_entry;
+	if ( !(rv & MERGEBACK) )
 		l_ins(dm->dm_current->prev, &mb->mb_entry);
 }
 
