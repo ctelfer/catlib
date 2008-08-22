@@ -15,8 +15,8 @@ struct sockaddr_in *sin = (struct sockaddr_in *)&sas;
 socklen_t remlen;
 char buf[256], abuf[256]; 
 
-  DO(fd = udp_sock(NULL, NULL));
-  DO(net_resolv("localhost", "10000", NULL, &sas));
+  ERRCK(fd = udp_sock(NULL, NULL));
+  ERRCK(net_resolv("localhost", "10000", NULL, &sas));
 
 
   for ( ; ; ) 
@@ -31,7 +31,7 @@ char buf[256], abuf[256];
     remlen = sizeof(*sin);
     if ( sendto(fd, buf, n, 0, (SA *)sin, remlen) < 0 )
       errsys("sendto:\n\t");
-    DO(n = recvfrom(fd, buf, 255, 0, (SA *)sin, &remlen)); 
+    ERRCK(n = recvfrom(fd, buf, 255, 0, (SA *)sin, &remlen)); 
     fprintf(stdout,"Received reply from %s\n",net_tostr((SA *)sin,abuf,256));
     fprintf(stdout, "Got back %d bytes : %s", n, buf);
   } 

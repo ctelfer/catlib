@@ -14,7 +14,7 @@ struct sockaddr_in remaddr;
 socklen_t alen;
 char recvbuf[256], strbuf[256]; 
 
-  DO(lfd = tcp_srv(NULL, "10000")); 
+  ERRCK(lfd = tcp_srv(NULL, "10000")); 
   alen = sizeof(remaddr);
   fd = accept(lfd, (SA *)&remaddr, &alen);
 
@@ -23,11 +23,11 @@ char recvbuf[256], strbuf[256];
 
   do 
   { 
-    DO(n = io_try_read(fd, recvbuf, 255));
+    ERRCK(n = io_try_read(fd, recvbuf, 255));
     recvbuf[n] = '\0';
     fprintf(stderr, "received %s", recvbuf); 
     if ( n > 0 )
-      DO(io_write(fd, recvbuf, n));
+      ERRCK(io_write(fd, recvbuf, n));
   } while (n > 0); 
 
   close(fd); 

@@ -10,9 +10,9 @@ int main(int argc, char *argv[])
   struct sockaddr_in sin;
   socklen_t addrsiz = 255, slen = sizeof(sin);
 
-  DO(fd = udp_sock(NULL, "10000"));
+  ERRCK(fd = udp_sock(NULL, "10000"));
 
-  DO(getsockname(fd, (SA *)&sin, &slen));
+  ERRCK(getsockname(fd, (SA *)&sin, &slen));
   fprintf(stderr, "listening on %s\n", net_tostr((SA *)&sin, aname, 255));
   
   while ( 1 ) 
