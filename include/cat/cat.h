@@ -28,6 +28,10 @@
 #define CAT_HAS_LONGLONG	1
 #endif
 
+#ifndef CAT_64BIT
+#define CAT_64BIT		1
+#endif
+
 #ifndef CAT_DIE_DUMP
 #define CAT_DIE_DUMP		0
 #endif 
@@ -121,5 +125,11 @@ typedef void (*copy_f)(void *src, void **dst);
 extern void cat_abort(const char *fn, unsigned ln, const char *expr);
 #define abort_unless(x) \
 	do { if (!(x)) { cat_abort(__FILE__, __LINE__, #x); } } while (0)
+
+extern char num_bits_array[];
+extern char num_leading_zeros_array[];
+
+#define nbits8(x) (num_bits_array[(unsigned char)(x) & 0xff])
+#define nlz8(x) (num_leading_zeros_array[(unsigned char)(x) & 0xff])
 
 #endif /* __cat_cat_h */
