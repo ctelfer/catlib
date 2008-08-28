@@ -7,9 +7,7 @@
 
 /* core alignment type */
 union align_u {
-	double		d;
 	long		l;
-	void *		p;
 	size_t		sz;
 #if defined(CAT_HAS_LONGLONG) && CAT_HAS_LONGLONG
 	long long	ll;
@@ -360,3 +358,257 @@ void dynmem_each_block(struct dynmempool *pool, apply_f f, void *ctx)
 		unitp = PTR2U(unitp, MBSIZE(unitp));
 	}
 }
+
+
+#if 0
+#include <cat/cattypes.h>
+#if CAT_64BIT
+
+#ifndef TLSF_LG2_MAX_ALLOC
+#define TLSF_LG2_MAX_ALLOC 63
+#define TLSF_MAX_ALLOC (1LL << TLSF_LG2_MAX_ALLOC)
+#endif /* TLSF_MAX_ALLOC */
+
+typedef uint64_t tlsf_sz_t;
+#define TLSF_SZ_BITS 64
+#define TLSF_LG2_MINSZ 5 /* XXX guess: verify by assert */
+
+#ifndef TLSF_L2_LEN
+#define TLSF_L2_LEN 6
+#endif /* TLSF_L2_LEN */
+#if TLSF_L2_LEN > 6
+#error "Max supported L2 len is 6 in a 64-bit architecture"
+#endif /* TLSF_L2_LEN */
+
+#else /* CAT_64BIT */
+
+#ifndef TLSF_LG2_MAX_ALLOC
+#define TLSF_LG2_MAX_ALLOC 31
+#define TLSF_MAX_ALLOC (1L << TLSF_LG2_MAX_ALLOC)
+#endif /* TLSF_MAX_ALLOC */
+
+typedef uint32_t tlsf_sz_t;
+#define TLSF_SZ_BITS 32
+#define TLSF_LG2_MINSZ 4 /* XXX guess: verify by assert */
+
+#ifndef TLSF_L2_LEN
+#define TLSF_L2_LEN 5
+#endif /* TLSF_L2_LEN */
+#if TLSF_L2_LEN > 5
+#error "Max supported L2 len is 5 in a 32-bit architecture"
+#endif /* TLSF_L2_LEN */
+
+#endif /* CAT_64BIT */
+
+
+#define NUML2 (TLSF_LG2_MAX_ALLOC - TLSF_LG2_MINSZ + 1)
+#define LG2FULLBLLEN (TLSF_LG2_MINSZ + TLSF_L2_LEN)
+#define FULLBLLEN (1 << (TLSF_LG2_MINSZ + TLSF_L2_LEN))
+#define NUMFULL  (TLSF_LG2_MAX_ALLOC - LG2FULLBLLEN + 1)
+#define NUMSMALL (NUML2 - NUMFULL)
+
+/* TLSF_L2_LEN list heads for each list with a # of MINSZ slots >= to min size
+   for the list head.  Then consider the smaller lists.  Number of slots there
+   is 1 for slot MINSZ, 2 for slot MINSIZ * 2, 4 for slot MINSZ * 4 ... So
+   there are 2^NUMSMALL-1 blocks in all.
+*/
+#define NUMHEADS ((NUMFULL * TLSF_L2_LEN) + ((1 << (NUMSMALL)) - 1))
+
+
+struct tlsf { 
+	struct list	tlsf_pools;
+	tlsf_sz_t 	tlsf_l1bm;
+	struct tlsf_l2  tlsf_l1[NUML2];
+	struct list 	tlsf_lists[NUMHEADS];
+};
+
+struct tlsf_l2 {
+	tlsf_sz_t	tl2_bm;
+	struct list *	tl2_blists;
+};
+
+
+void tlsf_init(struct tlsf *tlsf, void *mem, size_t len);
+void tlsf_add_pool(struct tlsf *tlsf, void *mem, size_t len);
+static void tlsf_init_pool(struct tlsfpool *pool, struct tlsf *tlsf,
+			     size_t tlen, size_t ulen, union align_u *start);
+void *tlsf_malloc(struct tlsf *tlsf, size_t amt);
+void tlsf_free(struct tlsf *tlsf, void *mem);
+void *tlsf_realloc(struct tlsf *tlsf, void *omem, size_t newamt);
+void tlsf_each_pool(struct tlsf *tlsf, apply_f f, void *ctx);
+void tlsf_each_block(struct tlsfpool *pool, apply_f f, void *ctx);
+
+
+void tlsf_init(struct tlsf *tlsf)
+{
+	int i;
+	struct list *listp;
+	abort_unless((1 << TLSF_LG2_MINSZ) == MINSZ);
+	abort_unless(tlsf);
+
+	memset(tlsf, 0, sizeof(tlsf));
+	l_init(&tlsf->tlsf_pools);
+	for (i = 0; i < NUMHEADS; i++)
+		l_init(&tlsf->tlsf_lists[i]);
+	listp = tlsf->tlsf_lists;
+	for (i = 0; i < NUMSMALL; i++) {
+		tlsf->tlsf_l2[i].tl2_blists = listp;
+		listp += (1 << i);
+	}
+	for ( ; i < NUML2; i++ ) { 
+		tlsf->tlsf_l2[i].tl2_blists = listp;
+		listp += (1 << TLSF_L2_LEN);
+	}
+}
+
+
+/* assumes CHAR_BIT == 8 */
+static int nlz(tlsf_sz_t x)
+{
+	int i = 1, b, n = 0;
+	do {
+		b = nlz8(x >> (TLSF_SZ_BITS - (i << 3)));
+		n += b;
+		i++
+	} while ( b < 8 && i <= sizeof(x) );
+	return n;
+}
+
+
+/* assumes CHAR_BIT == 8 */
+static int pop(tlsf_sz_t x)
+{
+	int n = 0;
+	while (x) {
+		n += nbits8(x);
+		x >>= 8;
+	}
+	return n;
+}
+
+
+static int ntz(tlsf_sz_t x)
+{
+	return pop(~x & (x-1));
+}
+
+
+static void calc_tslf_indices(size_t len, int *l1, int *l2)
+{
+	int i, j;
+	/* len must be a multiple of 16! */
+	abort_unless((len & 0xF) == 0);
+	abort_unless(l1);
+	abort_unless(l2);
+
+	i = TLSF_SZ_BITS - nlz(len) - TLSF_LG2_MINSZ;
+	if (len < FULLBLLEN) {
+		j = (len - (1 << i)) / MINSZ;
+	else
+		j = ((len - (1 << i)) >> (i - TSLF_L2_LEN)) & 
+	            ((1 << TSLF_L2_LEN) - 1);
+	*l1 = i;
+	*l2 = j;
+}
+
+
+static round_next_tlsf_size(int *l1, int *l2)
+{
+	abort_unless(l1);
+	abort_unless(l2);
+	*l2 += 1;
+	if ( *l1 + TLSF_LG2_MINSZ >= LG2FULLBLEN ) { 
+		if ( *l2 == TSLF_L2_LEN ) {
+			*l2 = 0;
+			*l1 += 1;
+		}
+	} else {
+		if ( (MINSZ * *l2) == (1 << (*l1 + MINSZ)) ) {
+			*l2 = 0;
+			*l1 += 1;
+		}
+	}
+}
+
+
+void tlsf_add_pool(struct tlsf *tlsf, void *mem, size_t len)
+{
+}
+
+
+static void tlsf_init_pool(struct tlsfpool *pool, struct tlsf *tlsf,
+			   size_t tlen, size_t ulen, union align_u *start)
+{
+}
+
+
+void *tlsf_malloc(struct tlsf *tlsf, size_t amt)
+{
+	int l1, l2;
+	struct list *head;
+
+	abort_unless(tlsf);
+
+	/* the first condition tests for overflow */
+	amt += UNITSIZE;
+	if ( amt < UNITSIZE)
+		return NULL;
+	if ( amt < MINSZ )
+		amt = MINSZ;
+	else {
+		amt = round2u(amt); /* round up size */ 
+		if ( amt > TLSF_MAX_ALLOC )
+			return NULL;
+	}
+
+	calc_tlsf_indices(amt, &l1, &l2);
+	round_next_tlsf_size(&l1, &l2);
+
+again:
+	if ( (head = find_bin(tlsf, l1, l2)) != NULL ) {
+		return extract_blk(tlsf, head, amt);
+	}
+
+	/* should not get here twice */
+	abort_unless(mm == NULL);
+
+	if ( add_mem_func ) {
+		void *mm = NULL;
+		size_t moreamt;
+		/* add 2 units for boundary sentinels */
+		moreamt = amt + UNITSIZE + sizeof(union dynmempool_u);
+		if ( moreamt < CAT_MIN_MOREMEM )
+			moreamt = CAT_MIN_MOREMEM;
+		mm = (*add_mem_func)(moreamt);
+		if ( !mm )
+			return NULL;
+		else
+			tlsf_add_pool(tlsf, mm, moreamt);
+		goto again;
+	}
+	
+	return NULL;
+}
+
+
+void tlsf_free(struct tlsf *tlsf, void *mem)
+{
+}
+
+
+void *tlsf_realloc(struct tlsf *tlsf, void *omem, size_t newamt)
+{
+}
+
+
+void tlsf_each_pool(struct tlsf *tlsf, apply_f f, void *ctx)
+{
+}
+
+
+void tlsf_each_block(struct tlsfpool *pool, apply_f f, void *ctx)
+{
+}
+
+
+#endif
