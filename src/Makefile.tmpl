@@ -232,22 +232,38 @@ depend: .depend
 	echo '#---- DO NOT DELETE ----' >> .tmp.makefile
 	for i in $(CFILES) ; do \
 		$(CC) $(IFLAGS) $(DEFS) -M $$i > .dep; \
-		sed -e '1 s|^|$(LCATODIR)/|' .dep >> .tmp.makefile; \
+		sed -e '/^[	 ]*$$/ d' \
+		    -e '1 s|^\([a-zA-Z]\)|$(LCATODIR)/\1|' \
+		    -e '2,$$ s/^\([a-zA-Z0-9_.]*:\)/	/'  \
+		    -e 's/^\(.*[^\]\)$$/\1 \\/' .dep >> .tmp.makefile;\
+		echo >> .tmp.makefile; \
 		echo '	$$(CC) $$(CFLAGS) -o $$@ -c'" $$i"' $$(IFLAGS)' >> \
 			.tmp.makefile; \
 		echo >> .tmp.makefile; \
 		$(CC) $(AIFLAGS) $(ADEFS) -M $$i > .dep; \
-		sed -e '1 s|^|$(LCATAODIR)/|' .dep >> .tmp.makefile; \
+		sed -e '/^[	 ]*$$/ d' \
+		    -e '1 s|^\([a-zA-Z]\)|$(LCATAODIR)/\1|'\
+		    -e '2,$$ s/^\([a-zA-Z0-9_.]*:\)/	/'  \
+		    -e 's/^\(.*[^\]\)$$/\1 \\/' .dep >> .tmp.makefile;\
+		echo >> .tmp.makefile; \
 		echo '	$$(CC) $$(ACFLAGS) -o $$@ -c'" $$i"' $$(AIFLAGS)' >> \
 			.tmp.makefile; \
 		echo >> .tmp.makefile; \
 		$(CC) $(DBG_IFLAGS) $(DBG_DEFS) -M $$i > .dep; \
-		sed -e '1 s|^|$(LCAT_DBG_ODIR)/|' .dep >> .tmp.makefile; \
+		sed -e '/^[	 ]*$$/ d' \
+		    -e '1 s|^\([a-zA-Z]\)|$(LCAT_DBG_ODIR)/\1|'\
+		    -e '2,$$ s/^\([a-zA-Z0-9_.]*:\)/	/'  \
+		    -e 's/^\(.*[^\]\)$$/\1 \\/' .dep >> .tmp.makefile;\
+		echo >> .tmp.makefile; \
 		echo '	$$(CC) $$(DBG_CFLAGS) -o $$@ -c'" $$i"' \
 			$$(DBG_IFLAGS)' >> .tmp.makefile; \
 		echo >> .tmp.makefile; \
 		$(CC) $(NOLIBC_IFLAGS) $(NOLIBC_DEFS) -M $$i > .dep; \
-		sed -e '1 s|^|$(LCAT_NO_LIBC_ODIR)/|' .dep >> .tmp.makefile; \
+		sed -e '/^[	 ]*$$/ d' \
+		    -e '1 s|^\([a-zA-Z]\)|$(LCAT_NO_LIBC_ODIR)/\1|' \
+		    -e '2,$$ s/^\([a-zA-Z0-9_.]*:\)/	/' \
+		    -e 's/^\(.*[^\]\)$$/\1 \\/' .dep >> .tmp.makefile; \
+		echo >> .tmp.makefile; \
 		echo '	$$(CC) $$(NOLIBC_CFLAGS) -o $$@ -c'" $$i"' \
 			$$(NOLIBC_IFLAGS)' >> .tmp.makefile; \
 		echo >> .tmp.makefile; \
