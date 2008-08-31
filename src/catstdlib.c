@@ -476,7 +476,7 @@ void abort(void)
 
 	/* Actions that tend to cause aborts in compiler implementations */
 	*(char *)0 = 1;	/* Null pointer dereference */
-	a = 1 / 0;	/* Integer divide by zero */
+	a = 1 / (a - a);/* Integer divide by zero */
 
 	/* worst case scenario: endless loop */
 	for (;;) ;

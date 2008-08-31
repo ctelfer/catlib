@@ -238,12 +238,11 @@ PTRDECL unsigned ht_rhash(void *k, void *unused)
 
 PTRDECL unsigned ht_phash(void *k, void *unused)  
 {
-	return (unsigned)((unsigned long)k >> 2);
-
-	/* XXX unreachable code to silence the compiler about unused funcs */
+	/* XXX useless code to silence the compiler about unused funcs */
 	(void)ht_shash;
 	(void)ht_phash;
 	(void)ht_rhash;
+	return (unsigned)((unsigned long)k >> 2);
 }
 
 
