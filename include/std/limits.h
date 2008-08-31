@@ -1,7 +1,6 @@
 #ifndef __catlimits_h
 #define __catlimits_h
 
-#if !CAT_USE_STDLIB
 /* 
  * These are best guesses that you can substitute on your own machine if 
  * need be.
@@ -20,7 +19,5 @@
 #define INT_MIN		((int)-INT_MAX)
 #define LONG_MAX	((long)(ULONG_MAX >> 1))
 #define LONG_MIN	((long)-LONG_MAX)
-
-#endif /* !CAT_USE_STDLIB */
 
 #endif /* __catlimits_h */
