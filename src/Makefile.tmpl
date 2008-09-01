@@ -159,12 +159,12 @@ LCAT_NO_LIBC_OF= \
 	$(LCAT_NO_LIBC_ODIR)/stduse.o \
 	$(LCAT_NO_LIBC_ODIR)/dynmem.o 
 
-CC=gcc
+ICOMMON=$(ISYSTEM) -I../include
 
 # Flags for libcat
 DEFS=
 CFLAGS= -O3 -Wall $(DEFS)
-IFLAGS= -I../include
+IFLAGS= $(ICOMMON)
 
 # Choose one option from the next two for libcata
 # Option 1: ANSI compliant
@@ -172,7 +172,7 @@ ADEFS= -DCAT_USE_INLINE=0 -DCAT_HAS_LONGLONG=0 -D_POSIX_C_SOURCE=200112L \
 	-D_BSD_SOURCE
 #	 -D_POSIX_C_SOURCE=200112L -D_XOPEN_SOURCE=600
 ACFLAGS= -Wall -ansi -pedantic $(ADEFS)
-AIFLAGS= -I../include
+AIFLAGS= $(ICOMMON)
 
 # Option 2: ANSI compliant + no libc
 #CFILES += catstdlib.c catstdio.c
@@ -185,12 +185,12 @@ AIFLAGS= -I../include
 # Compile for debugging and profiling
 DBG_DEFS= -DCAT_USE_INLINE=0 -DCAT_HAS_LONGLONG=1 
 DBG_CFLAGS= -Wall -g -pg $(DBG_DEFS)
-DBG_IFLAGS= -I../include
+DBG_IFLAGS= $(ICOMMON)
 
 # Compile without libc
 NOLIBC_DEFS=-DCAT_HAS_POSIX=0 -DCAT_USE_STDLIB=0 -DCAT_HAS_LONGLONG=0
 NOLIBC_CFLAGS=-Wall -pedantic $(NOLIBC_DEFS)
-NOLIBC_IFLAGS= -I../include -I../include/std
+NOLIBC_IFLAGS= -isystem ../include/std $(ICOMMON)
 
 all: ../lib/libcat.a ../lib/libcata.a ../lib/libcat_dbg.a ../lib/libcat_nostdc.a
 
@@ -228,7 +228,8 @@ veryclean:
 depend: .depend
 
 .depend: Makefile.tmpl
-	sed -e '/^#---- DO NOT DELETE ----/,$$ d' Makefile.tmpl > .tmp.makefile
+	cp build_system.conf .tmp.makefile
+	sed -e '/^#---- DO NOT DELETE ----/,$$ d' Makefile.tmpl >> .tmp.makefile
 	echo '#---- DO NOT DELETE ----' >> .tmp.makefile
 	for i in $(CFILES) ; do \
 		$(CC) $(IFLAGS) $(DEFS) -M $$i > .dep; \
