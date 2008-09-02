@@ -2,13 +2,14 @@ TESTS=	testlist testhash testtcpc testtcps testudpc testudps testpool \
 	testheap testmem testhw testtime testavl testpack testdl \
 	testpcache testuemux testrb markov markov2 testmatch \
 	testsplay testcsv testbitset testshell testgraph testprintf teststr \
-	testbitops testpspawn
+	testbitops testpspawn testdynmem
 	
 CFILES= testlist.c testhash.c testtcpc.c testtcps.c testudpc.c testudps.c \
 	testpool.c testmem.c testheap.c testhw.c testtime.c testavl.c \
 	testpack.c testdl.c testpcache.c testuemux.c testrb.c markov.c	\
 	markov2.c testmatch.c testsplay.c testcsv.c testbitset.c \
-	testshell.c testgraph.c testprintf.c teststr.c testbitops.c
+	testshell.c testgraph.c testprintf.c teststr.c testbitops.c \
+	testdynmem.c
 
 CC=gcc
 
@@ -24,6 +25,11 @@ CATA_LIBDEP=../lib/libcata.a
 CATA_CF= -g -DCAT_USE_INLINE=0 -DCAT_HAS_LONGLONG=0 -ansi -pedantic \
     -D_POSIX_C_SOURCE=200112L -D_USE_BSD
 CATA_LIB= -L../lib -lcata
+
+# Debug library
+CAT_DBG_LIBDEP=../lib/libcat_dbg.a
+CAT_DBG_CF= -g -pg
+CAT_DBG_LIB= -L../lib -lcat_dbg
 
 # TODO: Use no-libc version
 
@@ -114,8 +120,8 @@ testshell: testshell.c $(CATA_LIBDEP)
 testgraph: testgraph.c $(CATA_LIBDEP)
 	$(CC) $(CATA_CF) -o testgraph testgraph.c $(INC) $(CATA_LIB)
 
-testprintf: testprintf.c $(CATA_LIBDEP)
-	$(CC) $(CATA_CF) -o testprintf testprintf.c $(INC) $(CATA_LIB)
+testprintf: testprintf.c $(CAT_LIBDEP)
+	$(CC) $(CAT_CF) -g -o testprintf testprintf.c $(INC) $(CAT_LIB)
 
 teststr: teststr.c $(CATA_LIBDEP)
 	$(CC) $(CATA_CF) -o teststr teststr.c $(INC) $(CATA_LIB)
@@ -124,4 +130,7 @@ testbitops: testbitops.c $(CAT_LIBDEP)
 	$(CC) $(CAT_CF) -o testbitops testbitops.c $(INC) $(CAT_LIB)
 
 testpspawn: testpspawn.c $(CAT_LIBDEP)
-	$(CC) $(CATA_CF) -o testpspawn testpspawn.c $(INC) $(CATA_LIB)
+	$(CC) $(CAT_CF) -o testpspawn testpspawn.c $(INC) $(CAT_LIB)
+
+testdynmem: testdynmem.c $(CAT_DBG_LIBDEP)
+	$(CC) $(CAT_DBG_CF) -o testdynmem testdynmem.c $(INC) $(CAT_DBG_LIB)

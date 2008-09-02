@@ -14,16 +14,16 @@ int main(int argc, char *argv[])
     if ( argc > 1 )
         host = argv[1];
 
-    DO(fd = tcp_cli(host, "10000")); 
+    ERRCK(fd = tcp_cli(host, "10000")); 
 
     for ( ; ; ) { 
 
       if (fgets(sendbuf, 255, stdin) == NULL ) {close(fd); return 0; } 
 
       n = strlen(sendbuf); 
-      DO(io_write(fd, sendbuf, n));
+      ERRCK(io_write(fd, sendbuf, n));
 
-      DO(n2 = io_read(fd, recvbuf, n));
+      ERRCK(n2 = io_read(fd, recvbuf, n));
       recvbuf[n2] = '\0';
       fprintf(stdout, "Got back %d bytes : %s", n2, recvbuf);
     } 

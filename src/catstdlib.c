@@ -398,196 +398,40 @@ double strtod(const char *start, char **cpp)
 
 /* stdlib.c -- malloc(), free(), realloc(), calloc() ...  */
 
-#include <cat/list.h>
+#include <cat/dynmem.h>
 
-
-/* Core address type in integral form */
-/* Assumption: flat address space */
-typedef unsigned long cat_addr_t;
-
-/* core alignment type */
-union align_u {
-	double		d;
-	long		l;
-	void *		p;
-	size_t		sz;
-#if defined(CAT_HAS_LONGLONG) && CAT_HAS_LONGLONG
-	long long	ll;
-#endif /* defined(CAT_HAS_LONGLONG) && CAT_HAS_LONGLONG */
-};
-
-
-#define sizetonu(n) (((n)+sizeof(union align_u)-1) / sizeof(union align_u))
-
-struct memobj {
-	union align_u		mo_len;
-	struct list		mo_entry;
-};
-
-#define MINNU 		sizetonu(sizeof(struct memobj))
-#define NUMOBJ		(MINNU * sizeof(union align_u))
-#define moaddr(mo)	((cat_addr_t)mo)
-#define mo2ptr(mo)	((void *)((union align_u *)mo + 1))
-
-/* global data structures including ~2 million align_u elements of memory */
+/* global data structures including ~2 million unsigned long of memory */
 /* this number is obviously configurable */
 #ifndef CAT_MALLOC_MEM
 #define CAT_MALLOC_MEM	(2ul * 1024 * 1024)
 #endif /* CAT_MALLOC_MEM */
 
-#ifndef CAT_MIN_MOREMEM	
-#define CAT_MIN_MOREMEM	4096
-#endif /* CAT_MIN_MOREMEM */
-
-#define CAT_SIZE_MAX ((size_t)~0)
-
-static union align_u memblob[CAT_MALLOC_MEM];
-static struct list memlist_struct;
-static struct list *memlist = NULL;
-void *(*add_mem_func)(size_t len) = NULL;
-
-
-/* XXX check alignment assumptions here */
-void *align_heap_mem(void *mem, size_t *len)
-{
-	cat_addr_t mask = sizeof(union align_u) - 1;
-	cat_addr_t maddr = (size_t)mem;
-	if ( maddr & mask ) {
-		cat_addr_t naddr;
-		naddr = (maddr & mask) + 1;
-		*len -= naddr - maddr;
-		abort_unless(*len >= sizeof(struct memobj));
-		maddr = naddr;
-	}
-
-	if ( *len % sizeof(union align_u) ) {
-		*len -= *len % sizeof(struct memobj);
-		abort_unless(*len >= sizeof(struct memobj));
-	}
-	return (void *)maddr;
-}
-
-
-static void add_heap_memory(void *mem, size_t len)
-{
-	struct memobj *obj;
-	void free(void *mem);
-
-	abort_unless(memlist);
-	abort_unless(len >= sizeof(struct memobj));
-
-	obj = (struct memobj *)align_heap_mem(mem, &len);
-	obj->mo_len.sz = len;
-
-	free(mo2ptr(obj));
-}
+/* global data structures */
+static unsigned long memblob[CAT_MALLOC_MEM];
+static struct dynmem g_dm;
+static int initialized = 0;
 
 
 static void initmem(void)
 {
-	l_init(&memlist_struct);
-	memlist = &memlist_struct;
-	add_heap_memory(memblob, sizeof(memblob));
+	dynmem_init(&g_dm);
+	add_dynmempool(&g_dm, memblob, sizeof(memblob));
 }
 
 
 void *malloc(size_t amt)
 {
-	struct list *t;
-	struct memobj *mo, *nmo = NULL;
-	struct list *prev;
-	size_t nu;
-	void *mm = NULL;
-	size_t moreamt;
-
-	if ( !memlist )
+	if (!initialized)
 		initmem();
-
-	if ( amt > CAT_SIZE_MAX - sizeof(union align_u) )
-		return NULL;
-	amt += sizeof(union align_u);
-
-	nu = sizetonu(amt);
-	if ( nu < MINNU ) {
-		nu = MINNU;
-		amt = MINNU * sizeof(union align_u);
-	}
-
-again:
-	for ( t = l_head(memlist) ; t != l_end(memlist) ; t = t->next ) {
-		mo = container(t, struct memobj, mo_entry);
-		if ( mo->mo_len.sz >= amt ) {
-			if ( mo->mo_len.sz > amt + NUMOBJ ) {
-				nmo = (struct memobj *)
-					((union align_u *)mo + nu);
-				nmo->mo_len.sz = 
-					mo->mo_len.sz - 
-					nu * sizeof(union align_u);
-				prev = mo->mo_entry.prev;
-				mo->mo_len.sz = nu * sizeof(union align_u);
-			}
-			l_rem(&mo->mo_entry);
-			if ( nmo )
-				l_ins(prev, &nmo->mo_entry);
-			return mo2ptr(mo);
-		}
-	}
-
-	abort_unless(mm == NULL);
-
-	if ( add_mem_func ) {
-		moreamt = amt;
-		if ( moreamt < CAT_MIN_MOREMEM )
-			moreamt = CAT_MIN_MOREMEM;
-		mm = (*add_mem_func)(moreamt);
-		if ( !mm )
-			return NULL;
-		else
-			add_heap_memory(mm, moreamt);
-		goto again;
-	}
-	
-	return NULL;
+	return dynmem_malloc(&g_dm, amt);
 }
 
 
 void free(void *mem)
 {
-	struct memobj *mo, *mo2;
-	struct list *t;
-	cat_addr_t maddr;
-
-	if ( mem == NULL )
-		return;
-
-	abort_unless(memlist);
-	mo = (struct memobj *)((union align_u *)mem - 1);
-	maddr = (cat_addr_t)mo;
-
-	for ( t = l_tail(memlist) ; t != l_end(memlist) ; t = t->prev ) {
-		mo2 = container(t, struct memobj, mo_entry);
-		if ( moaddr(mo2) < moaddr(mo) )
-			break;
-	}
-
-	if ( t->next != l_end(memlist) ) {
-		mo2 = container(t, struct memobj, mo_entry);
-		if ( maddr + mo->mo_len.sz == moaddr(mo2) ) {
-			l_rem(&mo2->mo_entry);
-			mo->mo_len.sz += mo2->mo_len.sz;
-		}
-	}
-
-	if ( t->prev != l_end(memlist) ) {
-		mo2 = container(t, struct memobj, mo_entry);
-		if ( moaddr(mo2) + mo2->mo_len.sz == maddr ) {
-			mo2->mo_len.sz += mo->mo_len.sz;
-			mo = NULL;
-		}
-	}
-
-	if ( mo )
-		l_ins(t->prev, &mo->mo_entry);
+	if (!initialized)
+		initmem();
+	dynmem_free(&g_dm, mem);
 }
 
 
@@ -596,7 +440,9 @@ void *calloc(size_t nmem, size_t osiz)
 	size_t len;
 	void *m;
 
-	if ( osiz > CAT_SIZE_MAX / nmem )
+	if ( nmem == 0 )
+		return NULL;
+	if ( osiz > (size_t)~0 / nmem )
 		return NULL;
 	len = osiz * nmem;
 	m = malloc(len);
@@ -608,31 +454,9 @@ void *calloc(size_t nmem, size_t osiz)
 
 void *realloc(void *omem, size_t newamt)
 {
-	void *nmem;
-	struct memobj *mo;
-
-	if ( newamt == 0 ) {
-		free(omem);
-		return NULL;
-	}
-
-	if ( !omem )
-		return malloc(newamt);
-
-	if ( newamt > CAT_SIZE_MAX - sizeof(union align_u) )
-		return NULL;
-
-	mo = (struct memobj *)((union align_u *)omem - 1);
-	if ( mo->mo_len.sz >= newamt + sizeof(union align_u) )
-		return omem;
-
-	nmem = malloc(newamt);
-	if ( !nmem )
-		return NULL;
-	memcpy(nmem, omem, mo->mo_len.sz);
-	free(omem);
-
-	return nmem;
+	if (!initialized)
+		initmem();
+	return dynmem_realloc(&g_dm, omem, newamt);
 }
 
 
@@ -652,7 +476,7 @@ void abort(void)
 
 	/* Actions that tend to cause aborts in compiler implementations */
 	*(char *)0 = 1;	/* Null pointer dereference */
-	a = 1 / 0;	/* Integer divide by zero */
+	a = 1 / (a - a);/* Integer divide by zero */
 
 	/* worst case scenario: endless loop */
 	for (;;) ;

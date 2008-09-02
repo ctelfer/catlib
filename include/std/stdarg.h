@@ -1,7 +1,6 @@
 #ifndef __catstdarg_h
 #define __catstdarg_h
 
-#if !CAT_USE_STDLIB
 
 /* stdarg.h -- a best guess: works for x86 */
 typedef char *va_list;
@@ -17,7 +16,5 @@ typedef char *va_list;
 #define va_copy(dst, src)	((dst) = (src))
 #define __va_copy(d,s)		va_copy(d,s)
 #define va_end(ap)		((void) 0)
-
-#endif /* !CAT_USE_STDLIB */
 
 #endif /* __catstdarg_h */
