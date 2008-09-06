@@ -313,19 +313,19 @@ void *dynmem_realloc(struct dynmem *dm, void *omem, size_t newamt)
 	/* See if we can just add the next adjacent block */
 	lenp = PTR2U(mb, MBSIZE(mb));
 	if ( !(lenp->sz & ALLOC_BIT) )  {
-		tsz = MBSIZE(mb) + MBSIZE(lenp);
-		if ( tsz > newamt ) {
-			/* 
-			  TODO:  make own subroutine?
-			    - deallocate next block
-			      * mark unread
-			      * possibly update dm->dm_current
-			      * remove from list
-			      * mark prev alloc for next block
-			    - coalesce the two blocks
-			    - split out remainder if possible
-			    - if so, free remainder as well
-			*/
+		struct memblk *nmb = (struct memblk *)lenp;
+		tsz = MBSIZE(mb) + MBSIZE(nmb);
+		if ( tsz >= newamt ) {
+			size_t delta = tsz - newamt;
+			if ( MBSIZE(nmb) > delta + MINSZ )
+				nmb = split_block(nmb, delta);
+			/* remove the block and merge it with the alloced one */
+			l_rem(&nmb->mb_entry);
+			lenp = PTR2U(nmb, MBSIZE(nmb));
+			lenp->sz |= PREV_ALLOC_BIT;
+			/* addition doesn't colide with flags since they are */
+			/* in the low order bits */
+			mb->mb_len.sz += MBSIZE(nmb);
 			return mb2ptr(mb);
 		}
 	}
