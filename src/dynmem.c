@@ -549,15 +549,117 @@ static void calc_tslf_indices(struct tlsf *tlsf, size_t len, int *l1, int *l2)
 }
 
 
-static void tlsf_insert_block(struct tlsf *tlsf, struct memblk *mb, int l1, 
-			      int l2)
+static int round_next_tlsf_size(struct tlsf *tlsf, size_t *amt, int *l1, 
+				int *l2)
+{
+	abort_unless(tlsf && amt && l1 && l2);
+	*l2 += 1;
+	if ( *ls >= tlsf->tlsf_l2[*l1].tl2_nblists ) { 
+		*l1 += 1;
+		*l2 = 0;
+	}
+	if ( l1 >= TLSF_LG2_ALIM )
+		return -1;
+	/* TODO: round up amount? */
+	return 0;
+}
+
+
+static void tlsf_ins_blk(struct tlsf *tlsf, struct memblk *mb, int l1, int l2)
 {
 	struct tlsf_l2 *tl2;
 	abort_unless(tlsf);
 	tlsf->tlsf_l1bm |= (1 << l1);
 	tl2 = &tlsf->tlsf_l1[l1];
-	tl2->tl2_bm += (1 << l2);
+	tl2->tl2_bm |= (1 << l2);
 	l_ins(&tl2->tl2_blists[l2].prev, &mb->mb_entry);
+}
+
+static void tlsf_ins_blk_c(struct tlsf *tlsf, struct memblk *mb)
+{
+	int l1, l2;
+	calc_tlsf_indices(tlsf, MBSIZE(mb), &l1, &l2);
+	tlsf_ins_blk(tslf, mb, l1, l2);
+}
+
+static void tlsf_rem_blk(struct tlsf *tlsf, struct memblk *mb, int l1, int l2)
+{
+	struct tlsf_l2 *tl2;
+	l_rem(&mb->mb_entry);
+	tl2 = &tlsf->tlsf_l1[l1];
+	if ( l_empty(&tl2->tl2_blists[l2] ) { 
+		tl2->tl2_bm &= ~((tlsf_bm_t)1 << l2);
+		if ( tl2->tl2_bm == 0 )
+			tlsf->tlsf_l1bm &= !((tlsf_bm_t)1 << l1);
+	}
+}
+
+static void tlsf_rem_blk_c(struct tlsf *tlsf, struct memblk *mb)
+{
+	int l1, l2;
+	calc_tlsf_indices(tlsf, MBSIZE(mb), &l1, &l2);
+	tlsf_ins_blk(tslf, mb, l1, l2);
+}
+
+
+/* remove a block, split a block in 2 and reinset the second one, return */
+/* the first block */
+static struct memblk *tlsf_split_blk(struct tlsf *tslf, struct memblk *mb, 
+				     size_t amt)
+{
+	struct memblk *nmb;
+	size_t flags;
+
+	/* caller must assure that amt is a multiple of UNITSIZE */
+	abort_unless(amt % UNITSIZE == 0);
+
+	tlsf_rem_blk_c(tlsf, mb);
+	flags = mb->mb_len.sz & CTLBMASK;
+	nmb = (struct memblk *)PTR2U(mb, amt);
+	set_free_mb(nmb, MBSIZE(mb) - amt, flags);
+	set_free_mb(mb, amt, flags);
+
+	tlsf_ins_blk_c(nmb);
+	return mb;
+}
+
+
+static void tlsf_coalesce_and_insert(struct tlsf *tlsf, struct memblk *mb)
+{
+	struct memblk *nmb;
+	union align_u *unitp;
+	size_t sz;
+
+	abort_unless(mbparam);
+	/* mark the block free first */
+	sz = MBSIZE(mb);	
+	set_free_mb(mb, sz, mb->mb_len.sz & CTLBMASK);
+
+	/* join with the previous block if it is free */
+	if ( !(mb->mb_len.sz & PREV_ALLOC_BIT) ) {
+		unitp = (union align_u *)mb - 1;
+		mb = (struct memblk *)((char *)mb - unitp->sz);
+		tlsf_rem_blk_c(tlsf, mb);
+		sz += unitp->sz;
+		/* note that we are using aggressive coalescing, so this */
+		/* the prev alloc bit must always be set here: be safe   */
+		/* in case we decide to do delayed coalescing some time later */
+		set_free_mb(mb, sz, mb->mb_len.sz & CTLBMASK);
+	}
+
+	/* join with the next block if it is free */
+	unitp = PTR2U(mb, sz);
+	if ( !(unitp->sz & ALLOC_BIT) ) {
+		nmb = (struct memblk *)unitp;
+		tlsf_rem_blk_c(tlsf, mb);
+		sz += MBSIZE(nmb);
+		set_free_mb(mb, sz, mb->mb_len.sz & CTLBMASK);
+	} else {
+		/* otherwise clear the next block's PREV_ALLOC_BIT */
+		unitp->sz &= ~PREV_ALLOC_BIT;
+	}
+
+	tlsf_ins_blk_c(tlsf, mb);
 }
 
 
@@ -596,28 +698,12 @@ static void tlsf_init_pool(struct tlsfpool *pool, struct tlsf *tlsf,
 }
 
 
-static int round_next_tlsf_size(struct tlsf *tlsf, size_t *amt, int *l1, 
-				int *l2)
-{
-	abort_unless(tlsf && amt && l1 && l2);
-	*l2 += 1;
-	if ( *ls >= tlsf->tlsf_l2[*l1].tl2_nblists ) { 
-		*l1 += 1;
-		*l2 = 0;
-	}
-	if ( l1 >= TLSF_LG2_ALIM )
-		return -1;
-	/* TODO: round up amount? */
-	return 0;
-}
-
-
-static struct list *tlsf_find_block(struct tlsf *tlsf, int *l1, int *l2)
+static struct list *tlsf_find_blk(struct tlsf *tlsf, int *l1, int *l2)
 {
 	int n, rl1;
 	struct tlsf_l2 *tl2;
 
-	n = tlsf->tlsf_l1bm & ~((1 << *l1) - 1);
+	n = tlsf->tlsf_l1bm & ~(((tlsf_bm_t)1 << *l1) - 1);
 	if ( n == 0 )
 		return NULL;
 	rl1 = ntz(n);
@@ -627,40 +713,23 @@ static struct list *tlsf_find_block(struct tlsf *tlsf, int *l1, int *l2)
 		*l1 = rl1;
 	}
 	tl2 = &tlsf->tlsf_l2[rl1];
-	n = tl2->tl2_bm & ~((1 << *l2) - 1);
+	n = tl2->tl2_bm & ~(((tlsf_bm_t)1 << *l2) - 1);
 	abort_unless(n != 0);
 	*l2 = ntz(n);
 	return &tlw->tl2_blists[*l2];
 }
 
 
-static void *tlsf_find_block(struct tlsf *tlsf, size_t amt, int l1, int l2,
-			     struct list *head)
+static void *tlsf_extract(struct tlsf *tlsf, struct list *head, size_t amt, 
+			  int l1, int l2)
 {
-	struct memblk *mb;
-	struct tlsf_l2 *tl2;
-
-	abort_unless(tlsf && head);
-	abort_unless(!l_empty(head));
-
-	mb = container(t, struct memblk, mb_entry);
-	abort_unless(MBSIZE(mb) >= amt);
-	if ( MBSIZE(mb) > amt + MINSZ )
-		mb = split_block(mb, amt);
-	else
-		amt = MBSIZE(mb);
-	dm->dm_current = mb->mb_entry.next;
-	l_rem(&mb->mb_entry);
-	mb->mb_len.sz |= ALLOC_BIT;
-	PTR2U(mb, amt)->sz |= PREV_ALLOC_BIT;
-
-	tl2 = &tlsf->tlsf_l1[l1];
-	if ( l_empty(head) ) {
-		tl2->tl2_bm &= ~(1 << l2);
-		if ( tl2->tl2_bm == 0 )
-			tlsf->tlsf_l1bm &= ~(1 << l1);
+	struct memobj *mb = container(l_head(head), struct memobj, mb_entry);
+	if ( MBSIZE(mb) + amt < MINSZ ) {
+		mb = tlsf_split_blk(mb, amt);
+	} else {
+		tlsf_rem_blk(tlsf, mb, l1, l2);
 	}
-
+	mb->mb_size.sz |= ALLOC_BIT;
 	return mb2ptr(mb);
 }
 
@@ -689,7 +758,7 @@ void *tlsf_malloc(struct tlsf *tlsf, size_t amt)
 
 again:
 	if ( (head = tlsf_find_block(tlsf, &l1, &l2)) != NULL )
-		return tlsf_extract_block(tlsf, amt, l1, l2, head);
+		return tlsf_extract(tlsf, amt, l1, l2, head);
 
 	/* should not get here twice */
 	abort_unless(mm == NULL);
@@ -698,7 +767,7 @@ again:
 		void *mm = NULL;
 		size_t moreamt;
 		/* add 2 units for boundary sentinels */
-		moreamt = amt + UNITSIZE + sizeof(union dynmempool_u);
+		moreamt = amt + UNITSIZE + sizeof(union tlsfpool_u);
 		if ( moreamt < CAT_MIN_MOREMEM )
 			moreamt = CAT_MIN_MOREMEM;
 		mm = (*add_mem_func)(moreamt);
@@ -715,7 +784,7 @@ again:
 
 void tlsf_free(struct tlsf *tlsf, void *mem)
 {
-	int rv, l1, l2;
+	int l1, l2;
 	struct memblk *mb;
 	size_t blksiz;
 
@@ -725,10 +794,38 @@ void tlsf_free(struct tlsf *tlsf, void *mem)
 
 	mb = ptr2mb(mem);
 	mark_free(mb);
-	rv = coalesce(&mb);
-	blksiz = MBSIZ(mb);
-	calc_tlsf_indices(tlsf, blksz, &l1, &l2);
-	tlsf_insert_block(tlsf, mb, l1, l2);
+	tlsf_coalesce_and_insert(tlsf, mb);
+}
+
+
+static void shrink_alloc_block(struct tlsf *tlsf, struct memblk *mb, size_t sz)
+{
+	size_t delta, nbsz;
+	struct memblk *nmb;
+	union align_u *unitp;
+
+	/* caller should assure that sz is a multiple of UNITSIZE */
+	abort_unless(sz % UNITSIZE == 0);
+	delta = MBSIZE(mb) - sz;
+	if ( nbsz < MINSZ )
+		return;
+
+	unitp = PTR2U(mb, MBSIZE(mb));
+	if ( !(unitp->sz & ALLOC_BIT) ) {
+		nmb = (struct memobj *)unitp;
+		nbsz = MBSIZE(nmb);
+		tlsf_rem_blk_c(tlsf, nmb);
+		nbsz += delta;
+		/* remove the block and fall through to create the new one */
+	} else if ( nbsz < CAT_MIN_ALLOC_SHRINK ) {
+		/* only shrink current block if size savings is worth it */
+		return;
+	} else { 
+		nmb = (struct memblk *)PTR2U(mb, sz);
+	}
+	set_free_mb(nmb, nbsz, PREV_ALLOC_BIT);
+	tlsf_ins_blk_c(tlsf, nmb);
+	mb->mb_len.sz = sz | (mb->mb_len.sz & CTLBMASK);
 }
 
 
@@ -737,7 +834,8 @@ void *tlsf_realloc(struct tlsf *tlsf, void *omem, size_t newamt)
 	void *nmem = NULL;
 	struct memblk *mb;
 	union align_u *lenp;
-	size_t tsz;
+	size_t tsz, osize;
+	int l1, l2;
 
 	abort_unless(dm);
 	if ( newamt == 0 ) {
@@ -754,8 +852,9 @@ void *tlsf_realloc(struct tlsf *tlsf, void *omem, size_t newamt)
 	newamt = tsz + UNITSIZE;
 
 	mb = ptr2mb(omem);
+	osize = MBSIZE(mb) - sizeof(union align_u); 
 	if ( mb->mb_len.sz >= newamt ) {
-		shrink_alloc_block(dm, mb, newamt);
+		shrink_alloc_block(tlsf, mb, newamt);
 		return omem;
 	}
 
@@ -764,17 +863,27 @@ void *tlsf_realloc(struct tlsf *tlsf, void *omem, size_t newamt)
 	if ( !(lenp->sz & ALLOC_BIT) )  {
 		tsz = MBSIZE(mb) + MBSIZE(lenp);
 		if ( tsz > newamt ) {
-			set_free_mb(mb, tsz, mb->mb_len.sz & CTLBMASK);
+			struct memobj *nmb = (struct memobj *)lenp;
+			size_t delta = tsz - newamt;
+			if ( MBSIZE(nmb) > delta + MINSZ )
+				nmb = tlsf_split_blk(tlsf, nmb, delta);
+			else
+				tlsf_rem_blk_c(tlsf, nmb);
+			lenp = PTR2U(nmb, MBSIZE(nmb));
+			lenp->sz |= PREV_ALLOC_BIT;
+			/* addition doesn't colide with flags since they are */
+			/* in the low order bits */
+			mb->mb_len.sz += MBSIZE(nmb);
 			return mb2ptr(mb);
 		}
 	}
 
 	/* at this point we need a completely new block and must copy */
-	nmem = dynmem_malloc(dm, newamt);
+	nmem = tlsf_malloc(tlsf, newamt);
 	if ( nmem ) { 
 		/* may copy more than the original alloc, but still in bounds */
-		memcpy(nmem, omem, MBSIZE(mb));
-		dynmem_free(dm, omem);
+		memcpy(nmem, omem, osize);
+		tlsf_free(tlsf, omem);
 	}
 
 	return nmem;
