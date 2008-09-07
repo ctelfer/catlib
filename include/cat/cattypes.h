@@ -34,7 +34,7 @@
 #define CAT_S32_T long
 #endif /* CAT_S32_T */
 
-#ifdef CAT_64BIT
+#if CAT_64BIT
 #ifndef CAT_U64_T
 #define CAT_U64_T unsigned long long
 #endif /* CAT_U64_T */
@@ -50,7 +50,7 @@ typedef CAT_U16_T	uint16_t;
 typedef CAT_S16_T	int16_t;
 typedef CAT_U32_T	uint32_t;
 typedef CAT_S32_T	int32_t;
-#ifdef CAT_64BIT
+#if CAT_64BIT
 typedef CAT_U64_S	uint64_t;
 typedef CAT_S64_T	int64_t;
 #endif /* CAT_64BIT */

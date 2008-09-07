@@ -29,7 +29,7 @@
 #endif
 
 #ifndef CAT_64BIT
-#define CAT_64BIT		1
+#define CAT_64BIT		0
 #endif
 
 #ifndef CAT_DIE_DUMP
@@ -71,6 +71,12 @@ typedef unsigned long long u_longlong;
 #ifndef CAT_HAS_FIXED_WIDTH
 #define CAT_HAS_FIXED_WIDTH 1
 #define CAT_USE_STDINT_TYPES 1
+#endif /* CAT_HAS_FIXED_WIDTH */
+
+#else /* CAT_USE_STDLIB */
+
+#ifndef CAT_HAS_FIXED_WIDTH
+#define CAT_HAS_FIXED_WIDTH 1
 #endif /* CAT_HAS_FIXED_WIDTH */
 
 #endif /* CAT_USE_STDLIB */
