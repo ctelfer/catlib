@@ -9,9 +9,6 @@
 union align_u {
 	long		l;
 	size_t		sz;
-#if defined(CAT_HAS_LONGLONG) && CAT_HAS_LONGLONG
-	long long	ll;
-#endif /* defined(CAT_HAS_LONGLONG) && CAT_HAS_LONGLONG */
 };
 
 union dynmempool_u {
@@ -387,7 +384,8 @@ void tlsf_init(struct tlsf *tlsf)
 	int i;
 	struct list *listp;
 	struct tlsf_l2 *tl2;
-	abort_unless((1 << TLSF_LG2_MINSZ) == MINSZ);
+
+	abort_unless((1 << TLSF_LG2_UNITSIZE) == UNITSIZE);
 	abort_unless(tlsf);
 
 	memset(tlsf, 0, sizeof(tlsf));
@@ -415,7 +413,7 @@ static int nlz(tlsf_sz_t x)
 		b = nlz8(x >> (TLSF_SZ_BITS - (i << 3)));
 		n += b;
 		i++;
-	} while ( b < 8 && i <= sizeof(x) );
+	} while ( b == 8 && i <= sizeof(x) );
 	return n;
 }
 
@@ -444,17 +442,19 @@ static void calc_tlsf_indices(struct tlsf *tlsf, size_t len, int *l1, int *l2)
 {
 	int i, j, n;
 	/* len must be a multiple of 16! */
-	abort_unless((len & 0xF) == 0);
+	abort_unless((len & (UNITSIZE-1)) == 0);
 	abort_unless(l1);
 	abort_unless(l2);
 
 	n = nlz(len);
-	i = TLSF_SZ_BITS - n - TLSF_LG2_MINSZ;
-	j = (len - (1 << n)); /* subtract off the most significant bit */
+	abort_unless(n > 0 && n < TLSF_SZ_BITS);
+	i = TLSF_SZ_BITS - n - (TLSF_LG2_UNITSIZE + 1); 
+	/* subtract off the most significant bit */
+	j = len - (1 << (i + TLSF_LG2_UNITSIZE));
 	if ( len < FULLBLLEN )
-		j /= MINSZ;
+		j /= UNITSIZE;
 	else
-		j >>= i - (TLSF_L2_LEN + TLSF_LG2_MINSZ);
+		j >>= TLSF_SZ_BITS - (n + TLSF_L2_LEN + 1);
 	*l1 = i;
 	*l2 = j;
 }
@@ -469,7 +469,7 @@ static int round_next_tlsf_size(struct tlsf *tlsf, size_t *amt, int *l1,
 		*l1 += 1;
 		*l2 = 0;
 	}
-	if ( (unsigned)l1 >= TLSF_LG2_ALIM - TLSF_LG2_MINSZ )
+	if ( (unsigned)l1 >= TLSF_LG2_ALIM - TLSF_LG2_UNITSIZE )
 		return -1;
 	return 0;
 }
@@ -508,7 +508,7 @@ static void tlsf_rem_blk_c(struct tlsf *tlsf, struct memblk *mb)
 {
 	int l1, l2;
 	calc_tlsf_indices(tlsf, MBSIZE(mb), &l1, &l2);
-	tlsf_ins_blk(tlsf, mb, l1, l2);
+	tlsf_rem_blk(tlsf, mb, l1, l2);
 }
 
 
@@ -580,7 +580,7 @@ void tlsf_add_pool(struct tlsf *tlsf, void *mem, size_t len)
 	union align_u *unitp;
 	size_t ulen;
 
-	ulen = nutosize(len / UNITSIZE); /* round down to unit size */
+	ulen = nutosize(len / UNITSIZE); /* round down to UNITSIZE */
 	abort_unless(ulen >= MINASZ);
 	abort_unless((unsigned long)mem % UNITSIZE == 0);
 
@@ -714,8 +714,8 @@ static void tlsf_shrink_blk(struct tlsf *tlsf, struct memblk *mb, size_t sz)
 
 	/* caller should assure that sz is a multiple of UNITSIZE */
 	abort_unless(sz % UNITSIZE == 0);
-	delta = MBSIZE(mb) - sz;
-	if ( nbsz < MINSZ )
+	delta = nutosize((MBSIZE(mb) - sz) / UNITSIZE);
+	if ( delta < MINSZ )
 		return;
 
 	unitp = PTR2U(mb, MBSIZE(mb));
@@ -724,11 +724,13 @@ static void tlsf_shrink_blk(struct tlsf *tlsf, struct memblk *mb, size_t sz)
 		nbsz = MBSIZE(nmb);
 		tlsf_rem_blk_c(tlsf, nmb);
 		nbsz += delta;
-		/* remove the block and fall through to create the new one */
-	} else if ( nbsz < CAT_MIN_ALLOC_SHRINK ) {
+		nmb = (struct memblk *)((char *)nmb - delta);
+	} else if ( delta < CAT_MIN_ALLOC_SHRINK ) {
 		/* only shrink current block if size savings is worth it */
 		return;
 	} else { 
+		unitp->sz &= ~PREV_ALLOC_BIT;
+		nbsz = delta;
 		nmb = (struct memblk *)PTR2U(mb, sz);
 	}
 	set_free_mb(nmb, nbsz, PREV_ALLOC_BIT);
@@ -768,11 +770,11 @@ void *tlsf_realloc(struct tlsf *tlsf, void *omem, size_t newamt)
 	/* See if we can just add the next adjacent block */
 	lenp = PTR2U(mb, MBSIZE(mb));
 	if ( !(lenp->sz & ALLOC_BIT) )  {
-		tsz = MBSIZE(mb) + MBSIZE(lenp);
-		if ( tsz > newamt ) {
+		size_t delta = round2u(newamt - MBSIZE(mb));
+		size_t nextsz = MBSIZE(lenp);
+		if ( delta > nextsz ) {
 			struct memblk *nmb = (struct memblk *)lenp;
-			size_t delta = tsz - newamt;
-			if ( MBSIZE(nmb) > delta + MINSZ )
+			if ( nextsz > delta + MINSZ )
 				nmb = tlsf_split_blk(tlsf, nmb, delta);
 			else
 				tlsf_rem_blk_c(tlsf, nmb);
