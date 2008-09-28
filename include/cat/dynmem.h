@@ -48,7 +48,7 @@ void dynmem_each_block(struct dynmempool *pool, apply_f f, void *ctx);
 
 typedef uint64_t tlsf_sz_t;
 #define TLSF_SZ_BITS 64
-#define TLSF_LG2_MINSZ 5 /* XXX guess: verify by assert */
+#define TLSF_LG2_UNITSIZE 3 /* XXX guess: verify by assert */
 
 #ifndef TLSF_L2_LEN
 #define TLSF_L2_LEN 6
@@ -66,7 +66,7 @@ typedef uint64_t tlsf_sz_t;
 
 typedef uint32_t tlsf_sz_t;
 #define TLSF_SZ_BITS 32
-#define TLSF_LG2_MINSZ 4 /* XXX guess: verify by assert */
+#define TLSF_LG2_UNITSIZE 2 /* XXX guess: verify by assert */
 
 #ifndef TLSF_L2_LEN
 #define TLSF_L2_LEN 5
@@ -78,18 +78,19 @@ typedef uint32_t tlsf_sz_t;
 #endif /* CAT_64BIT */
 
 
-#define NUML2 (TLSF_LG2_ALIM - TLSF_LG2_MINSZ)
-#define LG2FULLBLLEN (TLSF_LG2_MINSZ + TLSF_L2_LEN)
-#define FULLBLLEN (1 << (LG2FULLBLLEN))
-#define NUMFULL  (TLSF_LG2_ALIM - LG2FULLBLLEN)
+#define NUML2 (TLSF_LG2_ALIM - TLSF_LG2_UNITSIZE)
+#define LG2FULLBLLEN TLSF_L2_LEN
+#define FULLBLLEN (1 << LG2FULLBLLEN)
+#define NUMFULL  (NUML2 - LG2FULLBLLEN)
 #define NUMSMALL (NUML2 - NUMFULL)
 
-/* TLSF_L2_LEN list heads for each list with a # of MINSZ slots >= to min size
-   for the list head.  Then consider the smaller lists.  Number of slots there
-   is 1 for slot MINSZ, 2 for slot MINSIZ * 2, 4 for slot MINSZ * 4 ... So
-   there are 2^NUMSMALL-1 blocks in all.
+/* 
+   TLSF_L2_LEN list heads for each list with a # of UNITSIZE slots >= to min 
+   size for the list head.  Then consider the smaller lists.  Number of slots 
+   there is 1 for slot UNITSIZE, 2 for slot UNITSIZE * 2, 4 for slot 
+   MINSZ * 4 ... So there are 2^NUMSMALL-1 blocks in all.
 */
-#define NUMHEADS ((NUMFULL * TLSF_L2_LEN) + ((1 << (NUMSMALL)) - 1))
+#define NUMHEADS ((NUMFULL * FULLBLLEN) + ((1 << (NUMSMALL)) - 1))
 
 struct tlsf_l2 {
 	tlsf_sz_t	tl2_bm;
