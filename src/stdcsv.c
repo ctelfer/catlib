@@ -72,7 +72,7 @@ int csv_read_rec(struct csv_state *csv, struct csv_record *cr)
 {
 	unsigned long nf, i;
 	int code = CSV_OK;
-	struct list *list;
+	struct list *list, *trav;
 	char *field, **record;
 
 	abort_unless(csv != NULL);
@@ -109,6 +109,8 @@ int csv_read_rec(struct csv_state *csv, struct csv_record *cr)
 	return CSV_REC;
 
 err:
+	for ( trav = l_head(list); trav != l_end(list); trav = trav->next )
+		free(clist_data(trav, char *));
 	clist_freelist(list);
 	return CSV_ERR;
 }
