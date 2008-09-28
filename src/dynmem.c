@@ -471,7 +471,7 @@ static int round_next_tlsf_size(struct tlsf *tlsf, size_t amt, int *l1, int *l2)
 	if ( *l1 <= LG2FULLBLLEN ) 
 		return 0;
 	bktlen = (1 << (*l1 + TLSF_LG2_UNITSIZE));
-	bktlen += bktlen / FULLBLLEN;
+	bktlen += bktlen / FULLBLLEN * *l2;
 	if ( amt <= bktlen )
 		return 0;
 
@@ -480,7 +480,7 @@ static int round_next_tlsf_size(struct tlsf *tlsf, size_t amt, int *l1, int *l2)
 		*l1 += 1;
 		*l2 = 0;
 	}
-	if ( (unsigned)l1 >= TLSF_LG2_ALIM - TLSF_LG2_UNITSIZE )
+	if ( (unsigned)*l1 >= TLSF_LG2_ALIM - TLSF_LG2_UNITSIZE )
 		return -1;
 	return 0;
 }
@@ -621,22 +621,24 @@ static void tlsf_init_pool(struct tlsfpool *pool, struct tlsf *tlsf,
 
 static struct list *tlsf_find_blk(struct tlsf *tlsf, int *l1, int *l2)
 {
-	int n, rl1;
+	int n;
 	struct tlsf_l2 *tl2;
 
-	n = tlsf->tlsf_l1bm & ~(((tlsf_sz_t)1 << *l1) - 1);
-	if ( n == 0 )
-		return NULL;
-	rl1 = ntz(n);
-	/* if the best fit bin not available then set l2 to 0 and reset l1 */
-	if (rl1 != *l1) { 
-		*l2 = 0;
-		*l1 = rl1;
-	}
-	tl2 = &tlsf->tlsf_l1[rl1];
+	/* first search for best fit within l2 bin */
+	tl2 = &tlsf->tlsf_l1[*l1];
 	n = tl2->tl2_bm & ~(((tlsf_sz_t)1 << *l2) - 1);
-	abort_unless(n != 0);
-	*l2 = ntz(n);
+	if ( n == 0 ) { 
+		/* if there is no fit, search for the closest l1 */
+		n = tlsf->tlsf_l1bm & ~(((tlsf_sz_t)1 << *l1) - 1);
+		if ( n == 0 ) /* if still nothing, we're out of luck */
+			return NULL;
+		*l1 = ntz(n);
+		tl2 = &tlsf->tlsf_l1[*l1];
+		*l2 = ntz(tl2->tl2_bm);
+	} else { 
+		*l2 = ntz(n);
+	} 
+
 	return &tl2->tl2_blists[*l2];
 }
 
