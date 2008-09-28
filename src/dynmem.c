@@ -447,7 +447,7 @@ static void calc_tlsf_indices(struct tlsf *tlsf, size_t len, int *l1, int *l2)
 	abort_unless(l2);
 
 	n = nlz(len);
-	abort_unless(n > 0 && n < TLSF_SZ_BITS);
+	abort_unless(n > 1 && n <= (TLSF_SZ_BITS - TLSF_LG2_UNITSIZE));
 	/* 1 << (i + LG2_UNITSIZE) is the first 1 bit in len */
 	i = (TLSF_SZ_BITS - 1 - TLSF_LG2_UNITSIZE) - n;
 	/* subtract off the most significant bit */
@@ -621,15 +621,17 @@ static void tlsf_init_pool(struct tlsfpool *pool, struct tlsf *tlsf,
 
 static struct list *tlsf_find_blk(struct tlsf *tlsf, int *l1, int *l2)
 {
-	int n;
+	tlsf_sz_t n;
 	struct tlsf_l2 *tl2;
 
 	/* first search for best fit within l2 bin */
 	tl2 = &tlsf->tlsf_l1[*l1];
 	n = tl2->tl2_bm & ~(((tlsf_sz_t)1 << *l2) - 1);
-	if ( n == 0 ) { 
+	if ( n == 0 ) {
+		tlsf_sz_t tmp = 1 << *l1;
 		/* if there is no fit, search for the closest l1 */
-		n = tlsf->tlsf_l1bm & ~(((tlsf_sz_t)1 << *l1) - 1);
+		/* rule out the current l1 */
+		n = tlsf->tlsf_l1bm & ~(tmp | (tmp - 1));
 		if ( n == 0 ) /* if still nothing, we're out of luck */
 			return NULL;
 		*l1 = ntz(n);
@@ -647,6 +649,7 @@ static void *tlsf_extract(struct tlsf *tlsf, struct list *head, size_t amt,
 			  int l1, int l2)
 {
 	struct memblk *mb = container(l_head(head), struct memblk, mb_entry);
+	abort_unless(MBSIZE(mb) >= amt);
 	if ( MBSIZE(mb) - amt >= MINSZ ) {
 		mb = tlsf_split_blk(tlsf, mb, amt);
 	} else {
@@ -681,8 +684,9 @@ void *tlsf_malloc(struct tlsf *tlsf, size_t amt)
 		return NULL;
 
 again:
-	if ( (head = tlsf_find_blk(tlsf, &l1, &l2)) != NULL )
+	if ( (head = tlsf_find_blk(tlsf, &l1, &l2)) != NULL ) {
 		return tlsf_extract(tlsf, head, amt, l1, l2);
+	}
 
 	/* should not get here twice */
 	abort_unless(mm == NULL);
