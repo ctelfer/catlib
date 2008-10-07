@@ -565,7 +565,7 @@ static void tlsf_coalesce_and_insert(struct tlsf *tlsf, struct memblk *mb)
 		/* note that we are using aggressive coalescing, so this */
 		/* the prev alloc bit must always be set here: be safe   */
 		/* in case we decide to do delayed coalescing some time later */
-		set_free_mb(mb, sz, mb->mb_len.sz & CTLBMASK);
+		set_free_mb(mb, sz, PREV_ALLOC_BIT);
 	}
 
 	/* join with the next block if it is free */
@@ -574,7 +574,7 @@ static void tlsf_coalesce_and_insert(struct tlsf *tlsf, struct memblk *mb)
 		nmb = (struct memblk *)unitp;
 		tlsf_rem_blk_c(tlsf, nmb);
 		sz += MBSIZE(nmb);
-		set_free_mb(mb, sz, mb->mb_len.sz & CTLBMASK);
+		set_free_mb(mb, sz, PREV_ALLOC_BIT);
 	} else {
 		/* otherwise clear the next block's PREV_ALLOC_BIT */
 		unitp->sz &= ~PREV_ALLOC_BIT;
@@ -649,6 +649,7 @@ static void *tlsf_extract(struct tlsf *tlsf, struct list *head, size_t amt,
 			  int l1, int l2)
 {
 	struct memblk *mb = container(l_head(head), struct memblk, mb_entry);
+	union align_u *nextp;
 	abort_unless(MBSIZE(mb) >= amt);
 	if ( MBSIZE(mb) - amt >= MINSZ ) {
 		mb = tlsf_split_blk(tlsf, mb, amt);
@@ -656,6 +657,8 @@ static void *tlsf_extract(struct tlsf *tlsf, struct list *head, size_t amt,
 		tlsf_rem_blk(tlsf, mb, l1, l2);
 	}
 	mb->mb_len.sz |= ALLOC_BIT;
+	nextp = PTR2U(mb, MBSIZE(mb));
+	nextp->sz |= PREV_ALLOC_BIT;
 	return mb2ptr(mb);
 }
 
