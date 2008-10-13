@@ -791,7 +791,7 @@ void *tlsf_realloc(struct tlsf *tlsf, void *omem, size_t newamt)
 	if ( !(lenp->sz & ALLOC_BIT) )  {
 		size_t delta = round2u(newamt - MBSIZE(mb));
 		size_t nextsz = MBSIZE(lenp);
-		if ( delta > nextsz ) {
+		if ( delta <= nextsz ) {
 			struct memblk *nmb = (struct memblk *)lenp;
 			if ( nextsz > delta + MINSZ )
 				nmb = tlsf_split_blk(tlsf, nmb, delta);
