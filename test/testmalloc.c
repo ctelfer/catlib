@@ -1,45 +1,60 @@
+#include <sys/time.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/time.h>
-#include <cat/err.h>
+#include <cat/dynmem.h>
 
-#define NCONS	100000
+#define NREPS 10000
+int nreps = NREPS;
+
+#define TEST(op) \
+	{					\
+	  struct timeval start, stop;		\
+	  double usec, nspo;			\
+	  int i;				\
+						\
+	  gettimeofday(&start, NULL);		\
+	  for ( i = 0 ; i < nreps; ++i )	\
+	    { op; }				\
+	  gettimeofday(&stop, NULL);		\
+	  usec = (stop.tv_sec - start.tv_sec) * 1000000 + \
+		 (stop.tv_usec - start.tv_usec);\
+	  nspo = 1000 * usec / nreps;		\
+	  printf("%-40s\t%lf\n", #op, nspo);	\
+	  fflush(stdout);			\
+	}
+
+#define HEAD printf("%-40s\tnanoseconds\n", "Op"); \
+	     printf("%-40s\t-----------\n", "--");
+
+unsigned long Memory1[1024 * 1024 * 2];
+unsigned long Memory2[1024 * 1024 * 2];
+struct dynmem Dm;
+struct tlsf Tlsf;
 
 int main(int argc, char *argv[])
 {
-  int i, j, na, siz;
-  void **allocs;
-  struct timeval tv, tv2;
-  double usec;
+  dynmem_init(&Dm);
+  dynmem_add_pool(&Dm, Memory1, sizeof(Memory1));
+  tlsf_init(&Tlsf);
+  tlsf_add_pool(&Tlsf, Memory2, sizeof(Memory2));
 
-
-  if ( argc < 4 )
-    err("usage: %s <alloc size> <pool size> <number of allocs>\n", argv[0]);
-
-  siz = atoi(argv[1]);
-  na = atoi(argv[3]);
-
-  allocs = malloc(sizeof(void *) * na);
-
-  printf("number of rounds: %d\n", NCONS);
-  printf("number of allocations/deallocations per round: %d\n", na);
-  fflush(stdout);
-
-  gettimeofday(&tv, 0);
-  for ( i = 0 ; i < NCONS; ++i )
-  {
-    for ( j = 0 ; j < na ; ++j ) 
-      allocs[j] = malloc(siz);
-    for ( j = 0 ; j < na ; ++j ) 
-      free(allocs[j]);
-  }
-  gettimeofday(&tv2, 0);
-  usec = (tv2.tv_sec - tv.tv_sec) * 1000000 +
-         tv2.tv_usec - tv.tv_usec;
-  usec /= (NCONS * na) ;
-
-  printf("Roughly %lf microseconds for the two operations\n", usec);
-  fflush(stdout);
+  printf("\n\n");
+  HEAD
+  TEST(free(malloc(16)))
+  TEST(free(malloc(200)))
+  TEST(free(malloc(550)))
+  TEST(free(malloc(65536)))
+  TEST(free(malloc(65586)))
+  TEST(dynmem_free(&Dm, dynmem_malloc(&Dm, 16)))
+  TEST(dynmem_free(&Dm, dynmem_malloc(&Dm, 200)))
+  TEST(dynmem_free(&Dm, dynmem_malloc(&Dm, 550)))
+  TEST(dynmem_free(&Dm, dynmem_malloc(&Dm, 65536)))
+  TEST(dynmem_free(&Dm, dynmem_malloc(&Dm, 65586)))
+  TEST(tlsf_free(&Tlsf, tlsf_malloc(&Tlsf, 16)))
+  TEST(tlsf_free(&Tlsf, tlsf_malloc(&Tlsf, 200)))
+  TEST(tlsf_free(&Tlsf, tlsf_malloc(&Tlsf, 550)))
+  TEST(tlsf_free(&Tlsf, tlsf_malloc(&Tlsf, 65536)))
+  TEST(tlsf_free(&Tlsf, tlsf_malloc(&Tlsf, 65586)))
 
   return 0;
 }

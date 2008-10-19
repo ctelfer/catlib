@@ -2,14 +2,14 @@ TESTS=	testlist testhash testtcpc testtcps testudpc testudps testpool \
 	testheap testmem testhw testtime testavl testpack testdl \
 	testpcache testuemux testrb markov markov2 testmatch \
 	testsplay testcsv testbitset testshell testgraph testprintf teststr \
-	testbitops testpspawn testdynmem testtlsf
+	testbitops testpspawn testdynmem testtlsf testmalloc
 	
 CFILES= testlist.c testhash.c testtcpc.c testtcps.c testudpc.c testudps.c \
 	testpool.c testmem.c testheap.c testhw.c testtime.c testavl.c \
 	testpack.c testdl.c testpcache.c testuemux.c testrb.c markov.c	\
 	markov2.c testmatch.c testsplay.c testcsv.c testbitset.c \
 	testshell.c testgraph.c testprintf.c teststr.c testbitops.c \
-	testdynmem.c testtlsf.c
+	testdynmem.c testtlsf.c testmalloc.c
 
 CC=gcc
 
@@ -137,3 +137,10 @@ testdynmem: testdynmem.c $(CAT_DBG_LIBDEP)
 
 testtlsf: testtlsf.c $(CAT_DBG_LIBDEP)
 	$(CC) $(CAT_DBG_CF) -o testtlsf testtlsf.c $(INC) $(CAT_DBG_LIB)
+
+testmalloc: testmalloc.c $(CAT_LIBDEP)
+	$(CC) $(CAT_CF) -o testmalloc testmalloc.c $(INC) $(CAT_LIB)
+
+# for profiling
+#testmalloc: testmalloc.c $(CAT_DBG_LIBDEP)
+#	$(CC) $(CAT_DBG_CF) -o testmalloc testmalloc.c $(INC) $(CAT_DBG_LIB)

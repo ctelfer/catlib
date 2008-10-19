@@ -3,6 +3,18 @@
 #include <cat/cat.h>
 #include <cat/list.h>
 
+/* core alignment type */
+union align_u {
+	long		l;
+	size_t		sz;
+};
+#define UNITSIZE	sizeof(union align_u)
+
+struct memblk {
+	union align_u		mb_len;
+	struct list		mb_entry;
+};
+
 struct dynmem { 
 	struct list dm_pools;
 	struct list dm_blocks;
@@ -77,20 +89,24 @@ typedef uint32_t tlsf_sz_t;
 
 #endif /* CAT_64BIT */
 
-
-#define NUML2 (TLSF_LG2_ALIM - TLSF_LG2_UNITSIZE)
-#define LG2FULLBLLEN TLSF_L2_LEN
-#define FULLBLLEN (1 << LG2FULLBLLEN)
-#define NUMFULL  (NUML2 - LG2FULLBLLEN)
-#define NUMSMALL (NUML2 - NUMFULL)
+#define TLSF_MINNU 	((sizeof(struct memblk)+2*UNITSIZE-1)/UNITSIZE)
+#define TLSF_MINSZ	(MINNU * UNITSIZE)
+#define TLSF_NUML2	(TLSF_LG2_ALIM - TLSF_LG2_UNITSIZE)
+#define TLSF_FULLBLLEN	(1 << TLSF_L2_LEN)
+#define TLSF_NUMFULL	(TLSF_NUML2 - TLSF_L2_LEN)
+#define TLSF_NUMSMALL	(TLSF_NUML2 - TLSF_NUMFULL)
 
 /* 
    TLSF_L2_LEN list heads for each list with a # of UNITSIZE slots >= to min 
-   size for the list head.  Then consider the smaller lists.  Number of slots 
-   there is 1 for slot UNITSIZE, 2 for slot UNITSIZE * 2, 4 for slot 
-   MINSZ * 4 ... So there are 2^NUMSMALL-1 blocks in all.
+   size for the list head.  Then consider the smaller lists.  
+   Number of slots there is MINSZ/UNITSIZE for slot MINSZ, 2*MINSZ/UNITSIZE for
+   slot MINSZ*2, 4*MINSZ/UNITSIZE for slot MINSZ*4 ... 
+   So there are (MINSZ/UNITSIZE) * 2^TLSF_NUMSMALL-1 blocks in all for small
+   lists.
 */
-#define NUMHEADS ((NUMFULL * FULLBLLEN) + ((1 << (NUMSMALL)) - 1))
+#define TLSF_MINBINS  TLSF_MINNU
+#define TLSF_NUMHEADS ((TLSF_NUMFULL * TLSF_FULLBLLEN) + \
+		       (TLSF_MINBINS * ((1 << TLSF_NUMSMALL) - 1)))
 
 struct tlsf_l2 {
 	tlsf_sz_t	tl2_bm;
@@ -101,8 +117,8 @@ struct tlsf_l2 {
 struct tlsf { 
 	struct list	tlsf_pools;
 	tlsf_sz_t 	tlsf_l1bm;
-	struct tlsf_l2  tlsf_l1[NUML2];
-	struct list 	tlsf_lists[NUMHEADS];
+	struct tlsf_l2  tlsf_l1[TLSF_NUML2];
+	struct list 	tlsf_lists[TLSF_NUMHEADS];
 };
 
 struct tlsfpool {

@@ -70,6 +70,18 @@ void freemem(struct tlsf *tlsf, struct raw *r)
 	r->len = 0;
 }
 
+void resizemem(struct tlsf *tlsf, struct raw *r, size_t len)
+{
+	void *d = tlsf_realloc(tlsf, r->data, len);
+	if (len == 0) {
+		r->data = NULL;
+		len = 0;
+	} else if (d != NULL) {
+		r->data = d;
+		r->len = len;
+	}
+}
+
 
 void freeallmem(struct tlsf *tlsf, struct raw *rarr, size_t ralen)
 {
@@ -143,6 +155,46 @@ void doit2()
 }
 
 
+void doit3() /* realloc tests */
+{
+	struct raw allocs[MAXALLOCS] = { 0 };
+
+	printmem(&Tlsf, "Initial state for realloc tests");
+	getmem(&Tlsf, &allocs[0], 280);
+	printmem(&Tlsf, "init -> 280");
+	resizemem(&Tlsf, &allocs[0], 290);
+	printmem(&Tlsf, "resize -> 290");
+	resizemem(&Tlsf, &allocs[0], 270);
+	printmem(&Tlsf, "resize -> 270");
+	resizemem(&Tlsf, &allocs[0], 310);
+	printmem(&Tlsf, "resize -> 310");
+	freeallmem(&Tlsf, allocs, array_length(allocs));
+	printmem(&Tlsf, "freed all");
+
+	getmem(&Tlsf, &allocs[0], 12);
+	getmem(&Tlsf, &allocs[1], 12);
+	getmem(&Tlsf, &allocs[2], 12);
+	freemem(&Tlsf, &allocs[1]);
+	printmem(&Tlsf, "After 3 allocations & 1 free");
+	printraw(allocs, array_length(allocs));
+	resizemem(&Tlsf, &allocs[0], 28);
+	printmem(&Tlsf, "After resize");
+	printraw(allocs, array_length(allocs));
+	freeallmem(&Tlsf, allocs, array_length(allocs));
+	printmem(&Tlsf, "freed all");
+
+
+	getmem(&Tlsf, &allocs[0], 12);
+	printmem(&Tlsf, "After 1 allocations: should split next block");
+	printraw(allocs, array_length(allocs));
+	resizemem(&Tlsf, &allocs[0], 28);
+	printmem(&Tlsf, "After resize");
+	freeallmem(&Tlsf, allocs, array_length(allocs));
+	printmem(&Tlsf, "freed all");
+
+}
+
+
 int main(int argc, char *argv[])
 {
 	srand(time(NULL));
@@ -151,6 +203,7 @@ int main(int argc, char *argv[])
 
 	doit();
 	doit2();
+	doit3();
 	return 0;
 } 
 
