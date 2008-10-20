@@ -1,3 +1,12 @@
+/*
+ * cat/uevent.c -- UNIX event dispatch
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2008, See accompanying license
+ *
+ */
+
 #include <cat/cat.h>
 
 #if CAT_HAS_POSIX
