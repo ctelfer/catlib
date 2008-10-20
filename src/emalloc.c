@@ -69,7 +69,7 @@ void * emalloc(size_t size)
 		(*abort_func)("emalloc: zero size!", NULL, size, 1, 0);
 
 	if ( !(m = dbg_mem_get(&dbgmem, size)) )
-		(*abort_func)("emalloc: ", NULL, size, 1);
+		(*abort_func)("emalloc: ", NULL, size, 1, 1);
 
 	return m;
 }
@@ -100,7 +100,7 @@ void * ecalloc(size_t nmemb, size_t size)
 void * erealloc(void *old, size_t size)
 {
 	void *m;
-	if ( !(m = dbg_mem_resize(old, size)) && (size > 0) )
+	if ( !(m = dbg_mem_resize(&dbgmem, old, size)) && (size > 0) )
 		(*abort_func)("erealloc: ", old, size, 1, 1);
 	return m;
 }
