@@ -85,7 +85,7 @@ static INLINE uint32_t ntz_32(uint32_t x) {
 static INLINE int nlz_32(uint32_t x) {
 	int i = 1, b, n = 0;
 	do {
-		b = nlz8((sizeof(x) * 8) >> (32 - (i << 3)));
+		b = nlz8(x >> (32 - (i << 3)));
 		n += b;
 		i++;
 	} while ( b == 8 && i <= sizeof(x) );
@@ -144,7 +144,7 @@ static INLINE int nlz_64(uint64_t x) {
 static INLINE int nlz_64(uint64_t x) {
 	int i = 1, b, n = 0;
 	do {
-		b = nlz8((sizeof(x) * 8) >> (64 - (i << 3)));
+		b = nlz8(x >> (64 - (i << 3)));
 		n += b;
 		i++;
 	} while ( b == 8 && i <= sizeof(x) );
@@ -156,7 +156,7 @@ static INLINE int ilog2_64(uint64_t x) {
 	if ( x == 0 )
 		return -1;
 	else
-		return 64 - nlz_64(x);
+		return 63 - nlz_64(x);
 }
 #endif /* CAT_HAS_NLZ_64 */
 
