@@ -41,7 +41,7 @@ void test_compress()
 	printf("Testing compress\n");
 	cl32 = compress_l32(word32, word32);
 	cr32 = compress_r32(word32, word32);
-	printf("Word 32 (%d bits):\n", pop32(word32));
+	printf("Word 32 (%d bits):\n", pop_32(word32));
 	print_bits32(word32);
 	printf("compress left:\n");
 	print_bits32(cl32);
@@ -56,7 +56,7 @@ void test_compress()
 
 	cl64 = compress_l64(word64, word64);
 	cr64 = compress_r64(word64, word64);
-	printf("Word 64 (%d bits):\n", pop64(word64));
+	printf("Word 64 (%d bits):\n", pop_64(word64));
 	print_bits64(word64);
 	printf("compress left:\n");
 	print_bits64(cl64);

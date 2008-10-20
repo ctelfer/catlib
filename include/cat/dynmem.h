@@ -69,6 +69,9 @@ typedef uint64_t tlsf_sz_t;
 #error "Max supported L2 len is 6 in a 64-bit architecture"
 #endif /* TLSF_L2_LEN */
 
+#define tlsf_nlz(x) nlz_64(x)
+#define tlsf_ntz(x) ntz_64(x)
+
 #else /* CAT_64BIT */
 
 #ifndef TLSF_LG2_ALIM
@@ -87,10 +90,14 @@ typedef uint32_t tlsf_sz_t;
 #error "Max supported L2 len is 5 in a 32-bit architecture"
 #endif /* TLSF_L2_LEN */
 
+#define tlsf_nlz(x) nlz_32(x)
+#define tlsf_ntz(x) ntz_32(x)
+
 #endif /* CAT_64BIT */
 
 #define TLSF_MINNU 	((sizeof(struct memblk)+2*UNITSIZE-1)/UNITSIZE)
 #define TLSF_MINSZ	(MINNU * UNITSIZE)
+#define TLSF_MINPOOL	((MINNU + 2) * UNITSIZE)
 #define TLSF_NUML2	(TLSF_LG2_ALIM - TLSF_LG2_UNITSIZE)
 #define TLSF_FULLBLLEN	(1 << TLSF_L2_LEN)
 #define TLSF_NUMFULL	(TLSF_NUML2 - TLSF_L2_LEN)

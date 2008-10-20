@@ -2,37 +2,13 @@
 #define __bitops_h
 
 #include <cat/cattypes.h>
+#include <cat/archops.h>
 
 #if CAT_USE_INLINE
 #define DECL static inline
 #else
 #define DECL static
 #endif
-
-
-DECL int pop32(uint32_t x)
-{
-	x = (x & 0x55555555) + ((x >> 1) & 0x55555555);
-	x = (x & 0x33333333) + ((x >> 2) & 0x33333333);
-	x = (x & 0x0F0F0F0F) + ((x >> 4) & 0x0F0F0F0F);
-	x = (x & 0x00FF00FF) + ((x >> 8) & 0x00FF00FF);
-	x = x + (x >> 16);
-	return x & 0x3F;
-}
-
-
-#if CAT_HAS_LONGLONG
-DECL int pop64(uint64_t x)
-{
-	x = (x & 0x5555555555555555LL) + ((x >> 1) & 0x5555555555555555LL);
-	x = (x & 0x3333333333333333LL) + ((x >> 2) & 0x3333333333333333LL);
-	x = (x & 0x0F0F0F0F0F0F0F0FLL) + ((x >> 4) & 0x0F0F0F0F0F0F0F0FLL);
-	x = (x & 0x00FF00FF00FF00FFLL) + ((x >> 8) & 0x00FF00FF00FF00FFLL);
-	x = (x & 0x0000FFFF0000FFFFLL) + ((x >> 16) & 0x0000FFFF0000FFFFLL);
-	x = x + (x >> 32);
-	return x & 0x7F;
-}
-#endif /* CAT_HAS_LONGLONG */
 
 uint32_t compress_l32(uint32_t x, uint32_t mask);
 uint32_t compress_r32(uint32_t x, uint32_t mask);

@@ -20,6 +20,10 @@
 #define CAT_HAS_POSIX		1
 #endif
 
+#ifndef CAT_ANSI89
+#define CAT_ANSI89		0
+#endif /* CAT_ANSI89 */
+
 #ifndef CAT_USE_INLINE
 #define CAT_USE_INLINE		1
 #endif

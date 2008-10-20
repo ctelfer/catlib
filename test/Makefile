@@ -121,7 +121,7 @@ testgraph: testgraph.c $(CATA_LIBDEP)
 	$(CC) $(CATA_CF) -o testgraph testgraph.c $(INC) $(CATA_LIB)
 
 testprintf: testprintf.c $(CAT_LIBDEP)
-	$(CC) $(CAT_CF) -g -o testprintf testprintf.c $(INC) $(CAT_LIB)
+	$(CC) $(CAT_CF) -o testprintf testprintf.c $(INC) $(CAT_LIB)
 
 teststr: teststr.c $(CATA_LIBDEP)
 	$(CC) $(CATA_CF) -o teststr teststr.c $(INC) $(CATA_LIB)

@@ -1,4 +1,14 @@
+/*
+ * src/dynmem.c -- Dynamic memory management
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2008, See accompanying license
+ *
+ */
+
 #include <cat/dynmem.h>
+#include <cat/archops.h>
 #if CAT_USE_STDLIB
 #include <string.h>
 #else /* CAT_USE_STDLIB */
@@ -379,8 +389,8 @@ void tlsf_init(struct tlsf *tlsf)
 	struct list *listp;
 	struct tlsf_l2 *tl2;
 
-	ASSERT((1 << TLSF_LG2_UNITSIZE) == UNITSIZE);
-	ASSERT(tlsf);
+	abort_unless((1 << TLSF_LG2_UNITSIZE) == UNITSIZE);
+	abort_unless(tlsf);
 
 	memset(tlsf, 0, sizeof(tlsf));
 	l_init(&tlsf->tlsf_pools);
@@ -396,39 +406,8 @@ void tlsf_init(struct tlsf *tlsf)
 			tl2->tl2_nblists = 1 << TLSF_L2_LEN;
 		listp += tl2->tl2_nblists;
 	}
-}
 
-
-/* assumes CHAR_BIT == 8 */
-static int nlz(tlsf_sz_t x)
-{
-	int i = 1, b, n = 0;
-	do {
-		b = nlz8(x >> (TLSF_SZ_BITS - (i << 3)));
-		n += b;
-		i++;
-	} while ( b == 8 && i <= sizeof(x) );
-	return n;
-}
-
-
-/* assumes CHAR_BIT == 8 */
-static int pop(tlsf_sz_t x)
-{
-	int n = 0;
-	while (x) {
-		n += nbits8(x);
-		x >>= 8;
-	}
-	return n;
-}
-
-
-static int ntz(tlsf_sz_t x)
-{
-	/* number of  bits in a mask consisting of all 1s after the  */
-	/* last bit set */
-	return pop(~x & (x-1));
+	abort_unless(listp - tlsf->tlsf_lists <= TLSF_NUMHEADS);
 }
 
 
@@ -438,7 +417,7 @@ static int calc_tlsf_indices(struct tlsf *tlsf, size_t len)
 	/* len must be a multiple of 4! */
 	ASSERT((len > 0) && (len & (UNITSIZE-1)) == 0);
 
-	n = nlz(len);
+	n = tlsf_nlz(len);
 	ASSERT(n > 1 && n <= (TLSF_SZ_BITS - TLSF_LG2_UNITSIZE));
 	/* 1 << (i + LG2_UNITSIZE) is the first 1 bit in len */
 	i = (TLSF_SZ_BITS - 1 - TLSF_LG2_UNITSIZE) - n;
@@ -585,7 +564,7 @@ void tlsf_add_pool(struct tlsf *tlsf, void *mem, size_t len)
 	size_t ulen;
 
 	ulen = nutosize(len / UNITSIZE); /* round down to UNITSIZE */
-	ASSERT(ulen >= MINASZ);
+	ASSERT(ulen >= TLSF_MINPOOL + sizeof(*pool_u));
 	ASSERT((unsigned long)mem % UNITSIZE == 0);
 
 	pool_u = mem;
@@ -596,7 +575,7 @@ void tlsf_add_pool(struct tlsf *tlsf, void *mem, size_t len)
 	/* add sentiel at the end */
 	PTR2U(unitp, ulen)->sz = ALLOC_BIT;
 	obj = (struct memblk *)unitp;
-	obj->mb_len.sz = ulen | PREV_ALLOC_BIT;
+	obj->mb_len.sz = ulen | PREV_ALLOC_BIT | ALLOC_BIT;
 
 	tlsf_free(tlsf, mb2ptr(obj));
 }
@@ -631,14 +610,15 @@ static struct list *tlsf_find_blk(struct tlsf *tlsf, int *idx)
 		n = tlsf->tlsf_l1bm & ~(tmp | (tmp - 1));
 		if ( n == 0 ) /* if still nothing, we're out of luck */
 			return NULL;
-		l1 = ntz(n);
+		l1 = tlsf_ntz(n);
 		tl2 = &tlsf->tlsf_l1[l1];
-		l2 = ntz(tl2->tl2_bm);
+		l2 = tlsf_ntz(tl2->tl2_bm);
 	} else { 
-		l2 = ntz(n);
+		l2 = tlsf_ntz(n);
 	} 
 
 	*idx = (l1 << 8) + l2;
+	ASSERT(l2 < tl2->tl2_nblists);
 	return &tl2->tl2_blists[l2];
 }
 
@@ -714,14 +694,10 @@ again:
 
 void tlsf_free(struct tlsf *tlsf, void *mem)
 {
-	struct memblk *mb;
-
 	ASSERT(tlsf);
 	if ( mem == NULL )
 		return;
-
-	mb = ptr2mb(mem);
-	tlsf_coalesce_and_insert(tlsf, mb);
+	tlsf_coalesce_and_insert(tlsf, ptr2mb(mem));
 }
 
 

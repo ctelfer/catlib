@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <cat/dynmem.h>
 
-#define NREPS 10000
+#define NREPS 100000
 int nreps = NREPS;
 
 #define TEST(op) \
