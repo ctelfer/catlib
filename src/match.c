@@ -452,3 +452,44 @@ void sfx_clear(struct sfxtree *sfx)
 	mem_free(&sfx->sys, sfx->edges.tab);
 }
 
+
+#if 0
+static int rex_init(struct rexpat *rxp, struct raw *pat, struct memsys *sys)
+{ 
+	unsigned char *p, *end;
+	if ( rxp == NULL || pat == NULL || pat->data == NULL || sys == NULL )
+		return -1;
+	rexpat->base = NULL;
+
+	return rex_parse((struct rex_node **)&rxp->next, p, end, sys);
+}
+
+static int rex_parse(struct rex_node **rnp, unsigned char *p, 
+		     unsigned char *end, struct memsys *sys)
+{
+	if ( p == end )
+		return 0;
+
+	switch (*p) { 
+	case '\\': {
+	} break;
+	case '(': {
+	} break;
+	case '[': { 
+	} break;
+	case ')': {
+	} break;
+	case ']': { 
+	} break;
+	case '.': { 
+	} break;
+	case '*': { 
+	} break;
+	case '+': { 
+	} break;
+	default: {
+	} break;
+	}
+
+}
+#endif
