@@ -160,6 +160,7 @@ int main(int argc, char *argv[])
 	if (argc < 2)
 		err("usage: %s file\n", argv[0]);
 
+	ps_ignore_sigcld();
 	test1(argv[1]);
 	test2(argv[1]);
 	test3();

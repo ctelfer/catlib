@@ -25,7 +25,6 @@
 #include <stdlib.h>
 
 /* Helper functions */
-static void ps_sigcld_handler(int sig);
 static struct ps_fd_entry *ps_spec_newfde(struct ps_spec *spec, int type);
 static int ps_fds_type_ok(int type);
 static void ps_fd_entry_cleanup(void *ep, void *unused);
@@ -42,15 +41,15 @@ static void ps_launch_child(struct pspawn *ps, int pipefds[2],
 static int ps_launch_parent(struct pspawn *ps, int pipefds[2]);
 
  
-static void ps_sigcld_handler(int sig)
+void ps_ignore_sigcld()
 {
+	signal(SIGCHLD, SIG_IGN); 
 }
 
 
 void ps_spec_init(struct ps_spec *spec)
 {
 	spec->fdelist = clist_newlist();
-	spec->replace_sigcld = 1;
 }
 
 
@@ -272,9 +271,6 @@ struct pspawn * ps_launch(char * const argv[], char * const envp[],
 		goto err;
 	}
 
-	if ( ps->spec.replace_sigcld ) 
-		ps->o_sigcld = signal(SIGCHLD, ps_sigcld_handler);
-
 	pid = fork();
 	if ( pid < 0 ) {
 		rerrno = errno;
@@ -301,8 +297,6 @@ err:
 	if ( retpipe[1] >= 0 )
 		close(retpipe[1]);
 	ps_spec_cleanup(&ps->spec);
-	if ( ps->o_sigcld != NULL )
-		signal(SIGCHLD, ps->o_sigcld);
 	free(ps);
 	errno = rerrno;
 	return NULL;
@@ -748,8 +742,6 @@ int ps_cleanup(struct pspawn *ps, int wait)
 		} while ( (pid < 0) && (errno == EINTR) );
 	}
 
-	if ( ps->o_sigcld != NULL )
-		signal(SIGCHLD, ps->o_sigcld);
 	status = ps->exit_status;
 	ps->state = PSS_FINISHED;
 	ps_spec_cleanup(&ps->spec);
