@@ -16,7 +16,7 @@ void usage(void)
 void dokmp(struct raw *str, struct raw *pat)
 {
 	struct kmppat *kmp;
-	size_t loc;
+	unsigned long loc;
 
 	kmp = kmp_pnew(pat);
 	if (kmp_match(str, kmp, &loc))
@@ -31,7 +31,7 @@ void dokmp(struct raw *str, struct raw *pat)
 void dobm(struct raw *str, struct raw *pat)
 {
 	struct bmpat *bmp;
-	size_t loc;
+	unsigned long loc;
 
 	bmp = bm_pnew(pat);
 	if (bm_match(str, bmp, &loc))

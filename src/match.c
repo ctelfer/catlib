@@ -4,14 +4,15 @@
 #if CAT_USE_STDLIB
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #else /* CAT_USE_STDLIB */
 #include <cat/catstdlib.h>
 #endif /* CAT_USE_STDLIB */
 
 
-void kmp_pinit(struct kmppat *kmp, struct raw *pat, size_t *skips)
+void kmp_pinit(struct kmppat *kmp, struct raw *pat, unsigned long *skips)
 {
-	size_t q, k, len;
+	unsigned long q, k, len;
 	unsigned char *pp;
 
 	abort_unless(kmp);
@@ -35,10 +36,10 @@ void kmp_pinit(struct kmppat *kmp, struct raw *pat, size_t *skips)
 }
 
 
-int kmp_match(const struct raw *str, struct kmppat *pat, size_t *loc)
+int kmp_match(const struct raw *str, struct kmppat *pat, unsigned long *loc)
 {
 	const char *sp, *pp;
-	size_t slen, plen, q, i;
+	unsigned long slen, plen, q, i;
 
 	abort_unless(str && str->data);
 	abort_unless(pat && pat->skips && pat->pat.data);
@@ -64,16 +65,16 @@ int kmp_match(const struct raw *str, struct kmppat *pat, size_t *loc)
 }
 
 
-void bm_pinit(struct bmpat *bmp, struct raw *pat, size_t *skips, 
-	      size_t *scratch)
+void bm_pinit(struct bmpat *bmp, struct raw *pat, unsigned long *skips, 
+	      unsigned long *scratch)
 {
-	size_t i, j, len;
+	unsigned long i, j, len;
 	unsigned char *pp;
 
 	abort_unless(bmp);
 	abort_unless(pat);
 	abort_unless(skips);
-	abort_unless(pat->len <= ((size_t)~0 - 1));
+	abort_unless(pat->len <= ((unsigned long)~0 - 1));
 
 	bmp->pat = *pat;
 	bmp->skips = skips;
@@ -111,9 +112,9 @@ void bm_pinit(struct bmpat *bmp, struct raw *pat, size_t *skips,
 }
 
 
-int bm_match(struct raw *str, struct bmpat *pat, size_t *loc)
+int bm_match(struct raw *str, struct bmpat *pat, unsigned long *loc)
 {
-	size_t i, j, slen, plen, skip;
+	unsigned long i, j, slen, plen, skip;
 	unsigned char *pp, *sp;
 
 	abort_unless(str && str->data);
@@ -315,7 +316,7 @@ static int sfx_build(struct sfxtree *sfx)
 		lastpar = NULL;
 		while (1) {
 			cur = active.node;
-			if (isexplicit(&active)) {
+			if ( isexplicit(&active) ) {
 				create = 1;
 				edge = getedge(sfx, cur, text[i], &create);
 				if ( !edge )
@@ -332,7 +333,7 @@ static int sfx_build(struct sfxtree *sfx)
 					       &create);
 				abort_unless(edge);
 				span = active.end - active.start + 1;
-				abort_unless(edge->end - edge->start + 1 > span);
+				abort_unless(edge->end - edge->start+1 > span);
 				if ( text[edge->start + span] == text[i] )
 					break;
 				if ( !(cur = split(sfx, edge, span, i)) )
@@ -373,7 +374,7 @@ int sfx_init(struct sfxtree *sfx, struct raw *str, struct memsys *sys)
 	sfx->sys = *sys;
 	sfx->str = *str;
 	/* XXX fix size? */
-	if ( ((size_t)~0) / sizeof(struct list) < str->len )
+	if ( ((unsigned long)~0) / sizeof(struct list) < str->len )
 		return -1;
 	if ( !(entries = mem_get(sys, sizeof(struct list) * str->len)) )
 		return -1;
@@ -381,7 +382,7 @@ int sfx_init(struct sfxtree *sfx, struct raw *str, struct memsys *sys)
 	root = &sfx->root;
 	root->sptr = NULL;
 
-	if (sfx_build(sfx) < 0) {
+	if ( sfx_build(sfx) < 0 ) {
 		sfx_clear(sfx);
 		return -1;
 	}
@@ -453,43 +454,662 @@ void sfx_clear(struct sfxtree *sfx)
 }
 
 
-#if 0
-static int rex_init(struct rexpat *rxp, struct raw *pat, struct memsys *sys)
-{ 
-	unsigned char *p, *end;
-	if ( rxp == NULL || pat == NULL || pat->data == NULL || sys == NULL )
-		return -1;
-	rexpat->base = NULL;
+#if 1
 
-	return rex_parse((struct rex_node **)&rxp->next, p, end, sys);
+struct rex_parse_aux {
+	struct memsys *sys;
+	struct rex_group *initial;
+	struct rex_group *final;
+	unsigned char *start;
+	unsigned char *end;
+	struct rex_group *gstack;
+	struct rex_choice *lastch;
+	int *eptr;
+};
+
+static int rex_parse(struct rex_node **rxnn, unsigned char *p, 
+		     struct rex_parse_aux *aux);
+
+static int rex_parse_error(struct rex_node **rxnn, struct rex_parse_aux *aux, 
+			   unsigned char *p)
+{
+	*rxnn = NULL;
+	if ( aux->eptr ) {
+		if ( p ) 
+			*aux->eptr = p - aux->start;
+		else
+			*aux->eptr = -1;
+	}
+	return -1;
 }
 
-static int rex_parse(struct rex_node **rnp, unsigned char *p, 
-		     unsigned char *end, struct memsys *sys)
-{
-	if ( p == end )
-		return 0;
 
-	switch (*p) { 
-	case '\\': {
-	} break;
-	case '(': {
-	} break;
-	case '[': { 
-	} break;
-	case ')': {
-	} break;
-	case ']': { 
-	} break;
-	case '.': { 
-	} break;
-	case '*': { 
-	} break;
-	case '+': { 
-	} break;
-	default: {
-	} break;
+static int parse_bound(unsigned char **p)
+{
+	int v = 0;
+	unsigned char *dp = *p;
+
+	while ( isdigit(*dp) ) {
+		v = v * 10 + (*dp - '0');
+		++dp;
+	}
+	if ( dp == *p )
+		return REX_WILDCARD;
+	if ( v < 0 || v > 254 )
+		return -1;
+	*p = dp;
+	return v;
+}
+
+
+static int rex_check_repitions(struct rex_node *rxn, unsigned char **pp,
+			       struct rex_parse_aux *aux)
+{
+	unsigned char *p = *pp;
+
+	if ( p == aux->end )
+		return 0;
+	if ( *p == '?' ) { 
+		rxn->repmin = 0;
+		rxn->repmax = 1;
+		*pp = p + 1;
+	} else if ( *p == '*' ) { 
+		rxn->repmin = 0;
+		rxn->repmax = REX_WILDCARD;
+		*pp = p + 1;
+	} else if ( *p == '+' ) { 
+		rxn->repmin = 1;
+		rxn->repmax = REX_WILDCARD;
+		*pp = p + 1;
+	} else if ( *p == '{' ) {
+		int v;
+		++p;
+		v = parse_bound(&p);
+		if ( v < 0 )
+			return rex_parse_error(&rxn->next, aux, p);
+		rxn->repmin = (v == REX_WILDCARD) ? 0 : v;
+		if ( *p != ',' ) { 
+			if ( *p != '}' )
+				return rex_parse_error(&rxn->next, aux, p);
+			rxn->repmax = v;
+			*pp = p + 1;
+			return 0;
+		}
+
+		++p;
+		v = parse_bound(&p);
+		if ( v < 0 )
+			return rex_parse_error(&rxn->next, aux, p);
+		rxn->repmax = v;
+		if ( rxn->repmin > rxn->repmax ) 
+			return rex_parse_error(&rxn->next, aux, *pp);
+		if ( *p != '}' )
+			return rex_parse_error(&rxn->next, aux, p);
+		*pp = p + 1;
+	} 
+
+	return 0;
+}
+
+
+static int span_regular(unsigned char *p, unsigned max)
+{
+	static const char *special = "*[](){}+?|.\\";
+	unsigned char *t = p;
+	while ( max-- > 0 && !strchr(special, *t) ) ++t;
+	return t - p;
+}
+
+
+static int rex_parse_str(struct rex_node **rxnn, unsigned char *p,
+			 struct rex_parse_aux *aux)
+{
+	int rv, len = 0, maxlen = aux->end - p, span;
+	struct rex_node_str *rs;
+	unsigned char *s, *op;
+
+	if ( !(rs = mem_get(aux->sys, sizeof(*rs))) )
+		return rex_parse_error(rxnn, aux, NULL);
+	*rxnn = (struct rex_node *)rs;
+	rs->base.type = REX_T_STRING;
+	rs->base.repmin = rs->base.repmax = 1;
+	rs->base.next = NULL;
+	rxnn = &rs->base.next;
+	s = rs->str;
+
+	if ( maxlen > sizeof(rs->str) )
+		maxlen = sizeof(rs->str);
+
+	do { 
+		span = span_regular(p, maxlen);
+		memcpy(s, p, span);
+		s += span;
+		p += span;
+		maxlen -= span;
+		len += span;
+		if ( len > 0 ) { 
+			if ( *p != '\\' )
+				break;
+			if ( len < 2 )
+				return rex_parse_error(rxnn, aux, p);
+			*s++ = *(p + 1);
+			p += 2;
+			--maxlen;
+			++len;
+		}
+	} while ( maxlen > 0 );
+
+	rs->len = len;
+	
+	op = p;
+	if ( (rv = rex_check_repitions(&rs->base, &p, aux)) < 0 )
+		return rv;
+	if ( p != op ) { 
+		if ( rs->len > 1 ) {
+			struct rex_node_str *rs2;
+			if ( !(rs2 = mem_get(aux->sys, sizeof(*rs2))) )
+				return rex_parse_error(rxnn, aux, NULL);
+			rs->len -= 1;
+			*rxnn = (struct rex_node *)rs2;
+			rs2->base.type = REX_T_STRING;
+			rs2->base.repmin = rs->base.repmin;
+			rs2->base.repmax = rs->base.repmax;
+			rs2->base.next = NULL;
+			rs2->len = 1;
+			rxnn = &rs2->base.next;
+			rs->base.repmin = rs->base.repmax = 1;
+		}
+	}
+	return rex_parse(rxnn, p, aux);
+}
+
+
+static int rex_parse_class(struct rex_node **rxnn, unsigned char *p, 
+		           struct rex_parse_aux *aux)
+{
+	unsigned char *end = p, *start = p;
+	int invert = 0, i, rv;
+	struct rex_ascii_class *rxc;
+
+	/* handle the special cases for the first character */
+	if ( end == aux->end ) { return rex_parse_error(rxnn, aux, p - 1); }
+	if ( *end == '^' )      { ++invert; ++end; ++start; }
+	if ( end == aux->end ) { return rex_parse_error(rxnn, aux, p - 1); }
+	if ( *end == ']' )      { ++end; } 
+
+	/* find the end delimeter and make sure we */
+	for ( ; end < aux->end && *end != ']'; ++end )
+		;
+	if ( end == start || end == aux->end )
+		rex_parse_error(rxnn, aux, p - 1);
+
+	if ( !(rxc = mem_get(aux->sys, sizeof(*rxc))) )
+		return rex_parse_error(rxnn, aux, NULL);
+	*rxnn = &rxc->base;
+	rxc->base.type = REX_T_CLASS;
+	rxc->base.repmin = rxc->base.repmax = 1;
+	rxc->base.next = NULL;
+	rxnn = &rxc->base.next;
+
+	for ( p = start; p < end; ++p ) {
+		if ( *p == '-' && p != start && p != end - 1 ) { 
+			unsigned char ch = *(p - 1);
+			unsigned char last = *(p + 1);
+			if ( ch > last )
+				return rex_parse_error(rxnn, aux, p - 1);
+			do {
+				rxc->set[(ch >> 3) & 0x1F] = (1 << (ch & 0x7));
+			} while ( ch++ < last );
+		} else {
+			rxc->set[(*p >> 3) & 0x1F] = (1 << (*p & 0x7));
+		}
 	}
 
+	if ( invert ) {
+		for ( i = 0; i < 32 ; ++i )
+			rxc->set[i] = ~rxc->set[i];
+	}
+
+	p = end + 1;
+	if ( (rv = rex_check_repitions(&rxc->base, &p, aux)) < 0 )
+		return rv;
+	return rex_parse(rxnn, p, aux);
+}
+
+
+static int rex_parse_any(struct rex_node **rxnn, unsigned char *p, 
+		         struct rex_parse_aux *aux)
+{
+	struct rex_ascii_class *rc;
+	int rv;
+
+	if ( !(rc = mem_get(aux->sys, sizeof(*rc))) )
+		return rex_parse_error(rxnn, aux, NULL);
+	*rxnn = &rc->base;
+	rc->base.type = REX_T_CLASS;
+	rc->base.repmin = rc->base.repmax = 1;
+	rc->base.next = NULL;
+	rxnn = &rc->base.next;
+	memset(rc->set, ~0, sizeof(rc->set));
+	++p;
+	if ( (rv = rex_check_repitions(&rc->base, &p, aux)) < 0 )
+		return rv;
+	return rex_parse(rxnn, p, aux);
+}
+
+
+static int rex_parse_choice(struct rex_node **rxnn, unsigned char *p, 
+		            struct rex_parse_aux *aux)
+{
+	struct rex_choice *rc;
+
+	if ( !(rc = mem_get(aux->sys, sizeof(*rc))) )
+		return rex_parse_error(rxnn, aux, NULL);
+	rc->base.type = REX_T_CHOICE;
+	rc->base.repmin = rc->base.repmax = 1;
+	rc->base.next = NULL;
+
+	if ( aux->lastch == NULL ) { 
+		struct rex_group *rg = aux->gstack;
+		if ( rg == NULL )
+			rg = aux->initial;
+		rc->opt1 = rg->base.next;
+		rg->base.next = &rc->base;
+	} else { 
+		rc->opt1 = aux->lastch->opt2;
+		aux->lastch->opt2 = &rc->base;
+		aux->lastch = rc;
+	}
+	rc->opt2 = NULL;
+	*rxnn = NULL;
+	rxnn = &rc->opt2;
+	aux->lastch = rc;
+
+	return rex_parse(rxnn, p+1, aux);
+}
+
+
+static int rex_parse_group_s(struct rex_node **rxnn, unsigned char *p, 
+		             struct rex_parse_aux *aux)
+{
+	struct rex_group *rg;
+
+	if ( !(rg = mem_get(aux->sys, sizeof(*rg))) )
+		return rex_parse_error(rxnn, aux, NULL);
+	*rxnn = &rg->base;
+	rg->base.type = REX_T_GROUP_S;
+	rg->base.repmin = rg->base.repmax = 1;
+	rg->base.next = NULL;
+	rxnn = &rg->base.next;
+
+	rg->other = aux->gstack;
+	aux->gstack = rg;
+	aux->lastch = NULL;
+
+	return rex_parse(rxnn, p+1, aux);
+}
+
+
+static int rex_parse_group_e(struct rex_node **rxnn, unsigned char *p, 
+		             struct rex_parse_aux *aux)
+{
+	struct rex_group *rge, *rgs, *rgn;
+	struct rex_node *rn, *rn2;
+	int rv;
+
+	/* Check the group start stack and pop the top one */
+	if ( aux->gstack == NULL )
+		return rex_parse_error(rxnn, aux, p);
+	rgs = aux->gstack;
+	aux->gstack = rgs->other;
+
+
+	/* allocate node */
+	if ( !(rge = mem_get(aux->sys, sizeof(*rge))) )
+		return rex_parse_error(rxnn, aux, NULL);
+	*rxnn = &rge->base;
+	rgs->other = rge;
+	rge->other = rgs;
+	rge->base.next = NULL;
+	++p;
+
+	/* close out current choice (if any) */
+	if ( aux->lastch != NULL ) {
+		abort_unless(rgs->base.next->type == REX_T_CHOICE);
+		rn = rgs->base.next;
+		while ( (rn2 = rn) != NULL ) { 
+			rn = rn->next;
+			rn2->next = &rge->base;
+		}
+	}
+
+	/* reinstate enclosing group's choice (if any) */
+	if ( ((rgn = aux->gstack) != NULL) && 
+	     (rgn->base.next->type == REX_T_CHOICE) ) {
+		struct rex_choice *rc = (struct rex_choice *)rgn->base.next;
+		while ( rc->opt2->type == REX_T_CHOICE )
+			rc = (struct rex_choice *)rc->opt2;
+		aux->lastch = rc;
+	}
+
+	if ( (rv = rex_check_repitions(&rge->base, &p, aux)) < 0 )
+		return rv;
+	return rex_parse(rxnn, p, aux);
+}
+
+
+static int rex_parse(struct rex_node **rxnn, unsigned char *p, 
+		     struct rex_parse_aux *aux)
+{
+	abort_unless(aux && aux->end && aux->initial && aux->final && aux->sys);
+
+	if ( p == aux->end ) {
+		if ( aux->gstack != NULL )
+			return rex_parse_error(rxnn, aux, p);
+		*rxnn = &aux->final->base;
+		return 0;
+	}
+
+	switch (*p) { 
+	case '*': 
+	case ']': 
+	case '+': 
+	case '?': 
+	case '{': 
+	case '}': 
+		return rex_parse_error(rxnn, aux, p);
+	case '(':
+		return rex_parse_group_s(rxnn, p, aux);
+	case '[':
+		return rex_parse_class(rxnn, p, aux);
+	case ')':
+		return rex_parse_group_e(rxnn, p, aux);
+	case '.':
+		return rex_parse_any(rxnn, p, aux);
+	case '|':
+		return rex_parse_choice(rxnn, p, aux);
+	default:
+		return rex_parse_str(rxnn, p, aux);
+	}
+}
+
+
+int rex_init(struct rex_pat *rxp, struct raw *pat, struct memsys *sys,
+	     int *error)
+{
+	struct rex_parse_aux aux;
+	if ( !rxp || !pat || !pat->data || sys == NULL )
+		return -1;
+
+	rxp->rp_start.base.type = REX_T_GROUP_S;
+	rxp->rp_start.base.repmin = 1;
+	rxp->rp_start.base.repmax = 1;
+	rxp->rp_start.base.next = NULL;
+	rxp->rp_start.num = 0;
+	rxp->rp_start.other = &rxp->rp_end;
+
+	rxp->rp_end.base.type = REX_T_GROUP_E;
+	rxp->rp_end.base.repmin = 1;
+	rxp->rp_end.base.repmax = 1;
+	rxp->rp_end.base.next = NULL;
+	rxp->rp_end.num = 0;
+	rxp->rp_end.other = &rxp->rp_start;
+
+	rxp->rp_sys = *sys;
+	aux.sys = &rxp->rp_sys;
+	aux.initial = &rxp->rp_start;
+	aux.final = &rxp->rp_end;
+	aux.start = (unsigned char *)pat->data;
+	aux.end = (unsigned char *)pat->data + pat->len;
+	aux.gstack = NULL;
+	aux.eptr = error;
+
+	return rex_parse(&rxp->rp_start.base.next, (unsigned char *)pat->data, 
+			 &aux);
+}
+
+
+static void rex_free_help(struct rex_node *node, struct rex_node *end, 
+		          struct memsys *sys)
+{
+	if ( node == NULL || node == end ) {
+		return;
+	} else if ( node->type == REX_T_GROUP_S && 
+		    node->next != NULL &&
+		    node->next->type == REX_T_CHOICE ) {
+		struct rex_group *rg = (struct rex_group *)node;
+		struct rex_choice *rc = (struct rex_choice *)node->next;
+		rex_free_help(rc->opt1, &rg->other->base, sys);
+		rex_free_help(rc->opt2, &rg->other->base, sys);
+		rex_free_help(&rg->other->base, end, sys);
+	} else { 
+		rex_free_help(node->next, end, sys);
+	}
+	mem_free(sys, node);
+}
+
+
+void rex_free(struct rex_pat *rxp)
+{
+	abort_unless(rxp);
+	rex_free_help(rxp->rp_start.base.next, &rxp->rp_end.base, 
+		      &rxp->rp_sys);
+}
+
+
+struct rex_match_aux {
+	char *start;
+	char *end;
+	char *gstart;
+	unsigned grep;
+	struct rex_match_loc *match;
+	unsigned nmatch;
+};
+
+
+static int rex_match_rxn(struct rex_node *rxn, char *cur, unsigned rep,
+		         struct rex_match_aux *aux);
+
+
+static int rex_next(struct rex_node *rxn, char *cur, unsigned rep,
+		    struct rex_match_aux *aux)
+{
+	int rv = REX_NOMATCH;
+	if ( (rxn->repmax == REX_WILDCARD) || (rep < rxn->repmax) ) {
+		rv = rex_match_rxn(rxn, cur, rep, aux);
+		if ( rv != REX_NOMATCH )
+			return rv;
+	}
+	if ( rep >= rxn->repmin )
+		rv = rex_match_rxn(rxn->next, cur, 0, aux);
+	return rv;
+}
+
+
+static int rex_match_string(struct rex_node *rxn, char *cur, unsigned rep,
+			    struct rex_match_aux *aux)
+{
+	struct rex_node_str *rs = (struct rex_node_str *)rxn;
+	if ( ((aux->end - cur) >= rs->len) &&
+	     (memcmp(rs->str, cur, rs->len) == 0) ) {
+		return rex_next(rxn, cur + rs->len, rep + 1, aux);
+	} else if ( rxn->repmin == 0 && rep == 0 ) { 
+		return rex_match_rxn(rxn->next, cur, 0, aux);
+	} else { 
+		return REX_NOMATCH;
+	}
+}
+
+
+static int rex_match_class(struct rex_node *rxn, char *cur, unsigned rep,
+			   struct rex_match_aux *aux)
+{
+	struct rex_ascii_class *rac = (struct rex_ascii_class *)rxn;
+	int rv = REX_NOMATCH;
+	int i = *((unsigned char *)cur);
+	int j = i >> 3;
+	i &= 0x7;
+	if ( (rac->set[j] & (1 << i)) ) { 
+		rv = rex_next(rxn, cur + 1, rep + 1, aux);
+	} else if ( rxn->repmin == 0 && rep == 0 ) { 
+		rv = rex_match_rxn(rxn->next, cur, 0, aux);
+	}
+	return rv;
+}
+
+
+static int rex_match_choice(struct rex_node *rxn, char *cur, unsigned rep,
+			    struct rex_match_aux *aux)
+{
+	struct rex_choice *rc = (struct rex_choice *)rxn;
+	int rv;
+	abort_unless(!rep);
+	rv = rex_match_rxn(rc->opt1, cur, 0, aux);
+	if ( rv != REX_NOMATCH )
+		return rv;
+	else
+		return rex_match_rxn(rc->opt2, cur, 0, aux);
+}
+
+
+static int rex_match_group_s(struct rex_node *rxn, char *cur, unsigned rep,
+			     struct rex_match_aux *aux)
+{
+	struct rex_group *rg = (struct rex_group *)rxn;
+	struct rex_match_aux aux2, *new_aux = aux;
+	int rv;
+
+	abort_unless(aux);
+	if ( rep == 0 ) { 
+		aux2 = *aux;
+		aux2.gstart = cur;
+		new_aux = &aux2;
+	}
+	new_aux->grep = rep + 1;
+
+	rv = rex_match_rxn(rxn->next, cur, 0, new_aux);
+
+	if ( rv != REX_ERROR ) {
+		if ( rv == REX_NOMATCH && rxn->repmin == 0 && rep == 0 ) {
+			/* we are doing the job of the end group here */
+			if ( rg->num < aux->nmatch ) {
+				aux->match[rg->num].valid = 1;
+				aux->match[rg->num].start = cur - aux->start;
+				aux->match[rg->num].len = 0;
+			}
+			rv = rex_match_rxn(rg->other->base.next, cur, 0, aux);
+		}
+	}
+
+	return rv;
+}
+
+
+static int rex_match_group_e(struct rex_node *rxn, char *cur, unsigned rep,
+			     struct rex_match_aux *aux)
+{
+	struct rex_group *rg = (struct rex_group *)rxn;
+	int rv = REX_NOMATCH;
+	rep = aux->grep;
+
+	abort_unless(aux);
+	if ( (rxn->repmax == REX_WILDCARD) || (rep < rxn->repmax) ) {
+		rv = rex_match_group_s(&rg->other->base, cur, aux->grep, aux);
+		aux->grep = rep;
+		if ( rv != REX_NOMATCH )
+			return rv;
+	} 
+	if ( rep >= rxn->repmin )
+		rv = rex_match_rxn(rxn->next, cur, 0, aux);
+	if ( rv == REX_MATCH && rg->num < aux->nmatch ) { 
+		aux->match[rg->num].valid = 1;
+		aux->match[rg->num].start = aux->gstart - aux->start;
+		aux->match[rg->num].len = cur - aux->gstart;
+	}
+
+	return rv;
+}
+
+
+static int rex_match_rxn(struct rex_node *rxn, char *cur, unsigned rep,
+		         struct rex_match_aux *aux)
+{
+	int rv;
+	if ( rxn == NULL )
+		return REX_MATCH;
+
+	/* handle end anchor */
+	if ( cur == aux->end ) {
+		if ( rxn->type == REX_T_EANCHOR )
+			return rex_match_rxn(rxn->next, cur, 0, aux);
+		else if ( rxn->type == REX_T_GROUP_E )
+			return rex_match_group_e(rxn, cur, 0, aux);
+		else
+			return REX_NOMATCH;
+	}
+
+	switch( rxn->type ) { 
+	case REX_T_STRING:
+		rv = rex_match_string(rxn, cur, rep, aux);
+		break;
+	case REX_T_CLASS:
+		rv = rex_match_class(rxn, cur, rep, aux);
+		break;
+	case REX_T_CHOICE:
+		rv = rex_match_choice(rxn, cur, rep, aux);
+		break;
+	case REX_T_GROUP_S:
+		rv = rex_match_group_s(rxn, cur, rep, aux);
+		break;
+	case REX_T_GROUP_E:
+		rv = rex_match_group_e(rxn, cur, rep, aux);
+		break;
+	case REX_T_BANCHOR:
+		if ( cur == aux->start )
+			return rex_match_rxn(rxn->next, cur, 0, aux);
+		else
+			return REX_NOMATCH;
+		break;
+	case REX_T_EANCHOR:
+		return REX_NOMATCH;
+	default:
+		return REX_ERROR;
+	}
+
+	return rv;
+}
+
+
+int rex_match(struct rex_pat *rxp, struct raw *str, struct rex_match_loc *m, 
+	      unsigned int nm)
+{
+	struct rex_match_aux aux;
+	char *cur;
+	int rv;
+
+	if ( rxp == NULL || str == NULL || str->data == NULL )
+		return REX_ERROR;
+	if ( rxp->rp_start.base.repmin != 1 || rxp->rp_start.base.repmax != 1 ||
+	    rxp->rp_end.base.repmin != 1 || rxp->rp_end.base.repmax != 1 )
+		return REX_ERROR;
+	if ( nm > 0 && m == 0 )
+		return REX_ERROR;
+
+	aux.start = str->data;
+	aux.end = str->data + str->len;
+	aux.match = m;
+	aux.nmatch = nm;
+
+	/* TODO: should we always return the longest match?  If so we need */
+	/* to save the best find and keep going.  This will require        */
+	/* allocating save space for 'm' */
+	for ( cur = aux.start; cur < aux.end; ++cur ) { 
+		aux.gstart = cur;
+		rv = rex_match_rxn(&rxp->rp_start.base, cur, 0, &aux);
+		if ( rv != REX_NOMATCH )
+			return rv;
+	}
+
+	return REX_NOMATCH;
 }
 #endif

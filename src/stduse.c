@@ -1370,8 +1370,8 @@ struct kmppat * kmp_pnew(struct raw *pat)
 	struct kmppat *kmp;
 
 	abort_unless(pat && pat->data && pat->len);
-	kmp = emalloc(sizeof(*kmp) + pat->len * sizeof(size_t));
-	kmp_pinit(kmp, pat, (size_t *)(kmp + 1));
+	kmp = emalloc(sizeof(*kmp) + pat->len * sizeof(unsigned long));
+	kmp_pinit(kmp, pat, (unsigned long *)(kmp + 1));
 	return kmp;
 }
 
@@ -1379,12 +1379,12 @@ struct kmppat * kmp_pnew(struct raw *pat)
 struct bmpat * bm_pnew(struct raw *pat)
 {
 	struct bmpat *bmp;
-	size_t *scratch;
+	unsigned long *scratch;
 
 	abort_unless(pat && pat->data && pat->len);
-	bmp = emalloc(sizeof(*bmp) + pat->len * sizeof(size_t));
-	scratch = emalloc(pat->len * sizeof(size_t));
-	bm_pinit(bmp, pat, (size_t *)(bmp + 1), scratch);
+	bmp = emalloc(sizeof(*bmp) + pat->len * sizeof(unsigned long));
+	scratch = emalloc(pat->len * sizeof(unsigned long));
+	bm_pinit(bmp, pat, (unsigned long *)(bmp + 1), scratch);
 	free(scratch);
 	return bmp;
 }

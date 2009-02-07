@@ -6,22 +6,23 @@
 #include <cat/hash.h>
 
 struct kmppat {
-	size_t *		skips;
+	unsigned long *		skips;
 	struct raw		pat;
 };
 
-void kmp_pinit(struct kmppat *p, struct raw *pat, size_t *skips);
-int kmp_match(const struct raw *str, struct kmppat *pat, size_t *loc);
+void kmp_pinit(struct kmppat *p, struct raw *pat, unsigned long *skips);
+int kmp_match(const struct raw *str, struct kmppat *pat, unsigned long *loc);
 
 
 struct bmpat {
-	size_t			last[256];
+	unsigned long		last[256];
 	struct raw		pat;
-	size_t *		skips;
+	unsigned long *		skips;
 };
 
-void bm_pinit(struct bmpat *bmp, struct raw *pat, size_t *skips, size_t *scrat);
-int bm_match(struct raw *str, struct bmpat *pat, size_t *loc);
+void bm_pinit(struct bmpat *bmp, struct raw *pat, unsigned long *skips, 
+	      unsigned long *scrat);
+int bm_match(struct raw *str, struct bmpat *pat, unsigned long *loc);
 
 
 #ifndef CAT_SFX_MAXLEN
@@ -66,48 +67,66 @@ void sfx_clear(struct sfxtree *sfx);
 struct sfxnode *sfx_next(struct sfxtree *t, struct sfxnode *cur, int ch);
 
 
+#define REX_T_STRING		0
+#define REX_T_CLASS		1
+#define REX_T_BANCHOR		2	/* no repitition */
+#define REX_T_EANCHOR		3	/* no repitition */
+#define REX_T_CHOICE		4	/* no repitition */
+#define REX_T_GROUP_S		5	/* no repitition */
+#define REX_T_GROUP_E		6
 #define REX_WILDCARD		255
-#define REX_T_CHAR		0
-#define REX_T_STRING		1
-#define REX_T_CLASS		2
-#define REX_T_GROUP		3
+
 struct rex_node {
 	unsigned char		type;
-	unsigned char		ch;
 	unsigned char		repmin;
 	unsigned char		repmax;
-	struct rexnode *	next;
+	struct rex_node *	next;
 };
 
 struct rex_node_str {
 	struct rex_node		base;
-	const char		str[32];
-	size_t			len;
+	unsigned char		str[32];
+	unsigned long 		len;
 };
 
 struct rex_ascii_class {
 	struct rex_node 	base;
-	unsigned char 		set[8];
+	unsigned char 		set[32];
 };
 
-struct rex_group { 
+struct rex_group {
 	struct rex_node		base;
-	struct rex_node *	nodes;
-	struct rex_group *	next;
+	unsigned		num;
+	struct rex_group *	other;
 };
 
-struct rexpat {
-	struct rex_group *	base;
+struct rex_choice {
+	struct rex_node		base;
+	struct rex_node *	opt1;
+	struct rex_node *	opt2;
 };
 
-struct rexmatch {
-	size_t			start;
-	size_t			len;
+struct rex_pat {
+	struct memsys		rp_sys;
+	struct rex_group 	rp_start;
+	struct rex_group 	rp_end;
 };
 
-int rex_init(struct rexpat *rxp, struct raw *pat, struct memsys *sys);
-int rex_match(struct rexpat *rxp, struct raw *str, struct rexmatch *m,
+struct rex_match_loc {
+	int			valid;
+	unsigned		start;
+	unsigned		len;
+};
+
+
+#define REX_MATCH	0
+#define REX_NOMATCH	1
+#define REX_ERROR	-1
+
+int rex_init(struct rex_pat *rxp, struct raw *pat, struct memsys *sys,
+	     int *error);
+int rex_match(struct rex_pat *rxp, struct raw *str, struct rex_match_loc *m,
 	      unsigned nm);
-int rex_free(struct rexpat *rxp);
+void rex_free(struct rex_pat *rxp);
 
 #endif /* __match_h */
