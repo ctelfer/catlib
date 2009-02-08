@@ -495,7 +495,7 @@ static int parse_bound(unsigned char **p)
 	}
 	if ( dp == *p )
 		return REX_WILDCARD;
-	if ( v < 0 || v > 254 )
+	if ( v < 0 || v > 255 )
 		return -1;
 	*p = dp;
 	return v;
@@ -529,7 +529,7 @@ static int rex_check_repitions(struct rex_node *rxn, unsigned char **pp,
 			return rex_parse_error(&rxn->next, aux, p);
 		rxn->repmin = (v == REX_WILDCARD) ? 0 : v;
 		if ( *p != ',' ) { 
-			if ( *p != '}' )
+			if ( *p != '}' || v < 1 )
 				return rex_parse_error(&rxn->next, aux, p);
 			rxn->repmax = v;
 			*pp = p + 1;
@@ -538,7 +538,7 @@ static int rex_check_repitions(struct rex_node *rxn, unsigned char **pp,
 
 		++p;
 		v = parse_bound(&p);
-		if ( v < 0 )
+		if ( v < 1 )
 			return rex_parse_error(&rxn->next, aux, p);
 		rxn->repmax = v;
 		if ( rxn->repmin > rxn->repmax ) 
@@ -546,7 +546,7 @@ static int rex_check_repitions(struct rex_node *rxn, unsigned char **pp,
 		if ( *p != '}' )
 			return rex_parse_error(&rxn->next, aux, p);
 		*pp = p + 1;
-	} 
+	}
 
 	return 0;
 }
@@ -992,7 +992,8 @@ static int rex_match_group_s(struct rex_node *rxn, char *cur, unsigned rep,
 	if ( rv != REX_ERROR ) {
 		if ( rv == REX_NOMATCH && rxn->repmin == 0 && rep == 0 ) {
 			/* we are doing the job of the end group here */
-			if ( rg->num < aux->nmatch ) {
+			if ( rg->num < aux->nmatch && 
+			     !aux->match[rg->num].valid ) {
 				aux->match[rg->num].valid = 1;
 				aux->match[rg->num].start = cur - aux->start;
 				aux->match[rg->num].len = 0;
@@ -1021,7 +1022,8 @@ static int rex_match_group_e(struct rex_node *rxn, char *cur, unsigned rep,
 	} 
 	if ( rep >= rxn->repmin )
 		rv = rex_match_rxn(rxn->next, cur, 0, aux);
-	if ( rv == REX_MATCH && rg->num < aux->nmatch ) { 
+	if ( rv == REX_MATCH && rg->num < aux->nmatch && 
+	     !aux->match[rg->num].valid ) {
 		aux->match[rg->num].valid = 1;
 		aux->match[rg->num].start = aux->gstart - aux->start;
 		aux->match[rg->num].len = cur - aux->gstart;
@@ -1099,6 +1101,7 @@ int rex_match(struct rex_pat *rxp, struct raw *str, struct rex_match_loc *m,
 	aux.end = str->data + str->len;
 	aux.match = m;
 	aux.nmatch = nm;
+	memset(m, 0, sizeof(*m) * nm);
 
 	/* TODO: should we always return the longest match?  If so we need */
 	/* to save the best find and keep going.  This will require        */

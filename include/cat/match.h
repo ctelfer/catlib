@@ -74,7 +74,7 @@ struct sfxnode *sfx_next(struct sfxtree *t, struct sfxnode *cur, int ch);
 #define REX_T_CHOICE		4	/* no repitition */
 #define REX_T_GROUP_S		5	/* no repitition */
 #define REX_T_GROUP_E		6
-#define REX_WILDCARD		255
+#define REX_WILDCARD		0
 
 struct rex_node {
 	unsigned char		type;
