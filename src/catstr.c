@@ -29,30 +29,37 @@
 #endif /* CAT_USE_STDLIB */
 
 #define CKCS(cs)							\
-	if (!cs || (cs->cs_size == CS_UNINITIALIZED) || 		\
-	    (cs->cs_size > CS_MAXLEN) || (cs->cs_dlen < cs->cs_size))	\
+	if (!cs || !cs->cs_data ||					\
+	    (cs->cs_size > CS_MAXLEN) || (cs->cs_dlen > cs->cs_size))	\
 		return CS_ERROR;
 
 #define CKCSP(cs)							\
-	if (!cs || (cs->cs_size == CS_UNINITIALIZED) || 		\
-	    (cs->cs_size > CS_MAXLEN) || (cs->cs_dlen < cs->cs_size))	\
+	if (!cs || !cs->cs_data || 					\
+	    (cs->cs_size > CS_MAXLEN) || (cs->cs_dlen > cs->cs_size))	\
 		return NULL;
 
 #define CKCSN(cs)							\
-	if (!cs || (cs->cs_size == CS_UNINITIALIZED) || 		\
-	    (cs->cs_size > CS_MAXLEN) || (cs->cs_dlen < cs->cs_size))	\
+	if (!cs || !cs->cs_data ||					\
+	    (cs->cs_size > CS_MAXLEN) || (cs->cs_dlen > cs->cs_size))	\
 		return;
 
-void cs_init(struct catstr *cs, size_t size)
+void cs_init(struct catstr *cs, char *data, size_t size, int data_is_str)
 {
-	if ( size > CS_MAXLEN ) {
-		cs->cs_size = CS_UNINITIALIZED;
+	size_t dlen = 0;
+
+	if ( data_is_str && data )
+		dlen = strlen(data);
+	if ( size > CS_MAXLEN || size < 1 || dlen > size - 1) {
+		cs->cs_size = 0;
+		cs->cs_dynamic = 0;
+		cs->cs_data = NULL;
 		return;
 	}
 
-	cs->cs_size = size;
-	cs->cs_dlen = 0;
-	cs->cs_data[0] = '\0';
+	cs->cs_size = size - 1;
+	cs->cs_data = data;
+	cs->cs_dlen = dlen;
+	cs->cs_data[dlen] = '\0';
 }
 
 
@@ -110,10 +117,46 @@ size_t cs_concat_d(struct catstr *dst, const struct catstr *src)
 }
 
 
+size_t cs_copy_d(struct catstr *dst, struct catstr *src)
+{
+	size_t tocopy;
+	CKCS(dst);
+	CKCS(src);
+
+	tocopy = src->cs_dlen;
+	if ( tocopy >= dst->cs_size )
+		tocopy = dst->cs_size - 1;
+	memmove(dst->cs_data, src->cs_data, tocopy);
+	dst->cs_data[tocopy] = '\0';
+	dst->cs_dlen = tocopy;
+	return tocopy;
+}
+
+
+size_t cs_format_d(struct catstr *dst, const char *fmt, ...)
+{
+	va_list ap;
+	int rv;
+	abort_unless(fmt);
+	va_start(ap, fmt);
+	rv = str_vfmt(dst->cs_data, dst->cs_size, fmt, ap);
+	va_end(ap);
+	if ( rv < 0 ) {
+		dst->cs_dlen = 0;
+		dst->cs_data[0] = '\0';
+		return CS_ERROR;
+	}
+	dst->cs_dlen = rv;
+	if ( rv > dst->cs_size )
+		dst->cs_dlen = dst->cs_size;
+	return (size_t)rv;
+}
+
+
 size_t cs_find_cc(const struct catstr *cs, char ch)
 {
-	const unsigned char *cp;
-	const unsigned char *end;
+	const char *cp;
+	const char *end;
 	size_t off = 0;
 	CKCS(cs);
 
@@ -133,16 +176,16 @@ size_t cs_find_cc(const struct catstr *cs, char ch)
 
 size_t cs_span_cc(const struct catstr *cs, const char *accept)
 {
-	const unsigned char *cp;
-	const unsigned char *ap;
-	const unsigned char *end;
+	const char *cp;
+	const char *ap;
+	const char *end;
 	size_t off = 0;
 	CKCS(cs);
 
 	cp = cs->cs_data;
 	end = cp + cs->cs_dlen;
 	while ( cp < end ) {
-		for ( ap = (const unsigned char *)accept ; *ap != '\0' ; ++ap )
+		for ( ap = (const char *)accept ; *ap != '\0' ; ++ap )
 			if ( *cp == *ap )
 				break;
 		if ( *ap == '\0' )
@@ -157,16 +200,16 @@ size_t cs_span_cc(const struct catstr *cs, const char *accept)
 
 size_t cs_cspan_cc(const struct catstr *cs, const char *reject)
 {
-	const unsigned char *cp;
-	const unsigned char *rp;
-	const unsigned char *end;
+	const char *cp;
+	const char *rp;
+	const char *end;
 	size_t off = 0;
 	CKCS(cs);
 
 	cp = cs->cs_data;
 	end = cp + cs->cs_dlen;
 	while ( cp < end ) {
-		for ( rp = (const unsigned char *)reject ; *rp != '\0' ; ++rp )
+		for ( rp = (const char *)reject ; *rp != '\0' ; ++rp )
 			if ( *cp == *rp )
 				goto done;
 		++cp;
@@ -181,12 +224,12 @@ size_t cs_find_uc(const struct catstr *cs, const char *utf8ch)
 {
 	size_t off = 0, dlen;
 	int scs, fcs, i;
-	const unsigned char *fcp = (const unsigned char *)utf8ch;
-	const unsigned char *scp;
+	const char *fcp = (const char *)utf8ch;
+	const char *scp;
 
 	CKCS(cs);
 	abort_unless(utf8ch);
-	scp = (const unsigned char *)cs->cs_data;
+	scp = (const char *)cs->cs_data;
 	dlen = cs->cs_dlen;
 
 	if ( (fcs = utf8_nbytes(*fcp)) < 0 )
@@ -214,7 +257,7 @@ size_t cs_find_uc(const struct catstr *cs, const char *utf8ch)
 }
 
 
-static int utf8match(const unsigned char *c1, const unsigned char *c2)
+static int utf8match(const char *c1, const char *c2)
 {
 	int c1b, c2b;
 	abort_unless(c1 && c2);
@@ -242,12 +285,12 @@ size_t cs_span_uc(const struct catstr *cs, const char *utf8ch, int nc)
 {
 	size_t off = 0, dlen, u8off;
 	int i, mr, uclen;
-	const unsigned char *fcp = (const unsigned char *)utf8ch;
-	const unsigned char *scp;
+	const char *fcp = (const char *)utf8ch;
+	const char *scp;
 
 	CKCS(cs);
 	abort_unless(utf8ch && nc > 0);
-	scp = (const unsigned char *)cs->cs_data;
+	scp = (const char *)cs->cs_data;
 	dlen = cs->cs_dlen;
 
 	while ( off < dlen ) {
@@ -276,12 +319,12 @@ size_t cs_cspan_uc(const struct catstr *cs, const char *utf8ch, int nc)
 {
 	size_t off = 0, dlen, u8off;
 	int i, mr;
-	const unsigned char *fcp = (const unsigned char *)utf8ch;
-	const unsigned char *scp;
+	const char *fcp = (const char *)utf8ch;
+	const char *scp;
 
 	CKCS(cs);
 	abort_unless(utf8ch && nc > 0);
-	scp = (const unsigned char *)cs->cs_data;
+	scp = (const char *)cs->cs_data;
 	dlen = cs->cs_dlen;
 
 	while ( off < dlen ) {
@@ -331,7 +374,7 @@ size_t cs_find_str(const struct catstr *findin, const char *s)
 size_t cs_find_raw(const struct catstr *findin, const struct raw *r)
 {
 	struct bmpat *bmp;
-	size_t off;
+	unsigned long off;
 	int rv;
 	struct raw rstr;
 
@@ -427,15 +470,17 @@ struct catstr *cs_grow(struct catstr *cs, size_t minlen)
 	size_t tlen, olen;
 	CKCSP(cs);
 	abort_unless(minlen <= CS_MAXLEN);
+	abort_unless(cs->cs_dynamic);
 
 	csp = (char *)cs;
 	olen = cs->cs_size;
 	if ( grow(&csp, &tlen, cs_alloc_size(minlen)) < 0 )
 		err("cs_grow: could not increase allocation");
-	abort_unless(tlen > olen);
+	abort_unless(tlen >= olen);
 
 	cs = (struct catstr *)csp;
-	cs->cs_size = cs_data_size(tlen);
+	cs->cs_data = (char *)(cs + 1);
+	cs->cs_size = (tlen - sizeof(struct catstr) - 1);
 
 	return cs;
 }
@@ -479,7 +524,7 @@ size_t cs_rev_off(const struct catstr *cs, size_t roff)
 struct catstr *cs_fd_readline(int fd)
 {
 	struct catstr *cs;
-	unsigned char *p;
+	char *p;
 	int eol = 0, rv;
 	size_t sofar = 0;
 
@@ -517,7 +562,7 @@ struct catstr *cs_fd_readline(int fd)
 struct catstr *cs_file_readline(FILE *file)
 {
 	struct catstr *cs;
-	unsigned char *p, *trav;
+	char *p, *trav;
 	int eol = 0;
 	size_t sofar = 0, toget;
 
@@ -563,8 +608,9 @@ struct catstr *cs_alloc(size_t len)
 	cs = emalloc(cs_alloc_size(len));
 	cs->cs_size = len;
 	cs->cs_dlen = 0;
-	cs->cs_data[len] = '\0';
+	cs->cs_data = (char *)(cs + 1);
 	cs->cs_data[0] = '\0';
+	cs->cs_dynamic = 1;
 
 	return cs;
 }
@@ -573,6 +619,7 @@ struct catstr *cs_alloc(size_t len)
 void cs_free(struct catstr *cs)
 {
 	CKCSN(cs);
+	abort_unless(cs->cs_dynamic);
 	free(cs);
 }
 
