@@ -44,13 +44,13 @@
 #define CAT_DEBUG_LEVEL		0
 #endif
 
+/* CAT_ALIGN is a union representing the most restrictive alignment type */
 #ifndef CAT_ALIGN
 typedef union { 
-	int			i;
+	long			l;
 	void *			vp;
 	char *			cp;
 	double 			d;
-	unsigned long		ul;
 #if CAT_HAS_LONGLONG
 	unsigned long long	ull;
 #endif /* CAT_HAS_LONGLONG */
@@ -59,6 +59,20 @@ typedef union {
 #else /* CAT_ALIGN */
 typedef CAT_ALIGN	cat_align_t;
 #endif /* CAT_ALIGN */
+
+/* ASSUMPTION: alignment restrictions are powers of 2 */
+/* ASSUMPTION: 
+ * all types in cat_align_t are worst case alignments: (e.g. ull is on 8-byte
+ * boundaries).  This does not generally hold but is safer than guessing
+ * incorrectly.  If a programmer knows * specifically otherwise the coder can 
+ * #define CAT_ALIGN.
+ */
+#define ALIGN_ROUNDUP(x) (((x) + sizeof(CAT_ALIGN) - 1) & (sizeof(CAT_ALIGN)-1))
+#define CAT_DECLARE_ALIGNED_DATA(name, len) \
+	CAT_DECLARE_ALIGNED_DATA_Q(,name,len)
+/* qual - (e.g. static volatile), name - variable name, len - in bytes */
+#define CAT_DECLARE_ALIGNED_DATA_Q(qual, name, len) \
+	qual CAT_ALIGN name[ALIGN_ROUNDUP(len) / sizeof(CAT_ALIGN)]
 
 
 typedef unsigned char u_char;
