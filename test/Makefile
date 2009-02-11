@@ -78,8 +78,8 @@ testheap: testheap.c $(CATA_LIBDEP)
 testtime: testtime.c $(CATA_LIBDEP)
 	$(CC) $(CATA_CF) -o testtime testtime.c $(INC) $(CATA_LIB)
 
-testpack: testpack.c $(CATA_LIBDEP)
-	$(CC) $(CATA_CF) -o testpack testpack.c $(INC) $(CATA_LIB)
+testpack: testpack.c $(CAT_LIBDEP)
+	$(CC) $(CAT_CF) -o testpack testpack.c $(INC) $(CAT_LIB)
 
 testdl: testdl.c $(CATA_LIBDEP)
 	$(CC) $(CATA_CF) -o testdl testdl.c $(INC) $(CATA_LIB)

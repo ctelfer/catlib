@@ -454,8 +454,6 @@ void sfx_clear(struct sfxtree *sfx)
 }
 
 
-#if 1
-
 struct rex_parse_aux {
 	struct memsys *sys;
 	struct rex_group *initial;
@@ -465,6 +463,7 @@ struct rex_parse_aux {
 	struct rex_group *gstack;
 	struct rex_choice *lastch;
 	int *eptr;
+	int gnum;
 };
 
 static int rex_parse(struct rex_node **rxnn, unsigned char *p, 
@@ -627,7 +626,7 @@ static int rex_parse_str(struct rex_node **rxnn, unsigned char *p,
 static int rex_parse_class(struct rex_node **rxnn, unsigned char *p, 
 		           struct rex_parse_aux *aux)
 {
-	unsigned char *end = p, *start = p;
+	unsigned char *start = p + 1, *end = start;
 	int invert = 0, i, rv;
 	struct rex_ascii_class *rxc;
 
@@ -650,6 +649,7 @@ static int rex_parse_class(struct rex_node **rxnn, unsigned char *p,
 	rxc->base.repmin = rxc->base.repmax = 1;
 	rxc->base.next = NULL;
 	rxnn = &rxc->base.next;
+	memset(&rxc->set, 0, sizeof(rxc->set));
 
 	for ( p = start; p < end; ++p ) {
 		if ( *p == '-' && p != start && p != end - 1 ) { 
@@ -658,10 +658,11 @@ static int rex_parse_class(struct rex_node **rxnn, unsigned char *p,
 			if ( ch > last )
 				return rex_parse_error(rxnn, aux, p - 1);
 			do {
-				rxc->set[(ch >> 3) & 0x1F] = (1 << (ch & 0x7));
+				rxc->set[(ch >> 3) & 0x1F] |= (1 << (ch & 0x7));
 			} while ( ch++ < last );
+			++p;
 		} else {
-			rxc->set[(*p >> 3) & 0x1F] = (1 << (*p & 0x7));
+			rxc->set[(*p >> 3) & 0x1F] |= (1 << (*p & 0x7));
 		}
 	}
 
@@ -718,7 +719,6 @@ static int rex_parse_choice(struct rex_node **rxnn, unsigned char *p,
 	} else { 
 		rc->opt1 = aux->lastch->opt2;
 		aux->lastch->opt2 = &rc->base;
-		aux->lastch = rc;
 	}
 	rc->opt2 = NULL;
 	*rxnn = NULL;
@@ -741,6 +741,7 @@ static int rex_parse_group_s(struct rex_node **rxnn, unsigned char *p,
 	rg->base.repmin = rg->base.repmax = 1;
 	rg->base.next = NULL;
 	rxnn = &rg->base.next;
+	rg->num = ++aux->gnum;
 
 	rg->other = aux->gstack;
 	aux->gstack = rg;
@@ -750,11 +751,44 @@ static int rex_parse_group_s(struct rex_node **rxnn, unsigned char *p,
 }
 
 
+static int finalize_choices(struct rex_group *rgs, struct rex_group *rge,
+			    struct rex_parse_aux *aux)
+{
+	struct rex_node *rn, **trav;
+	struct rex_choice *rc;
+	if ( aux->lastch == NULL )
+		return 0;
+	abort_unless(rgs->base.next->type == REX_T_CHOICE);
+
+	/* we should now have a linked list of choices linked through the */
+	/* ->opt2 pointers with the last opt2 pointer pointing to a       */
+	/* non-choice node.  Each of the opt1 lists should end with a node */
+	/* pointing to NULL.  The list _can_ be empty meaning an opt1      */
+	/* can point to NULL.  Any sub-groups with choices should have the */
+	/* form of a group start node followed by a list of choices _all_ */
+	/* of which point to the group end node through their next pointer. */
+	/* So, hitting such a group should go from start to choice to end to */
+	/* whatever follows in the rest of the choice expression. This code */
+	/* changes all the final NULL pointers to point to the group end node.*/
+	/* Note that the last list will already point to the end node. */
+	rn = rgs->base.next;
+	while ( rn->type == REX_T_CHOICE ) {
+		rc = (struct rex_choice *)rn;
+		rc->base.next = &rge->base;
+		trav = &rc->opt1;
+		while ( *trav != NULL )
+			trav = &(*trav)->next;
+		*trav = &rge->base;
+		rn = rc->opt2;
+	}
+	return 0;
+}
+
+
 static int rex_parse_group_e(struct rex_node **rxnn, unsigned char *p, 
 		             struct rex_parse_aux *aux)
 {
 	struct rex_group *rge, *rgs, *rgn;
-	struct rex_node *rn, *rn2;
 	int rv;
 
 	/* Check the group start stack and pop the top one */
@@ -768,20 +802,17 @@ static int rex_parse_group_e(struct rex_node **rxnn, unsigned char *p,
 	if ( !(rge = mem_get(aux->sys, sizeof(*rge))) )
 		return rex_parse_error(rxnn, aux, NULL);
 	*rxnn = &rge->base;
+	rge->base.type = REX_T_GROUP_E;
+	rge->base.repmin = rge->base.repmax = 1;
+	rge->base.next = NULL;
+	rxnn = &rge->base.next;
 	rgs->other = rge;
 	rge->other = rgs;
-	rge->base.next = NULL;
+	rge->num = rgs->num;
 	++p;
 
-	/* close out current choice (if any) */
-	if ( aux->lastch != NULL ) {
-		abort_unless(rgs->base.next->type == REX_T_CHOICE);
-		rn = rgs->base.next;
-		while ( (rn2 = rn) != NULL ) { 
-			rn = rn->next;
-			rn2->next = &rge->base;
-		}
-	}
+	/* close out any current choice nodes */
+	finalize_choices(rgs, rge, aux);
 
 	/* reinstate enclosing group's choice (if any) */
 	if ( ((rgn = aux->gstack) != NULL) && 
@@ -790,6 +821,8 @@ static int rex_parse_group_e(struct rex_node **rxnn, unsigned char *p,
 		while ( rc->opt2->type == REX_T_CHOICE )
 			rc = (struct rex_choice *)rc->opt2;
 		aux->lastch = rc;
+	} else {
+		aux->lastch = NULL;
 	}
 
 	if ( (rv = rex_check_repitions(&rge->base, &p, aux)) < 0 )
@@ -807,6 +840,7 @@ static int rex_parse(struct rex_node **rxnn, unsigned char *p,
 		if ( aux->gstack != NULL )
 			return rex_parse_error(rxnn, aux, p);
 		*rxnn = &aux->final->base;
+		finalize_choices(aux->initial, aux->final, aux);
 		return 0;
 	}
 
@@ -862,7 +896,9 @@ int rex_init(struct rex_pat *rxp, struct raw *pat, struct memsys *sys,
 	aux.start = (unsigned char *)pat->data;
 	aux.end = (unsigned char *)pat->data + pat->len;
 	aux.gstack = NULL;
+	aux.lastch = NULL;
 	aux.eptr = error;
+	aux.gnum = 0;
 
 	return rex_parse(&rxp->rp_start.base.next, (unsigned char *)pat->data, 
 			 &aux);
@@ -874,26 +910,28 @@ static void rex_free_help(struct rex_node *node, struct rex_node *end,
 {
 	if ( node == NULL || node == end ) {
 		return;
-	} else if ( node->type == REX_T_GROUP_S && 
-		    node->next != NULL &&
-		    node->next->type == REX_T_CHOICE ) {
+	} else if ( node->type == REX_T_GROUP_S ) {
 		struct rex_group *rg = (struct rex_group *)node;
-		struct rex_choice *rc = (struct rex_choice *)node->next;
-		rex_free_help(rc->opt1, &rg->other->base, sys);
-		rex_free_help(rc->opt2, &rg->other->base, sys);
-		rex_free_help(&rg->other->base, end, sys);
-	} else { 
+		rex_free_help(node->next, (struct rex_node *)rg->other, sys);
+		rex_free_help((struct rex_node *)rg->other, end, sys);
+		if ( rg->num > 0 )
+			mem_free(sys, node);
+	} else if ( node->type == REX_T_CHOICE ) {
+		struct rex_choice *rc = (struct rex_choice *)node;
+		rex_free_help(rc->opt1, end, sys);
+		rex_free_help(rc->opt2, end, sys);
+		mem_free(sys, node);
+	} else {
 		rex_free_help(node->next, end, sys);
+		mem_free(sys, node);
 	}
-	mem_free(sys, node);
 }
 
 
 void rex_free(struct rex_pat *rxp)
 {
 	abort_unless(rxp);
-	rex_free_help(rxp->rp_start.base.next, &rxp->rp_end.base, 
-		      &rxp->rp_sys);
+	rex_free_help(&rxp->rp_start.base, &rxp->rp_end.base, &rxp->rp_sys);
 }
 
 
@@ -904,6 +942,7 @@ struct rex_match_aux {
 	unsigned grep;
 	struct rex_match_loc *match;
 	unsigned nmatch;
+	struct rex_match_aux *prev;
 };
 
 
@@ -983,6 +1022,7 @@ static int rex_match_group_s(struct rex_node *rxn, char *cur, unsigned rep,
 	if ( rep == 0 ) { 
 		aux2 = *aux;
 		aux2.gstart = cur;
+		aux2.prev = aux;
 		new_aux = &aux2;
 	}
 	new_aux->grep = rep + 1;
@@ -1021,7 +1061,7 @@ static int rex_match_group_e(struct rex_node *rxn, char *cur, unsigned rep,
 			return rv;
 	} 
 	if ( rep >= rxn->repmin )
-		rv = rex_match_rxn(rxn->next, cur, 0, aux);
+		rv = rex_match_rxn(rxn->next, cur, 0, aux->prev);
 	if ( rv == REX_MATCH && rg->num < aux->nmatch && 
 	     !aux->match[rg->num].valid ) {
 		aux->match[rg->num].valid = 1;
@@ -1115,4 +1155,3 @@ int rex_match(struct rex_pat *rxp, struct raw *str, struct rex_match_loc *m,
 
 	return REX_NOMATCH;
 }
-#endif
