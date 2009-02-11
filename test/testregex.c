@@ -79,5 +79,9 @@ int main(int argc, char *argv[])
 	tmatch("(a|b)", "cbd");
 	tmatch("(a|b)+", "cbabbd");
 	tmatch("(a|bb)+", "cbabbbd");
+	tmatch("^abc", "abcd");
+	tmatch("^abc", "aaabcd");
+	tmatch("abc$", "abcd");
+	tmatch("bcd$", "aaabcd");
 	return 0;
 }

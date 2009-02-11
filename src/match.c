@@ -553,7 +553,7 @@ static int rex_check_repitions(struct rex_node *rxn, unsigned char **pp,
 
 static int span_regular(unsigned char *p, unsigned max)
 {
-	static const char *special = "*[](){}+?|.\\";
+	static const char *special = "*[](){}+?|.\\$^";
 	unsigned char *t = p;
 	while ( max-- > 0 && !strchr(special, *t) ) ++t;
 	return t - p;
@@ -831,6 +831,22 @@ static int rex_parse_group_e(struct rex_node **rxnn, unsigned char *p,
 }
 
 
+static int rex_parse_anchor(struct rex_node **rxnn, unsigned char *p, 
+		            struct rex_parse_aux *aux)
+{
+	struct rex_node *rn;
+	if ( !(rn = mem_get(aux->sys, sizeof(*rn))) )
+		return rex_parse_error(rxnn, aux, NULL);
+	*rxnn = rn;
+	rn->type = (*p == '^') ? REX_T_BANCHOR : REX_T_EANCHOR;
+	rn->repmin = rn->repmax = 1;
+	rn->next = NULL;
+	rxnn = &rn->next;
+
+	return rex_parse(rxnn, p + 1, aux);
+}
+
+
 static int rex_parse(struct rex_node **rxnn, unsigned char *p, 
 		     struct rex_parse_aux *aux)
 {
@@ -852,6 +868,9 @@ static int rex_parse(struct rex_node **rxnn, unsigned char *p,
 	case '{': 
 	case '}': 
 		return rex_parse_error(rxnn, aux, p);
+	case '^':
+	case '$':
+		return rex_parse_anchor(rxnn, p, aux);
 	case '(':
 		return rex_parse_group_s(rxnn, p, aux);
 	case '[':
