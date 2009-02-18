@@ -466,8 +466,10 @@ struct rex_parse_aux {
 	int gnum;
 };
 
+
 static int rex_parse(struct rex_node **rxnn, unsigned char *p, 
 		     struct rex_parse_aux *aux);
+
 
 static int rex_parse_error(struct rex_node **rxnn, struct rex_parse_aux *aux, 
 			   unsigned char *p)
@@ -586,10 +588,10 @@ static int rex_parse_str(struct rex_node **rxnn, unsigned char *p,
 		p += span;
 		maxlen -= span;
 		len += span;
-		if ( len > 0 ) { 
+		if ( span == 0 ) { 
 			if ( *p != '\\' )
 				break;
-			if ( len < 2 )
+			if ( maxlen < 2 )
 				return rex_parse_error(rxnn, aux, p);
 			*s++ = *(p + 1);
 			p += 2;
@@ -887,31 +889,53 @@ static int rex_parse(struct rex_node **rxnn, unsigned char *p,
 }
 
 
+static int all_paths_start(struct rex_node *rxn)
+{
+	switch (rxn->type) {
+		case REX_T_BANCHOR:
+			return 1;
+		case REX_T_GROUP_S:
+			return all_paths_start(rxn->next);
+		case REX_T_CHOICE: {
+			struct rex_choice *rc = (struct rex_choice *)rxn;
+			return all_paths_start(rc->opt1) &&
+			       all_paths_start(rc->opt2);
+		} break;
+		default:
+			return 0;
+	}
+}
+
+
 int rex_init(struct rex_pat *rxp, struct raw *pat, struct memsys *sys,
 	     int *error)
 {
 	struct rex_parse_aux aux;
+	int rv;
+
 	if ( !rxp || !pat || !pat->data || sys == NULL )
 		return -1;
 
-	rxp->rp_start.base.type = REX_T_GROUP_S;
-	rxp->rp_start.base.repmin = 1;
-	rxp->rp_start.base.repmax = 1;
-	rxp->rp_start.base.next = NULL;
-	rxp->rp_start.num = 0;
-	rxp->rp_start.other = &rxp->rp_end;
+	rxp->start_anchor = 0;
 
-	rxp->rp_end.base.type = REX_T_GROUP_E;
-	rxp->rp_end.base.repmin = 1;
-	rxp->rp_end.base.repmax = 1;
-	rxp->rp_end.base.next = NULL;
-	rxp->rp_end.num = 0;
-	rxp->rp_end.other = &rxp->rp_start;
+	rxp->start.base.type = REX_T_GROUP_S;
+	rxp->start.base.repmin = 1;
+	rxp->start.base.repmax = 1;
+	rxp->start.base.next = NULL;
+	rxp->start.num = 0;
+	rxp->start.other = &rxp->end;
 
-	rxp->rp_sys = *sys;
-	aux.sys = &rxp->rp_sys;
-	aux.initial = &rxp->rp_start;
-	aux.final = &rxp->rp_end;
+	rxp->end.base.type = REX_T_GROUP_E;
+	rxp->end.base.repmin = 1;
+	rxp->end.base.repmax = 1;
+	rxp->end.base.next = NULL;
+	rxp->end.num = 0;
+	rxp->end.other = &rxp->start;
+
+	rxp->sys = *sys;
+	aux.sys = &rxp->sys;
+	aux.initial = &rxp->start;
+	aux.final = &rxp->end;
 	aux.start = (unsigned char *)pat->data;
 	aux.end = (unsigned char *)pat->data + pat->len;
 	aux.gstack = NULL;
@@ -919,8 +943,12 @@ int rex_init(struct rex_pat *rxp, struct raw *pat, struct memsys *sys,
 	aux.eptr = error;
 	aux.gnum = 0;
 
-	return rex_parse(&rxp->rp_start.base.next, (unsigned char *)pat->data, 
-			 &aux);
+	rv = rex_parse(&rxp->start.base.next, (unsigned char *)pat->data, &aux);
+	if ( rv == 0 )
+		rxp->start_anchor = all_paths_start(&rxp->start.base);
+	else
+		rex_free(rxp);
+	return rv;
 }
 
 
@@ -950,7 +978,7 @@ static void rex_free_help(struct rex_node *node, struct rex_node *end,
 void rex_free(struct rex_pat *rxp)
 {
 	abort_unless(rxp);
-	rex_free_help(&rxp->rp_start.base, &rxp->rp_end.base, &rxp->rp_sys);
+	rex_free_help(&rxp->start.base, &rxp->end.base, &rxp->sys);
 }
 
 
@@ -1150,8 +1178,8 @@ int rex_match(struct rex_pat *rxp, struct raw *str, struct rex_match_loc *m,
 
 	if ( rxp == NULL || str == NULL || str->data == NULL )
 		return REX_ERROR;
-	if ( rxp->rp_start.base.repmin != 1 || rxp->rp_start.base.repmax != 1 ||
-	    rxp->rp_end.base.repmin != 1 || rxp->rp_end.base.repmax != 1 )
+	if ( rxp->start.base.repmin != 1 || rxp->start.base.repmax != 1 ||
+	     rxp->end.base.repmin != 1 || rxp->end.base.repmax != 1 )
 		return REX_ERROR;
 	if ( nm > 0 && m == 0 )
 		return REX_ERROR;
@@ -1162,14 +1190,15 @@ int rex_match(struct rex_pat *rxp, struct raw *str, struct rex_match_loc *m,
 	aux.nmatch = nm;
 	memset(m, 0, sizeof(*m) * nm);
 
-	/* TODO: should we always return the longest match?  If so we need */
-	/* to save the best find and keep going.  This will require        */
-	/* allocating save space for 'm' */
 	for ( cur = aux.start; cur < aux.end; ++cur ) { 
 		aux.gstart = cur;
-		rv = rex_match_rxn(&rxp->rp_start.base, cur, 0, &aux);
+		rv = rex_match_rxn(&rxp->start.base, cur, 0, &aux);
 		if ( rv != REX_NOMATCH )
 			return rv;
+		/* if all paths start with a start anchor don't search */
+		/* the entire string: stop and return here */
+		if ( rxp->start_anchor )
+			return REX_NOMATCH;
 	}
 
 	return REX_NOMATCH;
