@@ -97,8 +97,7 @@ static byte *unpack_half(byte *p, void *hp, int bigendian, int issigned)
 		if ( issigned ) {
 			s = (*p++ & 0xFF) << 8;
 			s |= *p++ & 0xFF;
-			if ( (sizeof(shalf) > 2) && (s & 0x8000) )
-				s |= (~0) << ((sizeof(shalf)-2) * 8);
+			s |= -(s & 0x8000);
 			*(shalf *)hp = s;
 		} else {
 			u = (*p++ & 0xFF) << 8;
@@ -107,10 +106,9 @@ static byte *unpack_half(byte *p, void *hp, int bigendian, int issigned)
 		}
 	} else {
 		if ( issigned ) {
-			s |= (*p++ & 0xFF);
-			s = (*p++ & 0xFF) << 8;
-			if ( (sizeof(shalf) > 2) && (s & 0x8000) )
-				s |= (~0) << ((sizeof(shalf)-2) * 8);
+			s = (*p++ & 0xFF);
+			s |= (*p++ & 0xFF) << 8;
+			s |= -(s & 0x8000);
 			*(shalf *)hp = s;
 		} else {
 			u |= (*p++ & 0xFF);
@@ -133,8 +131,7 @@ static byte *unpack_word(byte *p, void *wp, int bigendian, int issigned)
 			s |= ((sword)*p++ & 0xFF) << 16;
 			s |= ((sword)*p++ & 0xFF) << 8;
 			s |= ((sword)*p++ & 0xFF);
-			if ( (sizeof(word) > PSIZ_WORD) && (s & 0x80000000) )
-				s |= (~0) << ((sizeof(sword)-PSIZ_WORD) * 8);
+			s |= -(s & 0x80000000);
 			*(sword *)wp = s;
 		} else {
 			u  = ((word)*p++ & 0xFF) << 24;
@@ -149,8 +146,7 @@ static byte *unpack_word(byte *p, void *wp, int bigendian, int issigned)
 			s |= ((sword)*p++ & 0xFF) << 8;
 			s |= ((sword)*p++  & 0xFF)<< 16;
 			s |= ((sword)*p++  & 0xFF)<< 24;
-			if ( (sizeof(word) > PSIZ_WORD) && (s & 0x80000000) )
-				s |= (~0) << ((sizeof(sword)-PSIZ_WORD) * 8);
+			s |= -(s & 0x80000000);
 			*(sword *)wp = s;
 		} else {
 			u  = ((word)*p++ & 0xFF);
@@ -206,10 +202,7 @@ static byte *unpack_jumbo(byte *p, void *jp, int bigendian, int issigned)
 			s |= ((sjumbo)*p++ & 0xFF) << 16;
 			s |= ((sjumbo)*p++ & 0xFF) << 8;
 			s |= ((sjumbo)*p++ & 0xFF);
-			if ( (sizeof(jumbo) > PSIZ_JUMBO) && 
-			     (s & 0x8000000000000000ll) )
-				s |= (~0ll) << 
-					((sizeof(sjumbo) - PSIZ_JUMBO) * 8);
+			s |= -(s & 0x8000000000000000ll);
 			*(sjumbo *)jp = s;
 		} else {
 			u  = ((jumbo)*p++ & 0xFF) << 56;
@@ -232,10 +225,7 @@ static byte *unpack_jumbo(byte *p, void *jp, int bigendian, int issigned)
 			s |= ((sjumbo)*p++ & 0xFF) << 40;
 			s |= ((sjumbo)*p++ & 0xFF) << 48;
 			s |= ((sjumbo)*p++ & 0xFF) << 56;
-			if ( (sizeof(jumbo) > 8) && 
-			     (s & 0x8000000000000000ll) )
-				s |= (~0ll) << 
-					((sizeof(sjumbo) - PSIZ_JUMBO) * 8);
+			s |= -(s & 0x8000000000000000ll);
 			*(sjumbo *)jp = s;
 		} else {
 			u  = ((jumbo)*p++ & 0xFF);
@@ -467,12 +457,9 @@ size_t unpack(void *buf, size_t blen, const char *fmt, ...)
 			sbytep = va_arg(ap, sbyte *);
 			abort_unless(sbytep);
 			for ( i = 0 ; i < nreps ; ++i ) {
-				*sbytep = *p++ & 0xFF;
-				if ( (sizeof(sbyte) > PSIZ_BYTE) && 
-				     (*sbytep & 0x80) )
-					*sbytep |= (~0) << 
-						((sizeof(sbyte)-PSIZ_BYTE) * 8);
-				++sbytep;
+				sbyte sb = *p++ & 0xFF;
+				sb |= -(sb & 0x80);
+				*sbytep++ = sb;
 			}
 			pulled += PSIZ_BYTE * nreps;
 			nreps = 0;

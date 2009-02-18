@@ -33,6 +33,7 @@ DECL void l_init(struct list *head);
 DECL void l_ins(struct list *prev, struct list *elem);
 DECL void l_rem(struct list *elem);
 DECL int  l_isempty(struct list *list);
+DECL int  l_onlist(struct list *elem);
 
 DECL void          l_enq(struct list *list, struct list *elem);
 DECL struct list * l_deq(struct list *list);
@@ -40,8 +41,13 @@ DECL void          l_push(struct list *list, struct list *elem);
 DECL struct list * l_pop(struct list *list);
 DECL void          l_apply(struct list *list, apply_f f, void *arg);
 
-#define l_next_obj(ptr, type, member) base((ptr)->member.next, type, member)
-#define l_prev_obj(ptr, type, member) base((ptr)->member.prev, type, member)
+#define l_next_obj(ptr, type, member) \
+	container((ptr)->member.next, type, member)
+#define l_prev_obj(ptr, type, member) \
+	container((ptr)->member.prev, type, member)
+#define l_for_each(node, list) \
+	for ( (node) = l_head(list) ; (node) != l_end(list) ; \
+	      (node) = (node)->next )
 
 #if defined(CAT_LIST_DO_DECL) && CAT_LIST_DO_DECL
 
@@ -103,8 +109,9 @@ DECL struct list * l_deq(struct list *list)
 	if ( last != list ) {
 		l_rem(last);
 		return last;
-	} else
+	} else {
 		return NULL;
+	}
 }
 
 
@@ -132,6 +139,13 @@ DECL int l_isempty(struct list *list)
 {
 	abort_unless(list);
 	return (list->next == list);
+}
+
+
+DECL int l_onlist(struct list *list)
+{
+	abort_unless(list);
+	return (list->next != list);
 }
 
 

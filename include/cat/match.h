@@ -107,9 +107,10 @@ struct rex_choice {
 };
 
 struct rex_pat {
-	struct memsys		rp_sys;
-	struct rex_group 	rp_start;
-	struct rex_group 	rp_end;
+	struct memsys		sys;
+	int			start_anchor;
+	struct rex_group 	start;
+	struct rex_group 	end;
 };
 
 struct rex_match_loc {

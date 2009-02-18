@@ -26,7 +26,7 @@ void tmatch(char *pat, char *str)
 			locs[0].start, locs[0].len, str);
 		for ( i = 1; i < 16; i++ )
 			if ( locs[i].valid )
-				printf("Sub-group %d match: @%u:%u\n", 
+				printf("Sub-group %d match: @%u:%u\n", i,
 					locs[i].start, locs[i].len);
 	} else if ( rv == REX_NOMATCH ) { 
 		printf("NO MATCH: /%s/ -- \"%s\"\n", pat, str);
@@ -51,5 +51,37 @@ int main(int argc, char *argv[])
 	tmatch(".", "bonk");
 	tmatch(".*", "bonk");
 	tmatch(".+", "bonk");
+	tmatch("[abc]", "c");
+	tmatch("[abc]", "9");
+	tmatch("[a-z]", "b");
+	tmatch("[a-z]", "9");
+	tmatch("[a-zA-Z]", "K");
+	tmatch("[a-zA-Z]", ",");
+	tmatch("[^a-zA-Z]", ",");
+	tmatch("[^a-zA-Z]", "q");
+	tmatch("9[a-z]?", "9q");
+	tmatch("9[a-z]?", "99");
+	tmatch("[]]", "a]b");
+	tmatch("[^]]", "]b");
+	tmatch("[a-z]*", "  hello  ");
+	tmatch("[a-z]+", "  hello  ");
+	tmatch("(ab)", " caby");
+	tmatch("(a(b)*)", " cabbby");
+	tmatch("(a(b)?)", " cabbby");
+	tmatch("(a(b)?)", " cacbbby");
+	tmatch("(a(b)+)", " cay");
+	tmatch("(a(b)+)", " caby");
+	tmatch("(a(b)+)", " cabbby");
+	tmatch("a|b", "a");
+	tmatch("a|b", "b");
+	tmatch("a|b", "cad");
+	tmatch("a|b", "cbd");
+	tmatch("(a|b)", "cbd");
+	tmatch("(a|b)+", "cbabbd");
+	tmatch("(a|bb)+", "cbabbbd");
+	tmatch("^abc", "abcd");
+	tmatch("^abc", "aaabcd");
+	tmatch("abc$", "abcd");
+	tmatch("bcd$", "aaabcd");
 	return 0;
 }
