@@ -53,7 +53,6 @@ void * erealloc(void *old, size_t size)
 
 #else /* CAT_DEBUG_LEVEL <= 0 */
 
-#include <cat/dbgmem.h>
 #if CAT_USE_STDLIB
 #include <string.h>
 #else /* CAT_USE_STDLIB */
@@ -68,7 +67,7 @@ void * emalloc(size_t size)
 	if ( size == 0 )
 		(*abort_func)("emalloc: zero size!", NULL, size, 1, 0);
 
-	if ( !(m = dbg_mem_get(&dbgmem, size)) )
+	if ( !(m = malloc(size)) )
 		(*abort_func)("emalloc: ", NULL, size, 1, 1);
 
 	return m;
@@ -88,7 +87,7 @@ void * ecalloc(size_t nmemb, size_t size)
 		(*abort_func)("ecalloc: size overflow!", NULL, size, 1, 0);
 
 	tlen = nmemb * size;
-	if ( !(m = dbg_mem_get(&dbgmem, tlen)) )
+	if ( !(m = malloc(tlen)) )
 		(*abort_func)("ecalloc: ", NULL, size, nmemb, 1);
 
 	memset(m, 0, tlen);
@@ -100,7 +99,7 @@ void * ecalloc(size_t nmemb, size_t size)
 void * erealloc(void *old, size_t size)
 {
 	void *m;
-	if ( !(m = dbg_mem_resize(&dbgmem, old, size)) && (size > 0) )
+	if ( !(m = realloc(old, size)) && (size > 0) )
 		(*abort_func)("erealloc: ", old, size, 1, 1);
 	return m;
 }
