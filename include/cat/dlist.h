@@ -165,10 +165,12 @@ DECL void dl_rem(struct dlist *elem)
 {
 	struct dlist *next;
 
-	next = container(elem->entry.next, struct dlist, entry);
-	if ( tm_isset(&next->ttl) )
-		tm_add(&next->ttl, &elem->ttl);
-	l_rem(&elem->entry);
+	if ( l_onlist(&elem->entry) ) {
+		next = container(elem->entry.next, struct dlist, entry);
+		if ( tm_isset(&next->ttl) )
+			tm_add(&next->ttl, &elem->ttl);
+		l_rem(&elem->entry);
+	}
 }
 
 
