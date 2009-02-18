@@ -1,6 +1,6 @@
 Catlib Copyright Notice
 The author of this software is Christopher Adam Telfer
-Copyright (c) 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005
+Copyright (c) 2003-2009
 
 Permission to use, copy, modify, and distribute this software for any
 purpose without fee is hereby granted, provided that the above copyright
