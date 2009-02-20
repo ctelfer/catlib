@@ -150,10 +150,4 @@ extern void cat_abort(const char *fn, unsigned ln, const char *expr);
 #define abort_unless(x) \
 	do { if (!(x)) { cat_abort(__FILE__, __LINE__, #x); } } while (0)
 
-extern char num_bits_array[];
-extern char num_leading_zeros_array[];
-
-#define nbits8(x) (num_bits_array[(unsigned char)(x) & 0xff])
-#define nlz8(x) (num_leading_zeros_array[(unsigned char)(x) & 0xff])
-
 #endif /* __cat_cat_h */

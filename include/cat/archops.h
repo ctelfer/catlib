@@ -1,15 +1,23 @@
 /*
  * include/cat/archops.h -- Operations accelerated on native platform
  *
+ * Include bitops.h to get these functions.
+ *
  * by Christopher Adam Telfer
  *
- * Copyright 2008, See accompanying license
+ * Copyright 2008, 2009See accompanying license
  *
  */
 #ifndef __cat_archops_h
 #define __cat_archops_h
 #include <cat/cat.h>
 #include <cat/cattypes.h>
+
+extern char num_bits_array[];
+extern char num_leading_zeros_array[];
+
+#define nbits8(x) (num_bits_array[(unsigned char)(x) & 0xff])
+#define nlz8(x) (num_leading_zeros_array[(unsigned char)(x) & 0xff])
 
 #if CAT_USE_INLINE
 #define INLINE inline
