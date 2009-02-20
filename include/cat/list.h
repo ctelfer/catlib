@@ -32,6 +32,7 @@ struct list {
 DECL void l_init(struct list *head);
 DECL void l_ins(struct list *prev, struct list *elem);
 DECL void l_rem(struct list *elem);
+DECL void l_move(struct list *dst, struct list *src);
 DECL int  l_isempty(struct list *list);
 DECL int  l_onlist(struct list *elem);
 
@@ -90,6 +91,18 @@ DECL void l_rem(struct list *elem)
 	next->prev = prev;
 	elem->next = elem;
 	elem->prev = elem;
+}
+
+
+DECL void l_move(struct list *dst, struct list *src)
+{
+	abort_unless(src);
+	abort_unless(dst);
+	dst->next = src->next;
+	dst->prev = src->prev;
+	src->next->prev = dst;
+	src->prev->next = dst;
+	src->next = src->prev = src;
 }
 
 
