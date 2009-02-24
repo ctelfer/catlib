@@ -69,7 +69,7 @@ void bm_pinit(struct bmpat *bmp, struct raw *pat, unsigned long *skips,
 	      unsigned long *scratch)
 {
 	unsigned long i, j, len;
-	unsigned char *pp;
+	byte_t *pp;
 
 	abort_unless(bmp);
 	abort_unless(pat);
@@ -79,7 +79,7 @@ void bm_pinit(struct bmpat *bmp, struct raw *pat, unsigned long *skips,
 	bmp->pat = *pat;
 	bmp->skips = skips;
 	len = pat->len;
-	pp = (unsigned char *)pat->data;
+	pp = pat->data;
 
 	if ( len == 0 )
 		return;

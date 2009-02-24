@@ -16,15 +16,15 @@ int raw_cmp(void *r1p, void *r2p)
 	int rv = 0;
 	size_t len;
 	struct raw *r1 = r1p, *r2 = r2p;
-	unsigned char *p1, *p2;
+	byte_t *p1, *p2;
 
 	abort_unless(r1 && r1->data);
 	abort_unless(r2 && r2->data);
 
 	if ( r1 == r2 )
 		return 0;
-	p1 = (unsigned char *)r1->data;
-	p2 = (unsigned char *)r2->data;
+	p1 = (byte_t *)r1->data;
+	p2 = (byte_t *)r2->data;
 
 	len = r1->len < r2->len ? r1->len : r2->len;
 	while ( len > 0 && *p1 == *p2 ) {
@@ -51,10 +51,10 @@ int raw_cmp(void *r1p, void *r2p)
 struct raw *str_to_raw(struct raw *r, char *s, int terminate)
 {
 
-	unsigned char *t = (unsigned char *)s;
-	unsigned char *orig = t;
+	byte_t *t = (byte_t *)s;
+	byte_t *orig = t;
 	abort_unless(r && s);
-	r->data = s;
+	r->data = t;
 	while ( *t != '\0' )
 		++t;
 	r->len = t - orig;
