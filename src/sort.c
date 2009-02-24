@@ -8,13 +8,13 @@
 
 #define SWAPTYPE(a, size)					\
 	(((size) == sizeof(int)) && 				\
-         (((char *)(a) - (char *)0) % sizeof(int) == 0)) ?	\
+         (((byte_t*)(a) - (byte_t *)0) % sizeof(int) == 0)) ?	\
 	 INTSWAP :						\
 	(((size) == sizeof(long)) && 				\
-         (((char *)(a) - (char *)0) % sizeof(long) == 0)) ?	\
+         (((byte_t *)(a) - (byte_t *)0) % sizeof(long) == 0)) ?	\
 	 LONGSWAP :						\
 	(((size) % sizeof(long) == 0) && 			\
-         (((char *)(a) - (char *)0) % sizeof(long) == 0)) ?	\
+         (((byte_t *)(a) - (byte_t *)0) % sizeof(long) == 0)) ?	\
 	 BULKLONG :						\
 	 BULKBYTE
 	
@@ -34,26 +34,26 @@
 		}						\
 		break;						\
 		case BULKLONG: {				\
-			size_t n = esize / sizeof(long);	\
-			long *ap = (long *)a;			\
-			long *bp = (long *)b;			\
+			size_t __n = esize / sizeof(long);	\
+			long *__ap = (long *)a;			\
+			long *__bp = (long *)b;			\
 			long __t;				\
 			do {					\
-				__t = *ap;			\
-				*ap++ = *bp;			\
-				*bp++ = __t;			\
-			} while ( --n > 0 );			\
+				__t = *__ap;			\
+				*__ap++ = *__bp;		\
+				*__bp++ = __t;			\
+			} while ( --__n > 0 );			\
 		}						\
 		case BULKBYTE: {				\
-			size_t n = esize;			\
-			byte_t *ap = (byte_t *)a;		\
-			byte_t *bp = (byte_t *)b;		\
+			size_t __n = esize;			\
+			byte_t *__ap = (byte_t *)a;		\
+			byte_t *__bp = (byte_t *)b;		\
 			byte_t __t;				\
 			do {					\
-				__t = *ap;			\
-				*ap++ = *bp;			\
-				*bp++ = __t;			\
-			} while ( --n > 0 );			\
+				__t = *__ap;			\
+				*__ap++ = *__bp;		\
+				*__bp++ = __t;			\
+			} while ( --__n > 0 );			\
 		}						\
 		break;						\
 	}
@@ -63,13 +63,16 @@
 static void isort_i(void *arr, const size_t nelem, const size_t esize, 
 		    cmp_f cmp, int swaptype)
 {
-	char *start = arr, *p1, *p2, *tmp;
-	const char * const end = (char *)arr + nelem * esize;
+	byte_t *start = arr, *p1, *p2, *tmp;
+	const byte_t * const end = (byte_t *)arr + nelem * esize;
+
 	for ( p1 = start + esize ; p1 < end ; p1 += esize ) {
 		for ( p2 = p1 ; p2 > start ; p2 -= esize ) {
 			if ((*cmp)(p2 - esize, p2) > 0) {
 				tmp = p2 - esize;
 				SWAP(tmp, p2, swaptype);
+			} else {
+				break;
 			}
 		}
 	}
@@ -79,7 +82,7 @@ static void isort_i(void *arr, const size_t nelem, const size_t esize,
 void isort_array(void *arr, const size_t nelem, const size_t esize, cmp_f cmp)
 {
 	int type = SWAPTYPE(arr, esize);
-	if ( nelem == 0 )
+	if ( arr == NULL || nelem <= 1 || esize == 0 || cmp == NULL )
 		return;
 	isort_i(arr, nelem, esize, cmp, type);
 }
@@ -88,8 +91,9 @@ void isort_array(void *arr, const size_t nelem, const size_t esize, cmp_f cmp)
 static void ssort_i(void *arr, const size_t nelem, const size_t esize, 
 		    cmp_f cmp, int swaptype)
 {
-	char *p1, *p2, *min;
-	const char * const end = (char *)arr + nelem * esize;
+	byte_t *p1, *p2, *min;
+	const byte_t * const end = (byte_t *)arr + nelem * esize;
+
 	for ( p1 = arr ; p1 < end - esize ; p1 += esize ) {
 		min = p1;
 		for ( p2 = p1 + esize ; p2 < end ; p2 += esize )
@@ -104,7 +108,7 @@ static void ssort_i(void *arr, const size_t nelem, const size_t esize,
 void ssort_array(void *arr, const size_t nelem, const size_t esize, cmp_f cmp)
 {
 	int type = SWAPTYPE(arr, esize);
-	if ( nelem == 0 )
+	if ( arr == NULL || nelem <= 1 || esize == 0 || cmp == NULL )
 		return;
 	ssort_i(arr, nelem, esize, cmp, type);
 }
@@ -116,20 +120,19 @@ static void reheap_down(void *arr, const size_t nelem, const size_t esize,
 {
 	int didswap;
 	size_t cld;
-	char *ep, *cp;
+	byte_t *ep, *cp;
 
 	if ( pos >= nelem ) 
 		return;
 
 	do {
-		didswap = 0;
 		if ( (cld = (pos << 1) + 1) >= nelem )
 			break;
-
-		ep = (char *)arr + pos * esize;
+		didswap = 0;
+		ep = (byte_t *)arr + pos * esize;
 
 		/* find the max child */
-		cp = (char *)arr + cld * esize;
+		cp = (byte_t *)arr + cld * esize;
 		if ( ( cld + 1 < nelem ) && ( (*cmp)(cp + esize, cp) > 0 ) ) {
 			++cld;
 			cp += esize;
@@ -148,7 +151,7 @@ static void hsort_i(void *arr, size_t nelem, const size_t esize,
 		    cmp_f cmp, int swaptype)
 {
 	size_t i;
-	char *ep;
+	byte_t *ep;
 
 	/* build the max heap */
 	i = nelem >> 1; 
@@ -158,8 +161,8 @@ static void hsort_i(void *arr, size_t nelem, const size_t esize,
 
 	while ( nelem > 1 ) {
 		--nelem;
-		ep = (char *)arr + nelem * esize;
-		SWAP((char *)arr, ep, swaptype);
+		ep = (byte_t *)arr + nelem * esize;
+		SWAP((byte_t*)arr, ep, swaptype);
 		reheap_down(arr, nelem, esize, cmp, swaptype, 0);
 	}
 }
@@ -168,7 +171,7 @@ static void hsort_i(void *arr, size_t nelem, const size_t esize,
 void hsort_array(void *arr, const size_t nelem, const size_t esize, cmp_f cmp)
 {
 	int type = SWAPTYPE(arr, esize);
-	if ( nelem == 0 )
+	if ( arr == NULL || nelem <= 1 || esize == 0 || cmp == NULL )
 		return;
 	hsort_i(arr, nelem, esize, cmp, type);
 }
@@ -177,7 +180,7 @@ void hsort_array(void *arr, const size_t nelem, const size_t esize, cmp_f cmp)
 
 #define QS_MAXDEPTH	48
 struct qswork {
-	char *start;
+	byte_t *start;
 	size_t nelem;
 	int qdepth;
 };
@@ -198,20 +201,20 @@ struct qswork {
 /* subarrays of 7 elements or less. */
 void qsort_array(void *arr, const size_t nelem, const size_t esize, cmp_f cmp)
 {
-	int maxdepth = 1, depth;
+	byte_t *pivot, *lo, *hi, *end;
+	int bailout_depth = 1, depth;
 	struct qswork stack[QS_MAXDEPTH];
 	int top = 0;
-	const int swaptype = SWAPTYPE(arr, esize);
 	size_t n;
-	char *pivot, *lo, *hi, *end;
+	const int swaptype = SWAPTYPE(arr, esize);
 
-	if ( arr == NULL || nelem == 0 || esize == 0 || cmp == NULL )
+	if ( arr == NULL || nelem <= 1 || esize == 0 || cmp == NULL )
 		return;
 
 	/* find floor(log2(nelem)) + 1 */
 	n = nelem;
 	do {
-		++maxdepth;
+		++bailout_depth;
 		n >>= 1;
 	} while ( n );
 
@@ -225,7 +228,7 @@ void qsort_array(void *arr, const size_t nelem, const size_t esize, cmp_f cmp)
 			continue;
 		}
 		/* heap sort past the log2 of # of elements in recurse depth */
-		if ( depth > maxdepth ) {
+		if ( depth > bailout_depth ) {
 			hsort_i(pivot, n, esize, cmp, swaptype);
 			continue;
 		}
@@ -260,7 +263,7 @@ void qsort_array(void *arr, const size_t nelem, const size_t esize, cmp_f cmp)
 			/* second subarray */
 			if ( (*cmp)(pivot, lo) >= 0 ) /* low subarray */
 				hi += esize;
-			else                        /* high subarray */
+			else                          /* high subarray */
 				lo -= esize;
 			if ( lo != pivot ) {
 				SWAP(pivot, lo, swaptype);
@@ -270,16 +273,10 @@ void qsort_array(void *arr, const size_t nelem, const size_t esize, cmp_f cmp)
 		}
 
 
-		if ( top == QS_MAXDEPTH ) {
-			size_t num = (end - hi) / esize;
-			if ( num <= 8 )
-				isort_i(hi, num, esize, cmp, swaptype);
-			else
-				hsort_i(hi, num, esize, cmp, swaptype);
-		}
-		else {
+		if ( top == QS_MAXDEPTH )
+			hsort_i(hi, (end - hi) / esize, esize, cmp, swaptype);
+		else
 			PUSH(stack, top, hi, (end - hi) / esize, depth+1);
-		}
 	} 
 }
 
