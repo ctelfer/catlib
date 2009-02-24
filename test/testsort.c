@@ -83,9 +83,8 @@ void test_intarr()
 	if ( i == ASIZE )
 		printf("quick sort succeeded with %llu comparisons\n", ncmps);
 
-	/* quick sort 2 */
+	/* quick sort 2: array already sorted */
 	ncmps = 0;
-	memcpy(arr2, arr1, sizeof(arr1));
 	qsort_array(arr2, ASIZE, sizeof(int), intcmp);
 	for ( i = 1; i < ASIZE; i++ ) {
 		if (arr2[i-1] > arr2[i]) {
