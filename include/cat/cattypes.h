@@ -59,7 +59,4 @@ typedef CAT_S64_T	int64_t;
 
 #endif /* CAT_HAS_FIXED_WIDTH */
 
-/* convenient clear pseudonym */
-typedef unsigned char byte_t;
-
 #endif /* __cat_cattypes_h */

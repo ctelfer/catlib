@@ -74,7 +74,7 @@ typedef CAT_ALIGN	cat_align_t;
 #define CAT_DECLARE_ALIGNED_DATA_Q(qual, name, len) \
 	qual CAT_ALIGN name[ALIGN_ROUNDUP(len) / sizeof(CAT_ALIGN)]
 
-
+typedef unsigned char byte_t;
 typedef unsigned char u_char;
 typedef unsigned short u_short;
 typedef unsigned int u_int;
@@ -114,7 +114,7 @@ typedef unsigned long long u_longlong;
 /* generic binary data container */
 struct raw {
 	size_t		len;
-	char *		data;
+	byte_t *	data;
 } ;
 
 /* Generic scalar value union */
