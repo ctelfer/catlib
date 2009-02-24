@@ -2,7 +2,7 @@ CFILES=	cat.c aux.c err.c cb.c grow.c io.c mem.c net.c pack.c ring.c pcache.c \
 	uevent.c raw.c match.c csv.c stduse.c stdcsv.c graph.c shell.c \
 	str.c dbgmem.c emit.c emit_format.c emit_file.c emalloc.c catstr.c \
 	bitops.c list.c hash.c avl.c heap.c dlist.c pool.c rbtree.c time.c \
-	splay.c bitset.c catstdlib.c catstdio.c pspawn.c dynmem.c lex.c
+	splay.c bitset.c catstdlib.c catstdio.c pspawn.c dynmem.c lex.c sort.c
 
 LCATODIR=  ../obj/libcat
 LCATOF= $(LCATODIR)/cat.o \
@@ -34,7 +34,9 @@ LCATOF= $(LCATODIR)/cat.o \
 	$(LCATODIR)/bitops.o \
 	$(LCATODIR)/pspawn.o \
 	$(LCATODIR)/dynmem.o \
-	$(LCATODIR)/lex.o 
+	$(LCATODIR)/lex.o  \
+	$(LCATODIR)/sort.o 
+
 
 LCATAODIR=  ../obj/libcata
 LCATAOF=$(LCATAODIR)/cat.o \
@@ -77,7 +79,8 @@ LCATAOF=$(LCATAODIR)/cat.o \
 	$(LCATAODIR)/bitset.o \
 	$(LCATAODIR)/pspawn.o \
 	$(LCATAODIR)/dynmem.o \
-	$(LCATAODIR)/lex.o
+	$(LCATAODIR)/lex.o \
+	$(LCATAODIR)/sort.o
 
 
 LCAT_DBG_ODIR= ../obj/libcat_dbg
@@ -121,7 +124,8 @@ LCAT_DBG_OF=$(LCAT_DBG_ODIR)/cat.o \
 	$(LCAT_DBG_ODIR)/bitset.o \
 	$(LCAT_DBG_ODIR)/pspawn.o \
 	$(LCAT_DBG_ODIR)/dynmem.o \
-	$(LCAT_DBG_ODIR)/lex.o
+	$(LCAT_DBG_ODIR)/lex.o \
+	$(LCAT_DBG_ODIR)/sort.o
 	
 
 LCAT_NO_LIBC_ODIR=  ../obj/libcat_nolibc
@@ -161,13 +165,14 @@ LCAT_NO_LIBC_OF= \
 	$(LCAT_NO_LIBC_ODIR)/splay.o \
 	$(LCAT_NO_LIBC_ODIR)/stduse.o \
 	$(LCAT_NO_LIBC_ODIR)/dynmem.o \
-	$(LCAT_NO_LIBC_ODIR)/lex.o 
+	$(LCAT_NO_LIBC_ODIR)/lex.o \
+	$(LCAT_NO_LIBC_ODIR)/sort.o 
 
 ICOMMON=$(ISYSTEM) -I../include
 
 # Flags for libcat
 DEFS=
-CFLAGS= -O3 -Wall $(DEFS)
+CFLAGS= -O3 -Wall -Wno-sign-compare -Wno-pointer-sign $(DEFS)
 IFLAGS= $(ICOMMON)
 
 # Choose one option from the next two for libcata
@@ -175,7 +180,7 @@ IFLAGS= $(ICOMMON)
 ADEFS= -DCAT_USE_INLINE=0 -DCAT_ANSI89=1 -DCAT_HAS_LONGLONG=0 -D_BSD_SOURCE \
 	-D_POSIX_C_SOURCE=200112L
 #	-D_XOPEN_SOURCE=600
-ACFLAGS= -Wall -ansi -pedantic $(ADEFS)
+ACFLAGS= -Wall -ansi -pedantic -Wno-sign-compare -Wno-pointer-sign $(ADEFS)
 AIFLAGS= $(ICOMMON)
 
 # Option 2: ANSI compliant + no libc
@@ -188,12 +193,12 @@ AIFLAGS= $(ICOMMON)
 
 # Compile for debugging and profiling
 DBG_DEFS= -DCAT_USE_INLINE=0 -DCAT_HAS_LONGLONG=1 -DCAT_DEBUG_LEVEL=1
-DBG_CFLAGS= -Wall -g -pg $(DBG_DEFS)
+DBG_CFLAGS= -Wall -g -pg -Wno-sign-compare -Wno-pointer-sign $(DBG_DEFS)
 DBG_IFLAGS= $(ICOMMON)
 
 # Compile without libc
 NOLIBC_DEFS=-DCAT_HAS_POSIX=0 -DCAT_USE_STDLIB=0 -DCAT_HAS_LONGLONG=0
-NOLIBC_CFLAGS=-Wall -pedantic $(NOLIBC_DEFS)
+NOLIBC_CFLAGS=-Wall -pedantic -Wno-sign-compare -Wno-pointer-sign $(NOLIBC_DEFS)
 NOLIBC_IFLAGS= -isystem ../include/std $(ICOMMON)
 
 all: ../lib/libcat.a ../lib/libcata.a ../lib/libcat_dbg.a ../lib/libcat_nostdc.a
