@@ -44,6 +44,7 @@
 				*__bp++ = __t;			\
 			} while ( --__n > 0 );			\
 		}						\
+		break;						\
 		case BULKBYTE: {				\
 			size_t __n = esize;			\
 			byte_t *__ap = (byte_t *)a;		\
@@ -57,7 +58,6 @@
 		}						\
 		break;						\
 	}
-
 
 
 static void isort_i(void *arr, const size_t nelem, const size_t esize, 
