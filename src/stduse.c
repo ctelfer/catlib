@@ -1282,7 +1282,7 @@ char * ring_alloc(struct ring *r, size_t len)
 
 	osiz = r->alloc;
 	/* XXX extra (void *) cast is to shut up the compiler */
-	if ( grow((char **)(void *)&r->data, &r->alloc, r->len + len) < 0 )
+	if ( grow(&r->data, &r->alloc, r->len + len) < 0 )
 		err("ring_alloc: out of memory\n");
 
 	if ( last < r->start ) {

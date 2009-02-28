@@ -13,8 +13,8 @@
 #include <cat/cat.h>
 
 /* These NEED to be extern so that function pointers can point to them */
-extern int cmp_ptr(void *, void *);
-extern int cmp_str(void *, void *);
-extern int cmp_raw(void *, void *);
+extern int cmp_ptr(const void *, const void *);
+extern int cmp_str(const void *, const void *);
+extern int cmp_raw(const void *, const void *);
 
 #endif /* __cat_aux_h */

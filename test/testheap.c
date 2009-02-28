@@ -6,7 +6,7 @@
 #include <cat/stduse.h>
 
 
-int cmp_int(void *a, void *b)
+int cmp_int(const void *a, const void *b)
 {
   return (int)a - (int)b;
 }

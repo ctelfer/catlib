@@ -466,13 +466,13 @@ struct catstr *cs_concat(struct catstr *first, struct catstr *second)
 
 struct catstr *cs_grow(struct catstr *cs, size_t minlen)
 {
-	char *csp;
+	byte_t *csp;
 	size_t tlen, olen;
 	CKCSP(cs);
 	abort_unless(minlen <= CS_MAXLEN);
 	abort_unless(cs->cs_dynamic);
 
-	csp = (char *)cs;
+	csp = (byte_t *)cs;
 	olen = cs->cs_size;
 	if ( grow(&csp, &tlen, cs_alloc_size(minlen)) < 0 )
 		err("cs_grow: could not increase allocation");

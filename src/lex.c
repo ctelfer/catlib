@@ -67,7 +67,7 @@ int lex_next_token(struct lexer *lex, const char **string, int *len)
 	if ( lex->next_char == (char *)lex->input.data + lex->input.len )
 		return LEX_END;
 
-	r.data = lex->next_char;
+	r.data = (byte_t*)lex->next_char;
 	r.len = lex->input.len - (lex->next_char - (char *)r.data);
 	l_for_each(node, &lex->entries) { 
 		ent = node_to_lexent(node);

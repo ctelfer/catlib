@@ -18,21 +18,22 @@
 #endif /* CAT_USE_STDLIB */
 
 
-int cmp_ptr(void *k1, void *k2)
+int cmp_ptr(const void *k1, const void *k2)
 {
 	return ((char *)k1 - (char *)k2);
 }
 
 
-int cmp_str(void *k1, void *k2)
+int cmp_str(const void *k1, const void *k2)
 {
 	return strcmp(k1, k2);
 }
 
 
-int cmp_raw(void *k1p, void *k2p)
+int cmp_raw(const void *k1p, const void *k2p)
 {
-	struct raw *k1 = k1p, *k2 = k2p;
+	const struct raw *k1 = k1p;
+	const struct raw *k2 = k2p;
 
 	if ( k1->len > k2->len )
 		return -1;

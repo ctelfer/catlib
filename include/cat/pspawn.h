@@ -35,7 +35,7 @@ enum {
 	/* internal flags, do not set */
 	/* if neither REMAP nor FSRDR is set, preserve the fd in the child */
 	PSFD_REMAP   = 0x0200, /* re-map fd from parent in child process */
-	PSFD_FSRDR   = 0x0400, /* redirect fd from file system object */
+	PSFD_FSRDR   = 0x0400  /* redirect fd from file system object */
 };
 
 struct ps_fd_entry {

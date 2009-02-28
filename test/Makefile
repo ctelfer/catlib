@@ -148,8 +148,11 @@ testregex: testregex.c $(CAT_DBG_LIBDEP)
 testlex: testlex.c $(CAT_DBG_LIBDEP)
 	$(CC) $(CAT_DBG_CF) -o testlex testlex.c $(INC) $(CAT_DBG_LIB)
 
-testsort: testsort.c $(CAT_DBG_LIBDEP)
-	$(CC) $(CAT_DBG_CF) -o testsort testsort.c $(INC) $(CAT_DBG_LIB)
+#testsort: testsort.c $(CAT_DBG_LIBDEP)
+#	$(CC) $(CAT_DBG_CF) -o testsort testsort.c $(INC) $(CAT_DBG_LIB)
+
+testsort: testsort.c $(CAT_LIBDEP)
+	$(CC) $(CAT_CF) -o testsort testsort.c $(INC) $(CAT_LIB)
 
 # for profiling
 #testmalloc: testmalloc.c $(CAT_DBG_LIBDEP)

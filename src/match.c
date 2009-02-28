@@ -153,11 +153,11 @@ int bm_match(struct raw *str, struct bmpat *pat, unsigned long *loc)
 #define isexplicit(suffix) ( (suffix)->end < (suffix)->start )
 
 
-static int edgecmp(void *c1, void *c2)
+static int edgecmp(const void *c1, const void *c2)
 {
 	int rv;
-	struct sfxedgekey *ek1 = c1;
-	struct sfxedgekey *ek2 = c2;
+	const struct sfxedgekey *ek1 = c1;
+	const struct sfxedgekey *ek2 = c2;
 
 	if ( !(rv = (int)(ek1->node - ek2->node)) )
 		rv = ek1->character - ek2->character;

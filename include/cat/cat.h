@@ -142,7 +142,7 @@ typedef union scalar_u scalar_t;
 #define p2scalar(p)  ((scalar_t)(void *)(p))
 
 /* Special function types */
-typedef int  (*cmp_f)(void *v1, void *v2);
+typedef int  (*cmp_f)(const void *v1, const void *v2);
 typedef void (*apply_f)(void * data, void * ctx); 
 typedef void (*copy_f)(void *src, void **dst);
 

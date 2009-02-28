@@ -22,7 +22,7 @@
 #endif /* CAT_USE_STDLIB */
 
 
-int grow(char **ptr, size_t *lenp, size_t min)
+int grow(byte_t **ptr, size_t *lenp, size_t min)
 {
 	void *p2 = ptr;
 	int rv;
@@ -35,7 +35,7 @@ int grow(char **ptr, size_t *lenp, size_t min)
 int agrow(void **ptr, size_t ilen, size_t *lenp, size_t min)
 {
 	size_t len, n, newlen;
-	char *p;
+	byte_t *p;
 	size_t maxmem = (size_t)~0;
 
 	abort_unless(ptr);
@@ -84,7 +84,7 @@ int agrow(void **ptr, size_t ilen, size_t *lenp, size_t min)
 }
 
 
-int mem_grow(struct memsys *mem, char **ptr, size_t *lenp, size_t min)
+int mem_grow(struct memsys *mem, byte_t **ptr, size_t *lenp, size_t min)
 {
 	void *p2 = ptr;
 	int rv;
@@ -98,7 +98,7 @@ int mem_agrow(struct memsys *mem, void **ptr, size_t ilen, size_t *lenp,
 	      size_t min)
 {
 	size_t len, n, newlen;
-	char *p;
+	byte_t *p;
 	size_t maxmem = (size_t)~0;
 
 	abort_unless(ptr);
