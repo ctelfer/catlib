@@ -256,7 +256,8 @@ void qsort_array(void *arr, const size_t nelem, const size_t esize, cmp_f cmp)
 		if ( lo > hi ) { 
 			/* swap the pivot to the end of the low array */
 			SWAP(pivot, hi, swaptype);
-			PUSH(stack, top, pivot, (lo - pivot) / esize, depth+1);
+			PUSH(stack, top, pivot, (hi-pivot)/esize, depth+1);
+			hi += esize;
 		}
 		else {
 			/* see whether the last element goes in the first or */
@@ -267,16 +268,16 @@ void qsort_array(void *arr, const size_t nelem, const size_t esize, cmp_f cmp)
 				lo -= esize;
 			if ( lo != pivot ) {
 				SWAP(pivot, lo, swaptype);
-				PUSH(stack, top, pivot, (lo - pivot) / esize,
+				PUSH(stack, top, pivot, (lo-pivot)/esize,
 				     depth+1);
 			} 
 		}
 
 
 		if ( top == QS_MAXDEPTH )
-			hsort_i(hi, (end - hi) / esize, esize, cmp, swaptype);
+			hsort_i(hi, (end-hi)/esize, esize, cmp, swaptype);
 		else
-			PUSH(stack, top, hi, (end - hi) / esize, depth+1);
+			PUSH(stack, top, hi, (end-hi)/esize, depth+1);
 	} 
 }
 

@@ -1,10 +1,12 @@
 #include <cat/sort.h>
+#include <cat/time.h>
+#include <cat/aux.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 /* #define ASIZE	256 */
-#define ASIZE	12345
+#define ASIZE	10000
 int arr1[ASIZE], arr2[ASIZE], all[ASIZE];
 unsigned long long n_intcmps;
 
@@ -14,7 +16,7 @@ static unsigned urand(unsigned mod) {
 }
 
 
-int intcmp(void *i1, void *i2)
+int intcmp(const void *i1, const void *i2)
 {
 	++n_intcmps;
 	return *(int *)i1 - *(int *)i2;
@@ -107,12 +109,12 @@ void test_intarr()
 
 
 unsigned long long n_scmps;
-int string_compare(void *s1, void *s2) { 
+int string_compare(const void *s1, const void *s2) { 
 	++n_scmps;
-	return strcmp(*(char **)s1, *(char **)s2);
+	return strcmp(*(const char **)s1, *(const char **)s2);
 }
 
-int string_compare2(void *s1, void *s2) { 
+int string_compare2(const void *s1, const void *s2) { 
 	++n_scmps;
 	return strcmp(s1, s2);
 }
@@ -179,6 +181,57 @@ void test_strarr()
 }
 
 
+#define SPEEDLEN	10000
+#define NTRIES		100
+
+byte_t spd_dst[SPEEDLEN];
+void *spd_arr1[SPEEDLEN];
+void *spd_arr2[SPEEDLEN];
+
+
+unsigned long long spd_ncmps;
+int ptr_cmp(const void *p1, const void *p2)
+{
+	++spd_ncmps;
+	return *(const void **)p1 - *(const void **)p2;
+}
+
+
+void test_speed()
+{
+	int i, j;
+	struct timeval start, end;
+	for ( i = 0; i < SPEEDLEN; ++i )
+		spd_arr1[i] = &spd_dst[urand(SPEEDLEN)];
+	spd_ncmps = 0;
+	gettimeofday(&start, NULL);
+	for ( j = 0 ; j < NTRIES ; ++j ) {
+		memcpy(spd_arr2, spd_arr1, sizeof(spd_arr1));
+		qsort_array(spd_arr2, SPEEDLEN, sizeof(void *), &ptr_cmp);
+	}
+	gettimeofday(&end, NULL);
+	printf("Time taken for %u sorts of %u elements for my sort: %lf\n",
+	       NTRIES, SPEEDLEN, 
+	       (double)(end.tv_sec - start.tv_sec) + 
+	       (double)(end.tv_usec - start.tv_usec) / 1000000.0);
+	printf("my sort used %llu comparisons\n", spd_ncmps);
+
+	spd_ncmps = 0;
+	gettimeofday(&start, NULL);
+	memcpy(spd_arr2, spd_arr1, sizeof(spd_arr1));
+	for ( j = 0 ; j < NTRIES ; ++j ) {
+		memcpy(spd_arr2, spd_arr1, sizeof(spd_arr1));
+		qsort(spd_arr2, SPEEDLEN, sizeof(void *), &ptr_cmp);
+	}
+	gettimeofday(&end, NULL);
+	printf("Time taken for %u sorts of %u elements for std qsort: %lf\n",
+	       NTRIES, SPEEDLEN, 
+	       (double)(end.tv_sec - start.tv_sec) + 
+	       (double)(end.tv_usec - start.tv_usec) / 1000000.0);
+	printf("standard qsort used %llu comparisons\n", spd_ncmps);
+}
+
+
 int main(int argc, char *argv[])
 {
 	size_t i;
@@ -191,6 +244,8 @@ int main(int argc, char *argv[])
 	test_intarr();
 	printf("\n\nstring run 1\n");
 	test_strarr();
+	printf("\n\nspeed test\n");
+	test_speed();
 
 	return 0;
 }
