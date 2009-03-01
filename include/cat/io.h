@@ -13,15 +13,18 @@
 #include <cat/cat.h>
 
 #if CAT_HAS_POSIX
+#include <unistd.h>
+
+/* should be equivalent to ssize_t, but that isn't part of the standard */
 
 /* I/O functions */
-int io_read(int fd, void *buf, int len); 
-int io_write(int fd, void *buf, int len); 
-int io_try_read(int fd, void *buf, int len); 
-int io_try_write(int fd, void *buf, int len); 
-int io_check_ready(int fd, int type, double timeout);
+ssize_t io_read(int fd, void *buf, ssize_t len); 
+ssize_t io_write(int fd, void *buf, ssize_t len); 
+ssize_t io_try_read(int fd, void *buf, ssize_t len); 
+ssize_t io_try_write(int fd, void *buf, ssize_t len); 
 
 /* I/O flags for file fdriptors */
+int io_check_ready(int fd, int type, double timeout);
 int io_setnblk(int fd);
 int io_clrnblk(int fd);
 

@@ -26,11 +26,11 @@
 #include <fcntl.h>
 #include <errno.h>
 
-int io_read(int fd, void *buf, int nb) 
+ssize_t io_read(int fd, void *buf, ssize_t nb) 
 { 
-	unsigned char *p = buf; 
-	int nr = 0;
-	int n;
+	byte_t *p = buf; 
+	ssize_t nr = 0;
+	ssize_t n;
 
 	if ( fd < 0 || !buf || nb < 0 )
 		return -2;
@@ -52,11 +52,11 @@ int io_read(int fd, void *buf, int nb)
 }
 
 
-int io_write(int fd, void *buf, int nb) 
+ssize_t io_write(int fd, void *buf, ssize_t nb) 
 { 
-	unsigned char *p = buf; 
-	int nw = 0;
-	int n;
+	byte_t *p = buf; 
+	ssize_t nw = 0;
+	ssize_t n;
 
 	if ( fd < 0 || !buf || nb < 0 )
 		return -2;
@@ -78,10 +78,10 @@ int io_write(int fd, void *buf, int nb)
 }
 
 
-int io_try_read(int fd, void *buf, int nb) 
+ssize_t io_try_read(int fd, void *buf, ssize_t nb) 
 { 
-	unsigned char *p = buf; 
-	int n;
+	byte_t *p = buf; 
+	ssize_t n;
 
 	if ( fd < 0 || !buf || nb < 0 )
 		return -2;
@@ -93,10 +93,10 @@ int io_try_read(int fd, void *buf, int nb)
 }
 
 
-int io_try_write(int fd, void *buf, int nb) 
+ssize_t io_try_write(int fd, void *buf, ssize_t nb) 
 { 
-	unsigned char *p = buf; 
-	int n;
+	byte_t *p = buf; 
+	ssize_t n;
 
 	if ( fd < 0 || !buf || nb < 0 )
 		return -2;
