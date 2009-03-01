@@ -14,6 +14,7 @@ void *memmove(void *dst, const void *src, size_t len);
 void *memset(void *dst, int c, size_t len);
 size_t strlen(const char *s);
 int strcmp(const char *s1, const char *s2);
+int strncmp(const char *s1, const char *s2, size_t max);
 char *strstr(const char *str, const char *pat);
 char *strchr(const char *s, int ch);
 char *strrchr(const char *s, int ch);
@@ -21,6 +22,7 @@ char *strcpy(char *dst, const char *src);
 char *strdup(const char *s);
 
 /* ctype.h */
+int isalnum(int c);
 int isdigit(int c);
 int isxdigit(int c);
 int isspace(int c);

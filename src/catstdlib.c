@@ -84,6 +84,25 @@ int strcmp(const char *c1, const char *c2)
 }
 
 
+int strncmp(const char *c1, const char *c2, size_t n)
+{
+        abort_unless(c1 && c2);
+        while ( n > 0 && *c1 == *c2 && *c1 != '\0' && *c2 != '\0' ) {
+                c1++;
+                c2++;
+		--n;
+        }
+        if ( n == 0 || *c1 == *c2 )
+                return 0;
+        else if ( *c1 == '\0' )
+                return -1;
+        else if ( *c2 == '\0' )
+                return 1;
+        else
+                return *(unsigned char *)c1 - *(unsigned char *)c2;
+}
+
+
 char *strchr(const char *s, int ch)
 {
 	while ( *s != '\0' )
@@ -121,6 +140,12 @@ char *strdup(const char *s)
 	if (ns != NULL)
 		memcpy(ns, s, slen);
 	return ns;
+}
+
+
+int isalnum(int c)
+{
+	return isalpha(c) || isdigit(c);
 }
 
 
