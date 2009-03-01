@@ -119,6 +119,11 @@ struct raw {
 
 /* Generic scalar value union */
 union scalar_u {
+	int			int_val;
+	unsigned int		uint_val;
+	double			dbl_val;
+	void *			ptr_val;
+
 #if CAT_HAS_LONG_LONG
 	long long		llong_val;
 	unsigned long long	ullong_val;
@@ -131,11 +136,6 @@ union scalar_u {
 	unsigned char		uch_val;
 	long double		ldbl_val;
 	float			float_val;
-
-	int			int_val;
-	unsigned int		uint_val;
-	double			dbl_val;
-	void *			ptr_val;
 };
 
 typedef union scalar_u scalar_t;
