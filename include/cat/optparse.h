@@ -33,8 +33,7 @@ struct cli_opt {
 	scalar_t	val; /* for non string/no-arg types */
 };
 
-#define CLOPT_INITIALIZER(type, ch, str, desc) \
-		{ type, ch, str, desc, 0, NULL, 0 }
+#define CLOPT_INIT(type, ch, str, desc) { type, ch, str, desc, 0, NULL, 0 }
 
 struct cli_parser {
 	struct cli_opt *	options;
@@ -44,6 +43,8 @@ struct cli_parser {
 	int			eopt;  /* option # for CLOERR_NO/BADPARAM */
 				       /* option char when eidx < 0 */
 };
+
+#define CLIPARSE_INIT(optarr, arrlen) { optarr, arrlen, NULL, 0, 0 }
 
 int  parse_options(struct cli_parser *clp, int argc, char *argv[]);
 void print_options(struct cli_parser *clp, char *str, size_t ssize);

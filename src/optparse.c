@@ -63,7 +63,6 @@ static int parse_long_opt(const char *cp, struct cli_parser *clp)
 	size_t elen;
 	struct cli_opt *opt = NULL;
 
-	cp += 2;
 	end = strchr(cp, '=');
 	if ( end != NULL )
 		elen = end - cp;
@@ -77,7 +76,7 @@ static int parse_long_opt(const char *cp, struct cli_parser *clp)
 	}
 
 	if ( opt == NULL ) {
-		clp->eval = cp - 2;
+		clp->eval = cp;
 		clp->etype = CLOERR_UNKOPT;
 		return -1;
 	}
@@ -117,6 +116,7 @@ static int parse_short_opts(const char *cp, const char *next,
 		if ( i >= clp->num ) {
 			clp->eval = cp;
 			clp->etype = CLOERR_UNKOPT;
+			return -1;
 		}
 		if ( opt->type != CLOT_NOARG ) {
 			if ( next == NULL || used_arg ) {
@@ -131,6 +131,7 @@ static int parse_short_opts(const char *cp, const char *next,
 				clp->eopt = i;
 				return -1;
 			}
+			used_arg = 1;
 		}
 		opt->present = 1;
 		++cp;
@@ -223,8 +224,12 @@ void print_options(struct cli_parser *clp, char *str, size_t ssize)
 			continue;
 		lsz = 0;
 		if ( isalnum(opt->ch) ) {
-			fsz = (size_t)snprintf(cp, ssize, "-%c%s", opt->ch,
+			fsz = (size_t)snprintf(cp, ssize, "        -%c%s",
+					       opt->ch,
 					       (opt->str == NULL) ? "" : ", ");
+			adj_str(&cp, &ssize, &lsz, fsz);
+		} else {
+			fsz = (size_t)snprintf(cp, ssize, "        ");
 			adj_str(&cp, &ssize, &lsz, fsz);
 		}
 		if ( opt->str != NULL ) {
