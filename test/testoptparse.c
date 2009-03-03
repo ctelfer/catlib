@@ -3,44 +3,43 @@
 #include <stdio.h>
 #include <ctype.h>
 
-struct cli_opt g_optarr[] = { 
-	CLOPT_INIT(CLOT_NOARG, 'a', "--opt-a", "option A (no arg)"),
-	CLOPT_INIT(CLOT_STRING, 'b', "--opt-b", "option B (string)"),
-	CLOPT_INIT(CLOT_INT, 'c', "--opt-c", "option C (int)"),
-	CLOPT_INIT(CLOT_UINT, 'd', "--opt-d", "option D (unsigned int)"),
-	CLOPT_INIT(CLOT_DOUBLE, 'e', "--opt-e", "option E (double)"),
-	CLOPT_INIT(CLOT_NOARG, 0, "--opt-f", "option F (no arg, no char)"),
-	CLOPT_INIT(CLOT_INT, 'g', NULL, "option G (int, no string)"),
-	CLOPT_INIT(CLOT_NOARG, 'h', "--help", "print help")
+struct clopt g_optarr[] = { 
+	CLOPT_INIT(CLOPT_NOARG, 'a', "--opt-a", "option A (no arg)"),
+	CLOPT_INIT(CLOPT_STRING, 'b', "--opt-b", "option B (string)"),
+	CLOPT_INIT(CLOPT_INT, 'c', "--opt-c", "option C (int)"),
+	CLOPT_INIT(CLOPT_UINT, 'd', "--opt-d", "option D (unsigned int)"),
+	CLOPT_INIT(CLOPT_DOUBLE, 'e', "--opt-e", "option E (double)"),
+	CLOPT_INIT(CLOPT_NOARG, 0, "--opt-f", "option F (no arg, no char)"),
+	CLOPT_INIT(CLOPT_INT, 'g', NULL, "option G (int, no string)"),
+	CLOPT_INIT(CLOPT_NOARG, 'h', "--help", "print help")
 };
 
-struct cli_parser g_options = CLIPARSE_INIT(g_optarr, array_length(g_optarr));
+struct clopt_parser g_options = 
+	CLOPTPARSER_INIT(g_optarr, array_length(g_optarr));
 
 
-static void handle_error()
+static void handle_error(struct clopt_parser *clp, struct clopt *opt, int etype)
 {
-	switch(g_options.etype) {
-	case CLOERR_UNKOPT:
-		if ( *g_options.eval != '-' )
-			err("Unknown option -%c\n", *g_options.eval);
+	switch(etype) {
+	case CLORET_UNKOPT:
+		if ( *g_options.errval != '-' )
+			err("Unknown option -%c\n", *g_options.errval);
 		else
-			err("Unknown option %s\n", *g_options.eval);
+			err("Unknown option %s\n", *g_options.errval);
 		break;
-	case CLOERR_NOPARAM:
-		if ( *g_options.eval != '-' )
-			err("No parameter for -%c\n", *g_options.eval);
+	case CLORET_NOPARAM:
+		if ( isalnum(opt->ch) )
+			err("No parameter for -%c\n", opt->ch);
 		else
-			err("No parameter for %s\n", *g_options.eval);
+			err("No parameter for %s\n", opt->str);
 		break;
-	case CLOERR_BADPARAM:
-		if ( *g_options.eval != '-' )
+	case CLORET_BADPARAM:
+		if ( isalnum(opt->ch) )
 			err("Bad parameter for -%c: %s\n", 
-			    g_options.options[g_options.eopt].ch,
-			    g_options.eval);
+			    opt->ch, clp->errval);
 		else
 			err("Bad parameter for %s: %s\n",
-			    g_options.options[g_options.eopt].str,
-			    g_options.eval);
+			    opt->str, clp->errval);
 		break;
 	default:
 		err("unkown error type");
@@ -48,7 +47,7 @@ static void handle_error()
 }
 
 
-static const char *optstr(struct cli_opt *opt)
+static const char *optstr(struct clopt *opt)
 {
 	static char str[16];
 	if ( isalnum(opt->ch) ) {
@@ -61,26 +60,25 @@ static const char *optstr(struct cli_opt *opt)
 }
 
 
-static void print_option(struct cli_opt *opt)
+static void print_option(struct clopt *opt)
 {
-	if ( !opt->present )
-		return;
 	switch(opt->type) {
-	case CLOT_NOARG:
+	case CLOPT_NOARG:
 		printf("Option %s is set\n", optstr(opt));
 		break;
-	case CLOT_STRING:
-		printf("Option %s is set to '%s'\n", optstr(opt), opt->arg);
+	case CLOPT_STRING:
+		printf("Option %s is set to '%s'\n", optstr(opt), 
+			opt->val.str_val);
 		break;
-	case CLOT_INT:
+	case CLOPT_INT:
 		printf("Option %s is set to '%d'\n", optstr(opt), 
 		       opt->val.int_val);
 		break;
-	case CLOT_UINT:
+	case CLOPT_UINT:
 		printf("Option %s is set to '%u'\n", optstr(opt), 
 		       opt->val.uint_val);
 		break;
-	case CLOT_DOUBLE:
+	case CLOPT_DOUBLE:
 		printf("Option %s is set to '%lf'\n", optstr(opt), 
 		       opt->val.dbl_val);
 		break;
@@ -92,18 +90,24 @@ static void print_option(struct cli_opt *opt)
 
 int main(int argc, char *argv[])
 {
-	int argi, i;
+	int argi;
 	char buf[4096];
+	struct clopt *opt;
 
-	print_options(&g_options, buf, sizeof(buf));
-	printf("usage: %s [options] [args]\n%s", argv[0], buf);
+	optparse_print(&g_options, buf, sizeof(buf));
+	printf("usage: %s [options] [args]\n%s\n", argv[0], buf);
 
-	argi = parse_options(&g_options, argc, argv);
-	if ( argi < 0 )
-		handle_error();
-	for ( i = 0; i < array_length(g_optarr); ++i )
-		print_option(&g_optarr[i]);
+	optparse_reset(&g_options, argc, argv);
+	while ( !(argi = optparse_next(&g_options, &opt)) ) {
+		print_option(opt);
+	}
+	if ( argi < 0 ) {
+		handle_error(&g_options, opt, argi);
+		return -1;
+	}
+
 	for ( ; argi < argc ; ++argi )
 		printf("Argument: '%s'\n", argv[argi]);
+
 	return 0;
 }

@@ -10,6 +10,33 @@
 #endif
 
 
+int optparse_reset(struct clopt_parser *clp, int argc, char *argv[])
+{
+	size_t n;
+	struct clopt *opt;
+
+	if ( clp == NULL || argc < 1 || argv == NULL )
+		return -1;
+
+	for ( n = 0; n < clp->num ; ++n ) {
+		opt = &clp->options[n];
+		if ( opt->type < CLOPT_NOARG || opt->type > CLOPT_DOUBLE )
+			return -1;
+		if ( !isalnum(opt->ch) && opt->str == NULL )
+			return -1;
+	}
+
+	clp->argc = argc;
+	clp->argv = argv;
+	clp->vidx = 1;
+	clp->non_opt = 1;
+	clp->used_arg = 0;
+	clp->chptr = NULL;
+	clp->errval = NULL;
+
+	return 0;
+}
+
 static void movedown(char *argv[], int lo, int hi)
 {
 	char *hold = argv[hi];
@@ -20,31 +47,25 @@ static void movedown(char *argv[], int lo, int hi)
 }
 
 
-static int type_is_valid(int type) 
-{
-	return (type >= CLOT_NOARG && type <= CLOT_DOUBLE);
-}
-
-
-static int read_arg(struct cli_opt *opt, const char *arg)
+static int read_arg(struct clopt *opt, const char *arg)
 {
 	char *cp;
 	switch(opt->type) {
-	case CLOT_STRING:
-		opt->arg = arg;
+	case CLOPT_STRING:
+		opt->val.str_val = (char *)arg;
 		break;
-	case CLOT_INT:
+	case CLOPT_INT:
 		opt->val.int_val = strtol(arg, &cp, 0);
 		if ( cp == arg || *cp != '\0' || *arg == '\0' )
 			return -1;
 		break;
-	case CLOT_UINT:
+	case CLOPT_UINT:
 		opt->val.uint_val = strtoul(arg, &cp, 0);
 		if ( cp == arg || *cp != '\0' || *arg == '\0' )
 			return -1;
 		break;
-	case CLOT_DOUBLE:
-		opt->val.uint_val = strtod(arg, &cp);
+	case CLOPT_DOUBLE:
+		opt->val.dbl_val = strtod(arg, &cp);
 		if ( cp == arg || *cp != '\0' || *arg == '\0' )
 			return -1;
 		break;
@@ -56,12 +77,12 @@ static int read_arg(struct cli_opt *opt, const char *arg)
 }
 
 
-static int parse_long_opt(const char *cp, struct cli_parser *clp)
+static int parse_long_opt(struct clopt_parser *clp, struct clopt **optp)
 {
 	int i; 
-	const char *end;
+	const char *cp = clp->argv[clp->vidx], *end;
 	size_t elen;
-	struct cli_opt *opt = NULL;
+	struct clopt *opt = NULL;
 
 	end = strchr(cp, '=');
 	if ( end != NULL )
@@ -76,115 +97,108 @@ static int parse_long_opt(const char *cp, struct cli_parser *clp)
 	}
 
 	if ( opt == NULL ) {
-		clp->eval = cp;
-		clp->etype = CLOERR_UNKOPT;
-		return -1;
+		*optp = NULL;
+		clp->errval = cp;
+		return CLORET_UNKOPT;
 	}
 
-	if ( opt->type != CLOT_NOARG ) {
+	*optp = opt;
+	if ( opt->type != CLOPT_NOARG ) {
 		if ( end == NULL ) {
-			clp->etype = CLOERR_NOPARAM;
-			clp->eopt = i;
-			return -1;
+			return  CLORET_NOPARAM;
 		}
 		if ( read_arg(opt, end + 1) < 0 ) {
-			clp->eval = end + 1;
-			clp->etype = CLOERR_BADPARAM;
-			clp->eopt = i;
-			return -1;
+			clp->errval = end + 1;
+			return CLORET_BADPARAM;
 		}
+	} else if ( end != NULL ) {
+		clp->errval = end + 1;
+		return CLORET_BADPARAM;
 	}
-	opt->present = 1;
+	movedown(clp->argv, clp->non_opt++, clp->vidx++);
 
 	return 0;
 }
 
 
-static int parse_short_opts(const char *cp, const char *next, 
-		            struct cli_parser *clp)
+static int parse_short_opts(struct clopt_parser *clp, struct clopt **optp)
 {
 	int i;
-	int used_arg = 0;
-	struct cli_opt *opt = NULL;
-	cp += 1;
-	while ( *cp != '\0' ) {
-		for ( i = 0; i < clp->num ; ++i ) {
-			opt = &clp->options[i];
-			if ( isalnum(opt->ch) && opt->ch == *cp )
-				break;
+	struct clopt *opt = NULL;
+	const char *cp = clp->chptr;
+
+	for ( i = 0; i < clp->num ; ++i ) {
+		opt = &clp->options[i];
+		if ( isalnum(opt->ch) && opt->ch == *cp )
+			break;
+	}
+	if ( i >= clp->num ) {
+		*optp = NULL;
+		clp->argc = -1;
+		clp->errval = cp;
+		return CLORET_UNKOPT;
+	}
+	*optp = opt;
+	if ( opt->type != CLOPT_NOARG ) {
+		if ( clp->vidx >= clp->argc - 1 || clp->used_arg ) {
+			clp->argc = -1;
+			return CLORET_NOPARAM;
 		}
-		if ( i >= clp->num ) {
-			clp->eval = cp;
-			clp->etype = CLOERR_UNKOPT;
-			return -1;
+		if ( read_arg(opt, clp->argv[clp->vidx+1]) < 0 ) {
+			clp->errval = clp->argv[clp->vidx+1];
+			clp->argc = -1;
+			return CLORET_BADPARAM;
 		}
-		if ( opt->type != CLOT_NOARG ) {
-			if ( next == NULL || used_arg ) {
-				clp->eval = cp;
-				clp->etype = CLOERR_NOPARAM;
-				clp->eopt = i;
-				return -1;
-			}
-			if ( read_arg(opt, next) < 0 ) {
-				clp->eval = next;
-				clp->etype = CLOERR_BADPARAM;
-				clp->eopt = i;
-				return -1;
-			}
-			used_arg = 1;
-		}
-		opt->present = 1;
-		++cp;
+		clp->used_arg = 1;
+	}
+	if ( *++clp->chptr == '\0' ) {
+		movedown(clp->argv, clp->non_opt++, clp->vidx++);
+		if ( clp->used_arg )
+			movedown(clp->argv, clp->non_opt++, clp->vidx++);
+		clp->chptr = NULL;
 	}
 
-	return used_arg;
+	return 0;
 }
 
 
-int parse_options(struct cli_parser *clp, int argc, char *argv[])
+int optparse_next(struct clopt_parser *clp, struct clopt **optp)
 {
-	int i, non_opt = 1, rv;
+	int i;
+	char **argv;
 
-	abort_unless(argv);
 	abort_unless(clp);
+	abort_unless(optp);
 
-	for ( i = 0; i < clp->num; ++i ) {
-		abort_unless(type_is_valid(clp->options[i].type));
-		abort_unless(clp->options[i].ch > 0 || 
-			     (clp->options[i].str != NULL && 
-			      strcmp(clp->options[i].str, "--") != 0));
-		clp->options[i].present = 0;
-	}
-	clp->etype = 0;
-	clp->eopt = 0;
-	clp->eval = NULL;
+	if ( clp->argc <= 0 )
+		return CLORET_RESET;
 
-	for ( i = 1; i < argc ; i++ ) {
-		abort_unless(argv[i] != NULL);
-		if ( (argv[i][0] != '-') || (argv[i][1] == '\0') )
-			continue;
-		if ( strcmp(argv[i], "--") == 0 ) {
-			movedown(argv, non_opt, i);
-			break;
-		}
-		if ( strncmp(argv[i], "--", 2) == 0 ) {
-			movedown(argv, non_opt++, i);
-			rv = parse_long_opt(argv[non_opt-1], clp);
-			if ( rv != 0 )
-				return -1;
-		} else {
-			rv = parse_short_opts(argv[i], 
-					     (i < argc - 1) ? argv[i+1] : NULL, 
-					     clp);
-			if ( rv < 0 )
-				return -1;
-			movedown(argv, non_opt++, i);
-			if ( rv > 0 )
-				movedown(argv, non_opt++, ++i);
-		}
+	if ( clp->vidx < 0 )
+		return clp->non_opt;
+
+	if ( clp->chptr != NULL )
+		return parse_short_opts(clp, optp);
+
+	i = clp->vidx;
+	argv = clp->argv;
+	while ( (i < clp->argc) && ((argv[i][0] != '-')||(argv[i][1] == '\0')) )
+		i = ++clp->vidx;
+		
+	if ( i >= clp->argc )
+		return clp->non_opt;
+	if ( strcmp(argv[i], "--") == 0 ) {
+		movedown(clp->argv, clp->non_opt++, clp->vidx);
+		clp->vidx = -1;
+		return clp->non_opt;
 	}
 
-	return non_opt;
+	if ( strncmp(argv[i], "--", 2) == 0 ) {
+		return parse_long_opt(clp, optp);
+	} else {
+		clp->used_arg = 0;
+		clp->chptr = &argv[i][1];
+		return parse_short_opts(clp, optp);
+	}
 }
 
 
@@ -202,13 +216,13 @@ static void adj_str(char **cp, size_t *remlen, size_t *linelen, size_t added)
 }
 
 
-void print_options(struct cli_parser *clp, char *str, size_t ssize)
+void optparse_print(struct clopt_parser *clp, char *str, size_t ssize)
 {
 	int i;
 	char *cp = str;
 	char pad[80];
 	size_t fsz, lsz;
-	struct cli_opt *opt;
+	struct clopt *opt;
 
 	abort_unless(ssize > 1);
 	if ( ssize == 0 ) {

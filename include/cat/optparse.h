@@ -12,41 +12,50 @@
 
 #include <cat/cat.h>
 
-#define CLOT_NOARG	0
-#define CLOT_STRING	1
-#define CLOT_INT	2
-#define CLOT_UINT	3
-#define CLOT_DOUBLE	4
+#define CLOPT_NOARG	0
+#define CLOPT_STRING	1
+#define CLOPT_INT	2
+#define CLOPT_UINT	3
+#define CLOPT_DOUBLE	4
 
-#define CLOERR_NONE	0
-#define CLOERR_UNKOPT	1
-#define CLOERR_NOPARAM	2
-#define CLOERR_BADPARAM	3
+#define CLORET_OPTION	0
+#define CLORET_UNKOPT	-1
+#define CLORET_NOPARAM	-2
+#define CLORET_BADPARAM	-3
+#define CLORET_RESET	-4
 
-struct cli_opt {
+struct clopt {
 	int		type;
 	char 		ch;
 	const char *	str;
 	const char *	desc;
-	int		present;
-	const char *	arg;
-	scalar_t	val; /* for non string/no-arg types */
+	scalar_t	val;
 };
 
-#define CLOPT_INIT(type, ch, str, desc) { type, ch, str, desc, 0, NULL, 0 }
+#define CLOPT_INIT(type, ch, str, desc) { type, ch, str, desc, {0} }
 
-struct cli_parser {
-	struct cli_opt *	options;
-	unsigned		num;
-	const char *		eval;
-	int			etype;
-	int			eopt;  /* option # for CLOERR_NO/BADPARAM */
-				       /* option char when eidx < 0 */
+struct clopt_parser {
+	struct clopt *		options;
+	size_t			num;
+	int			argc;
+	char **			argv;
+	int			vidx;
+	int 			non_opt;
+	int			used_arg;
+	const char *		chptr;
+	const char *		errval;
 };
 
-#define CLIPARSE_INIT(optarr, arrlen) { optarr, arrlen, NULL, 0, 0 }
+#define CLOPTPARSER_INIT(optarr, arrlen) \
+	{ optarr, arrlen, 0, NULL, 0, 0, 0, NULL, NULL }
 
-int  parse_options(struct cli_parser *clp, int argc, char *argv[]);
-void print_options(struct cli_parser *clp, char *str, size_t ssize);
+/* returns 0 if the parser, argc, and argv are well formatted */
+int optparse_reset(struct clopt_parser *clp, int argc, char *argv[]);
+
+/* returns 0 on an option, < 0 on err, (CLORET_*), > 0 on index after options */
+int optparse_next(struct clopt_parser *clp, struct clopt **p);
+
+/* prints up to slen -1 characters: always null terminates */
+void optparse_print(struct clopt_parser *clp, char *str, size_t slen);
 
 #endif /* __cat_optparse_h */
