@@ -123,6 +123,7 @@ union scalar_u {
 	unsigned int		uint_val;
 	double			dbl_val;
 	void *			ptr_val;
+	char *			str_val;
 
 #if CAT_HAS_LONG_LONG
 	long long		llong_val;
