@@ -143,6 +143,7 @@ static int parse_long_opt(struct clopt_parser *clp, struct clopt **optp)
 				 "Bad parameter for option %s: %s", 
 				 clopt_name(opt, onamestr, sizeof(onamestr)),
 				 end + 1);
+			opt->val.str_val = (char *)end + 1;
 			return CLORET_BADPARAM;
 		}
 	} else if ( end != NULL ) {
@@ -151,6 +152,7 @@ static int parse_long_opt(struct clopt_parser *clp, struct clopt **optp)
 			 "Unwanted parameter for option %s: %s", 
 			 clopt_name(opt, onamestr, sizeof(onamestr)),
 			 end + 1);
+		opt->val.str_val = (char *)end + 1;
 		return CLORET_BADPARAM;
 	}
 	movedown(clp->argv, clp->non_opt++, clp->vidx++);
@@ -193,6 +195,7 @@ static int parse_short_opts(struct clopt_parser *clp, struct clopt **optp)
 				 "Bad parameter for option %s: %s", 
 				 clopt_name(opt, onamestr, sizeof(onamestr)),
 				 clp->argv[clp->vidx+1]);
+			opt->val.str_val = clp->argv[clp->vidx+1];
 			return CLORET_BADPARAM;
 		}
 		clp->used_arg = 1;
