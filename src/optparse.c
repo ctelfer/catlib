@@ -32,7 +32,6 @@ int optparse_reset(struct clopt_parser *clp, int argc, char *argv[])
 	clp->non_opt = 1;
 	clp->used_arg = 0;
 	clp->chptr = NULL;
-	clp->errval = NULL;
 
 	return 0;
 }
@@ -77,12 +76,37 @@ static int read_arg(struct clopt *opt, const char *arg)
 }
 
 
+char *clopt_name(struct clopt *opt, char *buf, size_t buflen)
+{
+	int n = 0;
+	if ( buflen < 1 )
+		return NULL;
+	*buf = '\0';
+	if ( isalnum(opt->ch) ) {
+		if ( buflen < 3 )
+			return buf;
+		buf[0] = '-'; buf[1] = opt->ch;
+		if ( opt->str == NULL ) {
+			buf[2] = '\0';
+			return buf;
+		} else {
+			buf[2] = ',';
+			n = 3;
+		} 
+	}
+	if ( opt->str != NULL )
+		snprintf(buf + n, buflen - n, "%s", opt->str);
+	return buf;
+}
+
+
 static int parse_long_opt(struct clopt_parser *clp, struct clopt **optp)
 {
 	int i; 
 	const char *cp = clp->argv[clp->vidx], *end;
 	size_t elen;
 	struct clopt *opt = NULL;
+	char onamestr[64];
 
 	end = strchr(cp, '=');
 	if ( end != NULL )
@@ -98,21 +122,35 @@ static int parse_long_opt(struct clopt_parser *clp, struct clopt **optp)
 
 	if ( opt == NULL ) {
 		*optp = NULL;
-		clp->errval = cp;
+		clp->argc = -1;
+		snprintf(clp->errbuf, sizeof(clp->errbuf), 
+			 "Unknown option: %s", cp);
 		return CLORET_UNKOPT;
 	}
 
 	*optp = opt;
 	if ( opt->type != CLOPT_NOARG ) {
 		if ( end == NULL ) {
-			return  CLORET_NOPARAM;
+			clp->argc = -1;
+			snprintf(clp->errbuf, sizeof(clp->errbuf), 
+				 "No parameter for option %s", 
+				 clopt_name(opt, onamestr, sizeof(onamestr)));
+			return CLORET_NOPARAM;
 		}
 		if ( read_arg(opt, end + 1) < 0 ) {
-			clp->errval = end + 1;
+			clp->argc = -1;
+			snprintf(clp->errbuf, sizeof(clp->errbuf), 
+				 "Bad parameter for option %s: %s", 
+				 clopt_name(opt, onamestr, sizeof(onamestr)),
+				 end + 1);
 			return CLORET_BADPARAM;
 		}
 	} else if ( end != NULL ) {
-		clp->errval = end + 1;
+		clp->argc = -1;
+		snprintf(clp->errbuf, sizeof(clp->errbuf), 
+			 "Unwanted parameter for option %s: %s", 
+			 clopt_name(opt, onamestr, sizeof(onamestr)),
+			 end + 1);
 		return CLORET_BADPARAM;
 	}
 	movedown(clp->argv, clp->non_opt++, clp->vidx++);
@@ -126,6 +164,7 @@ static int parse_short_opts(struct clopt_parser *clp, struct clopt **optp)
 	int i;
 	struct clopt *opt = NULL;
 	const char *cp = clp->chptr;
+	char onamestr[64];
 
 	for ( i = 0; i < clp->num ; ++i ) {
 		opt = &clp->options[i];
@@ -135,18 +174,25 @@ static int parse_short_opts(struct clopt_parser *clp, struct clopt **optp)
 	if ( i >= clp->num ) {
 		*optp = NULL;
 		clp->argc = -1;
-		clp->errval = cp;
+		snprintf(clp->errbuf, sizeof(clp->errbuf), 
+			 "Unknown option: -%c", *cp);
 		return CLORET_UNKOPT;
 	}
 	*optp = opt;
 	if ( opt->type != CLOPT_NOARG ) {
 		if ( clp->vidx >= clp->argc - 1 || clp->used_arg ) {
 			clp->argc = -1;
+			snprintf(clp->errbuf, sizeof(clp->errbuf), 
+				 "No parameter for option %s", 
+				 clopt_name(opt, onamestr, sizeof(onamestr)));
 			return CLORET_NOPARAM;
 		}
 		if ( read_arg(opt, clp->argv[clp->vidx+1]) < 0 ) {
-			clp->errval = clp->argv[clp->vidx+1];
 			clp->argc = -1;
+			snprintf(clp->errbuf, sizeof(clp->errbuf), 
+				 "Bad parameter for option %s: %s", 
+				 clopt_name(opt, onamestr, sizeof(onamestr)),
+				 clp->argv[clp->vidx+1]);
 			return CLORET_BADPARAM;
 		}
 		clp->used_arg = 1;
@@ -170,8 +216,11 @@ int optparse_next(struct clopt_parser *clp, struct clopt **optp)
 	abort_unless(clp);
 	abort_unless(optp);
 
-	if ( clp->argc <= 0 )
+	if ( clp->argc <= 0 ) {
+		snprintf(clp->errbuf, sizeof(clp->errbuf), 
+			 "Must call optparse_reset() upon error return code");
 		return CLORET_RESET;
+	}
 
 	if ( clp->vidx < 0 )
 		return clp->non_opt;

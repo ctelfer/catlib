@@ -43,11 +43,11 @@ struct clopt_parser {
 	int 			non_opt;
 	int			used_arg;
 	const char *		chptr;
-	const char *		errval;
+	char 			errbuf[128];
 };
 
 #define CLOPTPARSER_INIT(optarr, arrlen) \
-	{ optarr, arrlen, 0, NULL, 0, 0, 0, NULL, NULL }
+	{ optarr, arrlen, 0, NULL, 0, 0, 0, NULL, { 0 } }
 
 /* returns 0 if the parser, argc, and argv are well formatted */
 int optparse_reset(struct clopt_parser *clp, int argc, char *argv[]);
@@ -57,5 +57,8 @@ int optparse_next(struct clopt_parser *clp, struct clopt **p);
 
 /* prints up to slen -1 characters: always null terminates */
 void optparse_print(struct clopt_parser *clp, char *str, size_t slen);
+
+/* format the option name into a string */
+char *clopt_name(struct clopt *opt, char *buf, size_t buflen);
 
 #endif /* __cat_optparse_h */
