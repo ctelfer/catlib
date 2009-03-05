@@ -18,72 +18,28 @@ struct clopt_parser g_options =
 	CLOPTPARSER_INIT(g_optarr, array_length(g_optarr));
 
 
-static void handle_error(struct clopt_parser *clp, struct clopt *opt, int etype)
-{
-	switch(etype) {
-	case CLORET_UNKOPT:
-		if ( *g_options.errval != '-' )
-			err("Unknown option -%c\n", *g_options.errval);
-		else
-			err("Unknown option %s\n", *g_options.errval);
-		break;
-	case CLORET_NOPARAM:
-		if ( isalnum(opt->ch) )
-			err("No parameter for -%c\n", opt->ch);
-		else
-			err("No parameter for %s\n", opt->str);
-		break;
-	case CLORET_BADPARAM:
-		if ( isalnum(opt->ch) )
-			err("Bad parameter for -%c: %s\n", 
-			    opt->ch, clp->errval);
-		else
-			err("Bad parameter for %s: %s\n",
-			    opt->str, clp->errval);
-		break;
-	default:
-		err("unkown error type");
-	}
-}
-
-
-static const char *optstr(struct clopt *opt)
-{
-	static char str[16];
-	if ( isalnum(opt->ch) ) {
-		sprintf(str, "-%c", opt->ch);
-		return str;
-	}
-	else {
-		return opt->str;
-	}
-}
-
-
 static void print_option(struct clopt *opt)
 {
+	char ons[64];
+	const char *optname = clopt_name(opt, ons, sizeof(ons));
 	switch(opt->type) {
 	case CLOPT_NOARG:
-		printf("Option %s is set\n", optstr(opt));
+		printf("Option %s is set\n", optname);
 		break;
 	case CLOPT_STRING:
-		printf("Option %s is set to '%s'\n", optstr(opt), 
-			opt->val.str_val);
+		printf("Option %s is set to '%s'\n", optname, opt->val.str_val);
 		break;
 	case CLOPT_INT:
-		printf("Option %s is set to '%d'\n", optstr(opt), 
-		       opt->val.int_val);
+		printf("Option %s is set to '%d'\n", optname, opt->val.int_val);
 		break;
 	case CLOPT_UINT:
-		printf("Option %s is set to '%u'\n", optstr(opt), 
-		       opt->val.uint_val);
+		printf("Option %s is set to '%u'\n", optname,opt->val.uint_val);
 		break;
 	case CLOPT_DOUBLE:
-		printf("Option %s is set to '%lf'\n", optstr(opt), 
-		       opt->val.dbl_val);
+		printf("Option %s is set to '%lf'\n",optname,opt->val.dbl_val); 
 		break;
 	default:
-		err("Corrupted option %s", optstr(opt));
+		err("Corrupted option %s", optname);
 	}
 }
 
@@ -102,7 +58,7 @@ int main(int argc, char *argv[])
 		print_option(opt);
 	}
 	if ( argi < 0 ) {
-		handle_error(&g_options, opt, argi);
+		err("Error -- %s\n", g_options.errbuf);
 		return -1;
 	}
 
