@@ -9,10 +9,10 @@ typedef void *(*resize_f)(struct memsys *msys, void *old, size_t size);
 typedef void  (*free_f)(struct memsys *msys, void * tofree);
 
 struct memsys {
-	alloc_f		ms_alloc;
-	resize_f	ms_resize;
-	free_f		ms_free;
-	void *		ms_ctx;
+  alloc_f	ms_alloc;
+  resize_f	ms_resize;
+  free_f	ms_free;
+  void *	ms_ctx;
 };
 
 

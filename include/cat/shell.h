@@ -10,19 +10,19 @@
 struct shell_env;
 
 enum { 
-	SVT_NIL = 0,
-	SVT_INT,
-	SVT_UINT,
-	SVT_DOUBLE,
-	SVT_STRING,
-	SVT_PTR
+  SVT_NIL = 0,
+  SVT_INT,
+  SVT_UINT,
+  SVT_DOUBLE,
+  SVT_STRING,
+  SVT_PTR
 };
 
 struct shell_value {
-	int				sval_type;
-	scalar_t			sval_val;
-	struct memsys *			sval_mem;
-	free_f				sval_free;
+  int			sval_type;
+  scalar_t		sval_val;
+  struct memsys *	sval_mem;
+  free_f		sval_free;
 };
 #define sval_int	sval_val.int_val
 #define sval_uint	sval_val.uint_val
@@ -32,33 +32,33 @@ struct shell_value {
 
 
 typedef int (*shell_cmd_f)(struct shell_env *env, int nargs, char *args[],
-			   struct shell_value *rv);
+                           struct shell_value *rv);
 
 
 struct shell_cmd_entry {
-	char *				cmd_name;
-	shell_cmd_f			cmd_func;
+  char *			cmd_name;
+  shell_cmd_f			cmd_func;
 };
 
 struct shell_var {
-	char 				sv_name[CAT_MAX_VARNLEN];
-	struct shell_value		sv_value;
+  char 				sv_name[CAT_MAX_VARNLEN];
+  struct shell_value		sv_value;
 };
 
 struct shell_env {
-	struct shell_cmd_entry *	se_cmds;
-	unsigned int			se_ncmds;
-	struct shell_var		se_vars[CAT_MAX_VARS];
-	void *				se_ctx;
+  struct shell_cmd_entry *	se_cmds;
+  unsigned int			se_ncmds;
+  struct shell_var		se_vars[CAT_MAX_VARS];
+  void *			se_ctx;
 };
 
 #define DECLARE_SHELL_ENV(name, cmdarray) 				 \
 struct shell_env name = { cmdarray,					 \
-			  sizeof(cmdarray)/sizeof(struct shell_cmd_entry),\
-			  { 0 }, NULL }
+        sizeof(cmdarray)/sizeof(struct shell_cmd_entry),\
+        { 0 }, NULL }
 
 void shell_env_init(struct shell_env *env, struct shell_cmd_entry *ents,
-		    unsigned nents, void *ctx);
+                    unsigned nents, void *ctx);
 int  shell_parse(char *str, char **retvar, char *args[CAT_MAX_CMD_ARGS]);
 int  shell_run(struct shell_env *env, char *cmdstr);
 

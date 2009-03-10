@@ -11,28 +11,28 @@
 
 
 struct pcache { 
-	struct list	avail;
-	struct list	full;
-	struct list	empty;
-	size_t		asiz;
-	size_t		pgsiz;
-	unsigned	npools;
-	unsigned	maxpools;
-	unsigned	hiwat;
-	struct memsys *	memsys;
+  struct list		avail;
+  struct list		full;
+  struct list		empty;
+  size_t		asiz;
+  size_t		pgsiz;
+  unsigned		npools;
+  unsigned		maxpools;
+  unsigned		hiwat;
+  struct memsys *	memsys;
 };
 
 
 struct pc_pool {
-	struct list	entry;
-	struct pcache * cache;
-	struct pool	pool;
+  struct list		entry;
+  struct pcache * 	cache;
+  struct pool		pool;
 };
 
 
 union pc_pool_u { 
-	cat_align_t	align;
-	struct pc_pool	pool;
+  cat_align_t		align;
+  struct pc_pool	pool;
 };
 
 

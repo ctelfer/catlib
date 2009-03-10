@@ -29,32 +29,35 @@ void set_logger(struct emitter *em, log_close_f log_close_func);
 void setlogthresh(int thresh);
 
 
-#define ERRCK(x) do { if ( (x) < 0 ) 					   \
-                   err("Error at %s:%d:\n\t%s\n", __FILE__, __LINE__, #x); \
-		 } while (0);
+#define ERRCK(x) \
+     do {                                                          \
+	if ( (x) < 0 )                                             \
+          err("Error at %s:%d:\n\t%s\n", __FILE__, __LINE__, #x);  \
+     } while (0);
 
 
 #if CAT_DEBUG_LEVEL >= 1
 
-#define CDBG		logrec(1, "DEBUG %s:%d\n", __FILE__, __LINE__);
+#define CDBG \
+    logrec(1, "DEBUG %s:%d\n", __FILE__, __LINE__);
 
-#define CDBG1(f,v1)	logrec(1, "DEBUG %s:%d: " \
-			f "\n", __FILE__, __LINE__, v1);
+#define CDBG1(f,v1) \
+    logrec(1, "DEBUG %s:%d: " f "\n", __FILE__, __LINE__, v1);
 
-#define CDBG2(f,v1,v2)	logrec(1, , "DEBUG %s:%d: " \
-			f "\n", __FILE__, __LINE__, v1, v2);
+#define CDBG2(f,v1,v2) \
+    logrec(1, , "DEBUG %s:%d: " f "\n", __FILE__, __LINE__, v1, v2);
 
-#define CDBG3(f,v1,v2,v3)	logrec(1, "DEBUG %s:%d: " \
-			f "\n", __FILE__, __LINE__, v1, v2, v3);
+#define CDBG3(f,v1,v2,v3) \
+    logrec(1, "DEBUG %s:%d: " f "\n", __FILE__, __LINE__, v1, v2, v3);
 
-#define CDBG4(f,v1,v2,v3,v4)	logrec(1, "DEBUG %s:%d: " \
-			f "\n", __FILE__, __LINE__, v1, v2, v3, v4);
+#define CDBG4(f,v1,v2,v3,v4)	\
+    logrec(1, "DEBUG %s:%d: " f "\n", __FILE__, __LINE__, v1, v2, v3, v4);
 
-#define CDBG5(f,v1,v2,v3,v4,v5)	logrec(1, "DEBUG %s:%d: " \
-			f "\n", __FILE__, __LINE__, v1, v2, v3, v4, v5);
+#define CDBG5(f,v1,v2,v3,v4,v5)	\
+    logrec(1, "DEBUG %s:%d: "  f "\n", __FILE__, __LINE__, v1, v2, v3, v4, v5);
 
-#define CDBGE(f,e)	logrec(1, "DEBUG %s:%d: %s = " f " \n",\
-			__FILE__, __LINE__, #e , (e));
+#define CDBGE(f,e) \
+    logrec(1, "DEBUG %s:%d: %s = " f " \n", __FILE__, __LINE__, #e , (e));
 
 #else
 

@@ -10,8 +10,8 @@
 #endif /* CAT_USE_STDLIB */
 
 struct file_emitter {
-	struct emitter		fe_emitter;
-	FILE *			fe_file;
+  struct emitter	fe_emitter;
+  FILE *		fe_file;
 };
 
 void file_emitter_init(struct file_emitter *fe, FILE *file);

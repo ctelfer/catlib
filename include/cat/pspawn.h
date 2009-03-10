@@ -16,40 +16,40 @@
     - buffer bits must be non-zero if STDIO flag is set 
  */
 enum {
-	/* input / output flags */
-	PSFD_IN      = 0x0001, /* input to child */
-	PSFD_OUT     = 0x0002, /* output from child */
-	PSFD_INOUT   = 0x0003, /* both input and output to child */
-	PSFD_DMASK   = 0x0003, /* mask i/o bits */
+  /* input / output flags */
+  PSFD_IN      = 0x0001, /* input to child */
+  PSFD_OUT     = 0x0002, /* output from child */
+  PSFD_INOUT   = 0x0003, /* both input and output to child */
+  PSFD_DMASK   = 0x0003, /* mask i/o bits */
 
-	/* modifier flags */
-	PSFD_STDIO   = 0x0004, /* generate stdio FILE for file descriptor */
-	PSFD_APPEND  = 0x0008, /* open in append-mode (output only) */
+  /* modifier flags */
+  PSFD_STDIO   = 0x0004, /* generate stdio FILE for file descriptor */
+  PSFD_APPEND  = 0x0008, /* open in append-mode (output only) */
 
-	/* stdio buffering flags: set only if PSFD_STDIO is also set */
-	PSFD_FULLBUF = 0x0010, /* fully bufferd stdio */
-	PSFD_NOBUF   = 0x0020, /* non-buffered stdio */
-	PSFD_LINEBUF = 0x0030, /* line buffered stdio */
-	PSFD_BMASK   = 0x0030, /* stdio buffering mask */
+  /* stdio buffering flags: set only if PSFD_STDIO is also set */
+  PSFD_FULLBUF = 0x0010, /* fully bufferd stdio */
+  PSFD_NOBUF   = 0x0020, /* non-buffered stdio */
+  PSFD_LINEBUF = 0x0030, /* line buffered stdio */
+  PSFD_BMASK   = 0x0030, /* stdio buffering mask */
 
-	/* internal flags, do not set */
-	/* if neither REMAP nor FSRDR is set, preserve the fd in the child */
-	PSFD_REMAP   = 0x0200, /* re-map fd from parent in child process */
-	PSFD_FSRDR   = 0x0400  /* redirect fd from file system object */
+  /* internal flags, do not set */
+  /* if neither REMAP nor FSRDR is set, preserve the fd in the child */
+  PSFD_REMAP   = 0x0200, /* re-map fd from parent in child process */
+  PSFD_FSRDR   = 0x0400  /* redirect fd from file system object */
 };
 
 struct ps_fd_entry {
-	int 		locfd;
-	int		pipefd;
-	struct list	*remfds;
-	int		type;
-	FILE *		file;
-	const char *	path;
-	unsigned int	mode;
+  int 		locfd;
+  int		pipefd;
+  struct list *	remfds;
+  int		type;
+  FILE *	file;
+  const char *	path;
+  unsigned int	mode;
 };
 
 struct ps_spec {
-	struct list *fdelist;
+  struct list *	fdelist;
 };
 
 /* initilize a process spawn specification */
@@ -73,27 +73,27 @@ void ps_spec_copy(struct ps_spec *dst, const struct ps_spec *src);
       (ps_spec_add_remap() for each)
       + for the fde returned from each ps_spec_add_remap() call:
         - for each fd that the child should have this parent fd mapped to:
-	  ps_fde_addfd() for that target fd
+    ps_fde_addfd() for that target fd
 
    3) specify which file descriptors to have as pipes/sockets to/from/both
       the parent
       + ps_spec_add_pipe() for each specifying
         - whether input, output or both
-	- whether the server side should use stdio
-	- what buffering mode to use if using stdio
+  - whether the server side should use stdio
+  - what buffering mode to use if using stdio
       + for each fde returned from ps_spec_add_pipe()
         - for each fd that the child should have this pipe mapped to:
-	  ps_fde_addfd() for the target fd
+    ps_fde_addfd() for the target fd
 
    4) specify which file descriptors to redirect from/to a file system
       object (such as a file)
       + ps_spec_add_fsrdr() for each specifying
         - whether to open for input / output or both
-	- whether to open for appending (output-only)
+  - whether to open for appending (output-only)
       + for each fde returned from ps_spec_add_fsrdr()
         - for each fd that the child should have this file mapped to:
-	  ps_fde_addfd() for the target fd
-	- if the mode should be changed call ps_rdr_set_mode()
+    ps_fde_addfd() for the target fd
+  - if the mode should be changed call ps_rdr_set_mode()
    ------------- */
 
 /* specify to add a pipe to the child process (uni- or bi-directional) */
@@ -107,7 +107,7 @@ struct ps_fd_entry *ps_spec_keepfd(struct ps_spec *spec, int fd);
 
 /* specify to open file system object "path" in the child process */
 struct ps_fd_entry *ps_spec_add_fsrdr(struct ps_spec *spec, int type, 
-				      const char *path);
+              const char *path);
 
 /* set access permissions for a filesystem redirection object */
 void ps_rdr_set_mode(struct ps_fd_entry *psfde, unsigned int mode);
@@ -137,18 +137,18 @@ void ps_fde_delfd(struct ps_fd_entry *psfde, int fd);
 
 
 enum {
-	PSS_INIT,
-	PSS_LAUNCHED,
-	PSS_FINISHED
+  PSS_INIT,
+  PSS_LAUNCHED,
+  PSS_FINISHED
 };
 
 struct pspawn {
-	int		state;
-	int		exit_status;
-	void		(*o_sigcld)(int sig);
-	int		error;
-	pid_t		cpid;
-	struct ps_spec	spec;
+  int			state;
+  int			exit_status;
+  void			(*o_sigcld)(int sig);
+  int			error;
+  pid_t			cpid;
+  struct ps_spec	spec;
 };
 
 
@@ -161,7 +161,7 @@ void ps_ignore_sigcld();
 /* note that unless handling signals in your program yourself you should */
 /* call ps_ignore_sigcld() (only once is necessary) before calling ps_launch */
 struct pspawn * ps_launch(char * const argv[], char * const envp[], 
-			  struct ps_spec *spec);
+        struct ps_spec *spec);
 
 /* get the local fd that corresponds to the remote fd specified */
 /* return -1 if remfd is not specified */

@@ -36,57 +36,57 @@ DECL void bset_set_to(bitset_t *set, unsigned index, int val);
 
 DECL void bset_zero(bitset_t *set, unsigned nbits)
 {
-	unsigned i, len = BITSET_LEN(nbits);
-	for ( i = 0 ; i < len ; ++i )
-		set[i] = 0;
+  unsigned i, len = BITSET_LEN(nbits);
+  for ( i = 0 ; i < len ; ++i )
+    set[i] = 0;
 }
 
 
 DECL void bset_fill(bitset_t *set, unsigned nbits)
 {
-	unsigned i, len = BITSET_LEN(nbits);
-	for ( i = 0 ; i < len ; ++i )
-		set[i] = (unsigned int)~0;
+  unsigned i, len = BITSET_LEN(nbits);
+  for ( i = 0 ; i < len ; ++i )
+    set[i] = (unsigned int)~0;
 }
 
 
 DECL void bset_copy(bitset_t *dst, bitset_t *src, unsigned nbits)
 {
-	unsigned i, len = BITSET_LEN(nbits);
-	if ( !len )
-		return;
-	for ( i = 0 ; i < len - 1 ; ++i )
-		dst[i] = src[i];
-	i *= CAT_UINT_BIT;
-	for ( ; i < nbits ; ++i )
-		bset_set_to(dst, i, bset_test(src, i));
+  unsigned i, len = BITSET_LEN(nbits);
+  if ( !len )
+    return;
+  for ( i = 0 ; i < len - 1 ; ++i )
+    dst[i] = src[i];
+  i *= CAT_UINT_BIT;
+  for ( ; i < nbits ; ++i )
+    bset_set_to(dst, i, bset_test(src, i));
 }
 
 
 DECL int bset_test(bitset_t *set, unsigned index)
 {
-	return (set[index / CAT_UINT_BIT] & (1 << (index % CAT_UINT_BIT))) != 0;
+  return (set[index / CAT_UINT_BIT] & (1 << (index % CAT_UINT_BIT))) != 0;
 }
 
 
 DECL void bset_set(bitset_t *set, unsigned index)
 {
-	set[index / CAT_UINT_BIT] |=  (1 << (index % CAT_UINT_BIT));
+  set[index / CAT_UINT_BIT] |=  (1 << (index % CAT_UINT_BIT));
 }
 
 
 DECL void bset_clr(bitset_t *set, unsigned index)
 {
-	set[index / CAT_UINT_BIT] &=  ~(1 << (index % CAT_UINT_BIT));
+  set[index / CAT_UINT_BIT] &=  ~(1 << (index % CAT_UINT_BIT));
 }
 
 
 DECL void bset_set_to(bitset_t *set, unsigned index, int val)
 {
-	if ( val )
-		bset_set(set, index);
-	else
-		bset_clr(set, index);
+  if ( val )
+    bset_set(set, index);
+  else
+    bset_clr(set, index);
 }
 
 #endif /* defined(CAT_BITSET_DO_DECL) && CAT_BITSET_DO_DECL */

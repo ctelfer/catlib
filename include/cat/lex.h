@@ -10,23 +10,23 @@
 
 
 struct lexer_entry {
-	struct list		entry;
-	int			token;
-	struct rex_pat		pattern;
+  struct list		entry;
+  int			token;
+  struct rex_pat	pattern;
 };
 
 
 struct lexer { 
-	struct list		entries;
-	struct raw		input;
-	const char *		next_char;
+  struct list		entries;
+  struct raw		input;
+  const char *		next_char;
 };
 
 
 enum {
-	LEX_END = -1,
-	LEX_NOMATCH = -2,
-	LEX_ERROR = -3
+  LEX_END = -1,
+  LEX_NOMATCH = -2,
+  LEX_ERROR = -3
 };
 
 

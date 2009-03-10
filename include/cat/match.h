@@ -6,8 +6,8 @@
 #include <cat/hash.h>
 
 struct kmppat {
-	unsigned long *		skips;
-	struct raw		pat;
+  unsigned long *	skips;
+  struct raw		pat;
 };
 
 void kmp_pinit(struct kmppat *p, struct raw *pat, unsigned long *skips);
@@ -15,13 +15,13 @@ int kmp_match(const struct raw *str, struct kmppat *pat, unsigned long *loc);
 
 
 struct bmpat {
-	unsigned long		last[256];
-	struct raw		pat;
-	unsigned long *		skips;
+  unsigned long		last[256];
+  struct raw		pat;
+  unsigned long *	skips;
 };
 
 void bm_pinit(struct bmpat *bmp, struct raw *pat, unsigned long *skips, 
-	      unsigned long *scrat);
+              unsigned long *scratch);
 int bm_match(struct raw *str, struct bmpat *pat, unsigned long *loc);
 
 
@@ -33,13 +33,13 @@ int bm_match(struct raw *str, struct bmpat *pat, unsigned long *loc);
 
 
 struct sfxnode {
-	struct sfxnode *	sptr;
+  struct sfxnode *		sptr;
 };
 
 struct sfxedge {
-	struct hnode		hentry;
-	long			start;
-	long			end;
+  struct hnode			hentry;
+  long				start;
+  long				end;
 };
 
 struct suffix {
@@ -54,10 +54,10 @@ struct sfxedgekey {
 };
 
 struct sfxtree {
-	struct memsys		sys;
-	struct raw		str;
-	struct htab		edges;
-	struct sfxnode		root;
+  struct memsys			sys;
+  struct raw			str;
+  struct htab			edges;
+  struct sfxnode		root;
 };
 
 
@@ -77,46 +77,46 @@ struct sfxnode *sfx_next(struct sfxtree *t, struct sfxnode *cur, int ch);
 #define REX_WILDCARD		0
 
 struct rex_node {
-	unsigned char		type;
-	unsigned char		repmin;
-	unsigned char		repmax;
-	struct rex_node *	next;
+  unsigned char		type;
+  unsigned char		repmin;
+  unsigned char		repmax;
+  struct rex_node *	next;
 };
 
 struct rex_node_str {
-	struct rex_node		base;
-	unsigned char		str[32];
-	unsigned long 		len;
+  struct rex_node	base;
+  unsigned char		str[32];
+  unsigned long 	len;
 };
 
 struct rex_ascii_class {
-	struct rex_node 	base;
-	unsigned char 		set[32];
+  struct rex_node 	base;
+  unsigned char 	set[32];
 };
 
 struct rex_group {
-	struct rex_node		base;
-	unsigned		num;
-	struct rex_group *	other;
+  struct rex_node	base;
+  unsigned		num;
+  struct rex_group *	other;
 };
 
 struct rex_choice {
-	struct rex_node		base;
-	struct rex_node *	opt1;
-	struct rex_node *	opt2;
+  struct rex_node	base;
+  struct rex_node *	opt1;
+  struct rex_node *	opt2;
 };
 
 struct rex_pat {
-	struct memsys		sys;
-	int			start_anchor;
-	struct rex_group 	start;
-	struct rex_group 	end;
+  struct memsys		sys;
+  int			start_anchor;
+  struct rex_group 	start;
+  struct rex_group 	end;
 };
 
 struct rex_match_loc {
-	int			valid;
-	unsigned		start;
-	unsigned		len;
+  int			valid;
+  unsigned		start;
+  unsigned		len;
 };
 
 
@@ -125,9 +125,9 @@ struct rex_match_loc {
 #define REX_ERROR	-1
 
 int rex_init(struct rex_pat *rxp, struct raw *pat, struct memsys *sys,
-	     int *error);
+             int *error);
 int rex_match(struct rex_pat *rxp, struct raw *str, struct rex_match_loc *m,
-	      unsigned nm);
+              unsigned nm);
 void rex_free(struct rex_pat *rxp);
 
 #endif /* __match_h */

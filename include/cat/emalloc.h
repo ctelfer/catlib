@@ -3,7 +3,7 @@
 #include <cat/cat.h>
 
 typedef void (*emalloc_abort_f)(char *s, void *omem, size_t size, size_t nmem,
-				int syserr);
+                                int syserr);
 
 void * emalloc(size_t size);
 void * ecalloc(size_t nmemb, size_t size);

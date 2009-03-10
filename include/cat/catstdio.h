@@ -6,12 +6,12 @@
 #include <cat/catstdlib.h>
 
 typedef struct {
-	char *			f_buffer;
-	size_t			f_buflen;
-	size_t			f_fill;
-	int			f_flags;
-	int			f_fd;
-	int			f_lastop;
+  char *	f_buffer;
+  size_t	f_buflen;
+  size_t	f_fill;
+  int		f_flags;
+  int		f_fd;
+  int		f_lastop;
 } FILE;
 
 
@@ -56,7 +56,7 @@ int   printf(const char *format, ...);
 int   fprintf(FILE *stream, const char *format, ...);
 int   vprintf(const char *format, va_list ap);
 int   vfprintf(FILE *stream, const char *format, va_list ap);
-	       
+
 
 extern FILE *stdin, *stdout, *stderr;
 

@@ -14,10 +14,10 @@
 
 /* N.B. First two fields match struct raw */
 struct ring {
-	size_t			alloc;
-	unsigned char *		data;
-	size_t			start;
-	size_t			len;
+  size_t			alloc;
+  unsigned char *		data;
+  size_t			start;
+  size_t			len;
 } ;
 
 

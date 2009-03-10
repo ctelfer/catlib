@@ -18,9 +18,9 @@ struct callback;
 typedef int (*callback_f)(void *arg, struct callback *cb);
 
 struct callback {
-	struct list	entry;
-	void *		ctx;
-	callback_f	func;
+  struct list	entry;
+  void *	ctx;
+  callback_f	func;
 };
 
 

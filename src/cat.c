@@ -10,8 +10,8 @@
 
 void cat_abort(const char *fn, unsigned ln, const char *expr)
 {
-	fprintf(stderr, "%s:%u -- check failed: %s\n", fn, ln, expr);
-	abort();
-	exit(255);	/* in case the signal is caught */
+  fprintf(stderr, "%s:%u -- check failed: %s\n", fn, ln, expr);
+  abort();
+  exit(255);	/* in case the signal is caught */
 }
 
