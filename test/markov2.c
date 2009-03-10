@@ -83,7 +83,7 @@ int main(int argc, char *argv)
 	gettimeofday(&tv, NULL);
 	srandom(tv.tv_usec);
 	Prefix_tbl = ht_new(HTSIZ, CAT_DT_RAW);
-	if (grow((char *)&Strings.data, &Strings.len, 
+	if (grow(&Strings.data, &Strings.len, 
 		 NPREF * sizeof(NONWORD) + MAXWORD) < 0)
 		errsys("Out of memory\n");
 	for ( i = 0 ; i < NPREF ; ++i ) {
@@ -95,7 +95,7 @@ int main(int argc, char *argv)
 
 	while ( scanf(fmt, STR(cur)) > 0 ) { 
 		l = strlen(STR(cur)) + 1;
-		if (grow((char*)&Strings.data, &Strings.len, cur+l+MAXWORD) < 0)
+		if (grow(&Strings.data,&Strings.len,cur+l+MAXWORD) < 0)
 			errsys("Out of memory\n");
 		add(prefixes, cur);
 		cur += l;
