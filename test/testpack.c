@@ -92,5 +92,15 @@ int main(int argc, char *argv[])
   printf("String1 = %s\n", buffer);
   printf("String2 = %s\n", strbuf2);
 
+  printf("\n\n");
+  printf("hton16(0x2211) = %x\n", hton16(0x2211));
+  printf("ntoh16(0x1122) = %x\n", ntoh16(0x1122));
+  printf("hton32(0x44332211) = %x\n", hton32(0x44332211));
+  printf("ntoh32(0x11223344) = %x\n", ntoh32(0x11223344));
+#if CAT_HAS_LONGLONG
+  printf("ntoh64(0x1122334455667788) = %llx\n", ntoh64(0x1122334455667788ll));
+  printf("hton64(0x8877665544332211) = %llx\n", ntoh64(0x8877665544332211ll));
+#endif /* CAT_HAS_LONGLONG */
+
   return 0;
 }
