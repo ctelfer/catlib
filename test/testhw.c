@@ -1,6 +1,9 @@
 #include <sys/time.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
 
 #define NREPS 10000
 int nreps = NREPS;
@@ -29,23 +32,23 @@ void f() { }
 
 
 struct obj { 
-	int (*opf)(struct obj *, int);
+	int (*opf)(volatile struct obj *, int);
 };
 
 
-int op(struct obj *op, int i) {
+int op(volatile struct obj *op, int i) {
 	return i;
 }
 
 
 int main(int argc, char *argv[])
 {
-  int a, b=2, c=1, *ip;
-  float f1, f2, f3 = 1;
-  double d1, d2, d3 = 1;
-  struct { int a, b; char c; double d; } st, *stp = &st;
-  struct obj obj = { op }, *objp = &obj;
-  int arr[50];
+  volatile int a, b=2, c=1, *ip;
+  volatile float f1, f2, f3 = 1;
+  volatile double d1, d2, d3 = 1;
+  volatile struct { int a, b; char c; double d; } st, *stp = &st;
+  volatile struct obj obj = { op }, *objp = &obj;
+  volatile int arr[50];
 
   st.b = 1;
 
@@ -59,8 +62,11 @@ int main(int argc, char *argv[])
   printf("long           %3d\n", sizeof(long));
   printf("long long      %3d\n", sizeof(long long));
   printf("char *         %3d\n", sizeof(char *));
+  printf("size_t         %3d\n", sizeof(size_t));
+  printf("ssize_t        %3d\n", sizeof(ssize_t));
+  printf("ptrdiff_t      %3d\n", sizeof(ptrdiff_t));
 
-  printf("Integer operations\n");
+  printf("\nInteger operations\n");
   HEAD
   TEST({})
   TEST(a = 1)
@@ -121,6 +127,8 @@ int main(int argc, char *argv[])
   TEST(a = b & st.b)
   TEST(if ( st.b ) a = b & st.b; else a = b % st.b)
   TEST(if (stp->b) a = b&stp->b; else a=b%stp->b)
+  TEST(if ( !st.b ) a = b & st.b; else a = b % st.b)
+  TEST(if (!stp->b) a = b&stp->b; else a=b%stp->b)
   TEST(f())
   TEST(op(&obj, 10))
   TEST(free(malloc(16)))
