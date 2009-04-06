@@ -10,7 +10,7 @@
 #include <cat/cat.h>
 #include <cat/err.h>
 #include <cat/emit.h>
-#include <cat/emit_file.h>
+#include <cat/stdemit.h>
 #include <cat/str.h>
 
 #if CAT_USE_STDLIB

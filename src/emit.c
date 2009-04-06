@@ -41,6 +41,14 @@ static int null_emit_func(struct emitter *em, const void *buf, size_t len)
 }
 
 
+int init_null_emitter(struct emitter *em)
+{
+  abort_unless(em);
+  em->emit_state = EMIT_OK;
+  em->emit_func = null_emit_func;
+}
+
+
 struct emitter null_emitter = { EMIT_OK, &null_emit_func };
 
 
@@ -88,43 +96,3 @@ void string_emitter_terminate(struct string_emitter *se)
 }
 
 
-#if CAT_HAS_POSIX
-#include <sys/types.h>
-#include <unistd.h>
-#include <errno.h>
-
-static int fd_emit_func(struct emitter *ectx, const void *buf, size_t len)
-{
-  size_t nwritten = 0;
-  ssize_t rv;
-  int fd = ((struct fd_emitter *)ectx)->fde_fd;
-  const unsigned char *data = buf;
-
-  while ( nwritten < len ) {
-    rv = write(fd, data + nwritten, len - nwritten);
-    if ( rv == -1 ) {
-      if ( errno == EINTR )
-        continue;
-      ectx->emit_state = EMIT_ERR;
-      return -1;
-    } else {
-      nwritten += (size_t)rv;
-    }
-  } 
-  return 0;
-}
-
-
-void fd_emitter_init(struct fd_emitter *fde, int fd)
-{
-  struct emitter *e;
-  abort_unless(fde);
-  abort_unless(fd >= 0);
-
-  e = &fde->fde_emitter;
-  e->emit_state = EMIT_OK;
-  e->emit_func  = fd_emit_func;
-  fde->fde_fd   = fd;
-}
-
-#endif /* CAT_HAS_POSIX */
