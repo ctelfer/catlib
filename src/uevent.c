@@ -57,6 +57,7 @@ void ue_init(struct uemux *mux)
     uemux_maxsig = -1;
   }
 
+  mux->done = 0;
   mux->maxfd = -1;
   mux->fdtab = avl_new(CAT_DT_NUM);
   dl_init(&mux->timers, -1, -1);
@@ -88,12 +89,20 @@ void ue_fini(struct uemux *mux, struct memsys *msys)
 }
 
 
+void ue_stop(struct uemux *mux)
+{
+  mux->done = 1;
+}
+
+
 static void tdispatch(void *lp, void *muxp)
 {
   struct list *l = lp;
   struct uemux *m = muxp;
   struct ue_timer *t;
 
+  if ( m->done )
+    return;
   l_rem(l);
   t = container(container(l, struct dlist, entry), 
           struct ue_timer, entry);
@@ -329,6 +338,8 @@ static void run_sig_handlers(struct uemux *mux, sigset_t *ss, int maxsig)
   struct callback *cb;
 
   for ( i = 0; i < maxsig ; ++i ) {
+    if ( mux->done )
+      return;
     if ( !sigismember(ss, i) )
       continue;
     an = avl_lkup(mux->sigtab, (void *)i, &dir);
@@ -347,6 +358,7 @@ static void run_sig_handlers(struct uemux *mux, sigset_t *ss, int maxsig)
 
 
 struct ue_iorun_prm {
+  struct uemux *mux;
   fd_set *	rset;
   fd_set *	wset;
   fd_set *	eset;
@@ -355,11 +367,13 @@ struct ue_iorun_prm {
 
 static void iorun(void *ioep, void *param)
 {
-  struct ue_ioevent *io = 
-    container(container(ioep, struct callback, entry),
-        struct ue_ioevent, cb);
+  struct ue_ioevent *io =
+    container(container(ioep, struct callback, entry), struct ue_ioevent, cb);
   struct ue_iorun_prm *iorp = param;
   fd_set *set = NULL;
+
+  if ( iorp->mux->done )
+    return;
 
   switch(io->type) {
     case UE_RD: set = iorp->rset; break;
@@ -383,6 +397,8 @@ void ue_next(struct uemux *mux)
   sigset_t block, oset, fired;
 
   abort_unless(mux);
+  if ( mux->done )
+    return;
 
   tvp = NULL;
   rset = mux->rset;
@@ -426,9 +442,10 @@ void ue_next(struct uemux *mux)
     l_apply(&l, tdispatch, mux);
   }
 
-  iorp.rset   = &rset;
-  iorp.wset   = &wset;
-  iorp.eset   = &eset;
+  iorp.mux  = mux;
+  iorp.rset = &rset;
+  iorp.wset = &wset;
+  iorp.eset = &eset;
   l_apply(&mux->iolist, iorun, &iorp);
 }
 
@@ -436,7 +453,7 @@ void ue_next(struct uemux *mux)
 void ue_run(struct uemux *mux)
 {
   abort_unless(mux);
-  while ( !dl_isempty(&mux->timers) || (mux->maxfd >= 0) )
+  while ( (!dl_isempty(&mux->timers) || (mux->maxfd >= 0)) && !mux->done )
     ue_next(mux);
 }
 
@@ -459,7 +476,7 @@ void ue_runfor(struct uemux *mux, unsigned long msec)
   ue_tm_init(&timer, UE_TIMEOUT, msec, done, &timeout);
   ue_tm_reg(mux, &timer);
 
-  while ( ! timeout )
+  while ( !timeout && !mux->done )
     ue_next(mux);
 }
 

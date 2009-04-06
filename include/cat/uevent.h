@@ -53,19 +53,21 @@ struct uemux {
   fd_set		wset;
   fd_set		eset;
   struct avl *		sigtab;
+  int                   done;
 };
 
 
 /* mux initialization, finalization and execution */
 void ue_init(struct uemux *mux);
 void ue_fini(struct uemux *mux, struct memsys *msys);
+void ue_stop(struct uemux *mux);
 void ue_next(struct uemux *mux);
 void ue_run(struct uemux *mux);
 void ue_runfor(struct uemux *mux, unsigned long msec);
 
 /* timer events */
 void ue_tm_init(struct ue_timer *t, int type, unsigned long ttl, callback_f tof,
-    void *arg);
+                void *arg);
 void ue_tm_reg(struct uemux *mux, struct ue_timer *t);
 void ue_tm_cancel(struct ue_timer *t);
 
@@ -84,9 +86,9 @@ void ue_sig_clear(void);
 struct ue_ioevent * ue_io_new(struct uemux *m, int type, int fd, callback_f f, 
                               void *ctx);
 struct ue_timer * ue_tm_new(struct uemux *m, int type, unsigned long ttl, 
-          callback_f f, void *ctx);
+                            callback_f f, void *ctx);
 struct ue_sigevent * ue_sig_new(struct uemux *m, int signum, callback_f f, 
-              void *ctx);
+                                void *ctx);
 void ue_tm_del(void *);
 void ue_io_del(void *);
 void ue_sig_del(void *);
