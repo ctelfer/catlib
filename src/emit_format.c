@@ -51,29 +51,24 @@ typedef int (*format_f)(struct emitter *em, struct format_params *fp,
             struct va_list_s *app, int *flen);
 
 
-int Emit_char(struct emitter *em, char ch)
-{
-  if ( em->emit_state == EMIT_EOS )
-    return 0;
-  return emit_char(em, ch);
-}
+#define EMIT_CHAR(em, ch)                                                \
+  do {                                                                   \
+    if ( ((em)->emit_state != EMIT_EOS) && (emit_char((em), (ch)) < 0) ) \
+      return -1;                                                         \
+  } while(0)
+      
 
-
-int Emit_string(struct emitter *em, const char *s)
-{
-  if ( em->emit_state == EMIT_EOS )
-    return 0;
-  return emit_string(em, s);
-}
-
+#define EMIT_STRING(em, ch)                                                \
+  do {                                                                     \
+    if ( ((em)->emit_state != EMIT_EOS) && (emit_string((em), (ch)) < 0) ) \
+      return -1;                                                           \
+  } while(0)
+      
 
 static int Emit_n_char(struct emitter *em, unsigned char ch, int times)
 {
-  abort_unless(em && times >= 0);
-  if ( em->emit_state == EMIT_EOS )
-    return 0;
   while ( times > 0 ) {
-    if ( Emit_char(em, ch) < 0 )
+    if ( ((em)->emit_state != EMIT_EOS) && (emit_char((em), (ch)) < 0) )
       return -1;
     --times;
   }
@@ -105,7 +100,7 @@ static int is_fmt_char(char ch)
 
 
 static int get_format_flags(const char **fmtp, struct format_params *fp,
-          struct va_list_s *app)
+                            struct va_list_s *app)
 {
   const char *fmt;
   char *fp2;
@@ -228,7 +223,7 @@ static void reverse_string(char *s, size_t len)
 
 
 static int fmt_char(struct emitter *em, struct format_params *fp, 
-        struct va_list_s *app, int *flen)
+                    struct va_list_s *app, int *flen)
 {
   char ch;
 
@@ -243,8 +238,7 @@ static int fmt_char(struct emitter *em, struct format_params *fp,
     if ( Emit_n_char(em, ' ', fp->minwidth - 1) < 0 )
       return -1;
   }
-  if ( Emit_char(em, ch) < 0 )
-    return -1;
+  EMIT_CHAR(em, ch);
   if ( fp->minwidth > 0 && !fp->rightjust ) {
     if ( Emit_n_char(em, ' ', fp->minwidth - 1) < 0 )
       return -1;
@@ -260,7 +254,7 @@ static int fmt_char(struct emitter *em, struct format_params *fp,
 
 
 static int fmt_str_help(char *s, struct emitter *em, struct format_params *fp, 
-            int *flen)
+                        int *flen)
 {
   size_t slen;
 
@@ -274,8 +268,7 @@ static int fmt_str_help(char *s, struct emitter *em, struct format_params *fp,
     if ( Emit_n_char(em, ' ', fp->minwidth - slen) < 0 )
       return -1;
   }
-  if ( Emit_string(em, s) < 0 )
-    return -1;
+  EMIT_STRING(em, s);
   if ( fp->minwidth > 0 && !fp->rightjust && fp->minwidth > slen ) {
     if ( Emit_n_char(em, ' ', fp->minwidth - slen) < 0 )
       return -1;
@@ -291,7 +284,7 @@ static int fmt_str_help(char *s, struct emitter *em, struct format_params *fp,
 
 
 static int fmt_str(struct emitter *em, struct format_params *fp,
-       struct va_list_s *app, int *flen)
+                   struct va_list_s *app, int *flen)
 {
   char *s;
 
@@ -366,7 +359,7 @@ static CAT_MAXSTYPE get_s_arg(struct format_params *fp, struct va_list_s *app)
 
 
 static int fmt_int(struct emitter *em, struct format_params *fp,
-       struct va_list_s *app, int *flen)
+                   struct va_list_s *app, int *flen)
 {
   CAT_MAXSTYPE v;
   char buf[sizeof(v) * 3 + 1] = { 0 };
@@ -418,14 +411,11 @@ static int fmt_int(struct emitter *em, struct format_params *fp,
       return -1;
 
   if ( neg ) {
-    if ( Emit_char(em, '-') < 0 )
-      return -1;
+    EMIT_CHAR(em, '-');
   } else if ( fp->alwayssign ) {
-    if ( Emit_char(em, '+') < 0 )
-      return -1;
+    EMIT_CHAR(em, '+');
   } else if ( fp->posspace ) {
-    if ( Emit_char(em, ' ') < 0 )
-      return -1;
+    EMIT_CHAR(em, ' ');
   }
 
   if ( ndigits > i ) {
@@ -433,8 +423,7 @@ static int fmt_int(struct emitter *em, struct format_params *fp,
       return -1;
   }
 
-  if ( Emit_string(em, buf) < 0 )
-    return -1;
+  EMIT_STRING(em, buf);
 
   if ( fp->minwidth >= 0 && fp->minwidth > tnlen && !fp->rightjust )
     if ( Emit_n_char(em, ' ', fp->minwidth - tnlen) < 0 )
@@ -450,7 +439,7 @@ static int fmt_int(struct emitter *em, struct format_params *fp,
 
 
 static int fmt_u(struct emitter *em, struct format_params *fp, int *flen, 
-     int radix, char *apfx, CAT_MAXUTYPE v)
+                 int radix, char *apfx, CAT_MAXUTYPE v)
 {
   char buf[sizeof(v) * 8 + 1] = { 0 };
   int i, ndigits, tnlen, plen = 0;
@@ -496,8 +485,7 @@ static int fmt_u(struct emitter *em, struct format_params *fp, int *flen,
     int i, ch;
     for ( i = 0 ; i < plen ; ++i ) {
       ch = fp->capver ? toupper(apfx[i]) : apfx[i];
-      if ( Emit_char(em, ch) < 0 )
-        return -1;
+      EMIT_CHAR(em, ch);
     }
   }
 
@@ -505,8 +493,7 @@ static int fmt_u(struct emitter *em, struct format_params *fp, int *flen,
     if ( Emit_n_char(em, '0', ndigits - i) < 0 )
       return -1;
 
-  if ( Emit_string(em, buf) < 0 )
-    return -1;
+  EMIT_STRING(em, buf);
 
   if ( fp->minwidth >= 0 && fp->minwidth > tnlen && !fp->rightjust )
     if ( Emit_n_char(em, '0', fp->minwidth - tnlen) < 0 )
@@ -522,7 +509,7 @@ static int fmt_u(struct emitter *em, struct format_params *fp, int *flen,
 
 
 static int fmt_hex(struct emitter *em, struct format_params *fp,
-       struct va_list_s *app, int *flen)
+                   struct va_list_s *app, int *flen)
 {
   abort_unless(em && fp && app && flen);
   return fmt_u(em, fp, flen, 16, "0x", get_u_arg(fp, app));
@@ -530,7 +517,7 @@ static int fmt_hex(struct emitter *em, struct format_params *fp,
 
 
 static int fmt_oct(struct emitter *em, struct format_params *fp,
-       struct va_list_s *app, int *flen)
+                   struct va_list_s *app, int *flen)
 {
   abort_unless(em && fp && app && flen);
   return fmt_u(em, fp, flen, 8, "0", get_u_arg(fp, app));
@@ -538,7 +525,7 @@ static int fmt_oct(struct emitter *em, struct format_params *fp,
 
 
 static int fmt_uint(struct emitter *em, struct format_params *fp,
-        struct va_list_s *app, int *flen)
+                    struct va_list_s *app, int *flen)
 {
   abort_unless(em && fp && app && flen);
   return fmt_u(em, fp, flen, 10, "", get_u_arg(fp, app));
@@ -547,7 +534,7 @@ static int fmt_uint(struct emitter *em, struct format_params *fp,
 
 
 static int fmt_binary(struct emitter *em, struct format_params *fp,
-          struct va_list_s *app, int *flen)
+                      struct va_list_s *app, int *flen)
 {
   abort_unless(em && fp && app && flen);
   return fmt_u(em, fp, flen, 2, "0b", get_u_arg(fp, app));
@@ -555,7 +542,7 @@ static int fmt_binary(struct emitter *em, struct format_params *fp,
 
 
 static int get_double_arg(struct format_params *fp, struct va_list_s *app, 
-        long double *rv)
+                          long double *rv)
 {
   long double v;
 
@@ -681,7 +668,7 @@ static int adjust_precision(long double v, int power, int prec, int flags)
 
 
 static int fmt_double_help(long double v, struct emitter *em, 
-         struct format_params *fp, int *flen)
+                           struct format_params *fp, int *flen)
 {
   int prec = 6;
   int signlen = 0;
@@ -727,15 +714,12 @@ static int fmt_double_help(long double v, struct emitter *em,
 
   /* Add sign */
   if ( v < 0.0 ) {
-    if ( Emit_char(em, '-') < 0 )
-      return -1;
+    EMIT_CHAR(em, '-');
     v = 0.0 - v;
   } else if ( fp->alwayssign ) {
-    if ( Emit_char(em, '+') < 0 )
-      return -1;
+    EMIT_CHAR(em, '+');
   } else if ( fp->posspace ) {
-    if ( Emit_char(em, ' ') < 0 )
-      return -1;
+    EMIT_CHAR(em, ' ');
   }
 
   if ( spaces > 0 && fp->rightjust && fp->zerofill ) {
@@ -752,28 +736,24 @@ static int fmt_double_help(long double v, struct emitter *em,
     v /= p10(power);
     while ( power >= 0 ) {
       digit = (unsigned char)v  % 10;
-      if ( Emit_char(em, digit + '0') < 0 )
-        return -1;
+      EMIT_CHAR(em, digit + '0');
       v *= 10.0;
       v -= digit * 10.0;
       --power;
     }
   } else {
-    if ( Emit_char(em, '0') < 0 )
-      return -1;
+    EMIT_CHAR(em, '0');
     v *= 10.0;
   }
 
   if ( prec > 0 || fp->alternate ) {
-    if ( Emit_char(em, '.') < 0 )
-      return -1;
+    EMIT_CHAR(em, '.');
   }
 
   /* fractional portion */
   while ( prec > 0 ) {
     digit = (unsigned char)v % 10;
-    if ( Emit_char(em, digit + '0') < 0 )
-      return -1;
+    EMIT_CHAR(em, digit + '0');
     v *= 10.0;
     v -= digit * 10.0;
     --prec;
@@ -792,7 +772,7 @@ static int fmt_double_help(long double v, struct emitter *em,
 
 
 static int fmt_double(struct emitter *em, struct format_params *fp,
-          struct va_list_s *app, int *flen)
+                      struct va_list_s *app, int *flen)
 {
   long double v;
   abort_unless(em && fp && app && flen);
@@ -804,7 +784,7 @@ static int fmt_double(struct emitter *em, struct format_params *fp,
 
 
 static int fmt_exp_double_help(long double v, struct emitter *em, 
-             struct format_params *fp, int *flen)
+                               struct format_params *fp, int *flen)
 {
   int prec = 6;
   int signlen = 0;
@@ -858,15 +838,12 @@ static int fmt_exp_double_help(long double v, struct emitter *em,
 
   /* Add sign */
   if ( v < 0.0 ) {
-    if ( Emit_char(em, '-') < 0 )
-      return -1;
+    EMIT_CHAR(em, '-');
     v = 0.0 - v;
   } else if ( fp->alwayssign ) {
-    if ( Emit_char(em, '+') < 0 )
-      return -1;
+    EMIT_CHAR(em, '+');
   } else if ( fp->posspace ) {
-    if ( Emit_char(em, ' ') < 0 )
-      return -1;
+    EMIT_CHAR(em, ' ');
   }
 
   if ( spaces > 0 && fp->rightjust && fp->zerofill ) {
@@ -882,38 +859,30 @@ static int fmt_exp_double_help(long double v, struct emitter *em,
 
   /* print first digit */
   digit = (unsigned char)v  % 10;
-  if ( Emit_char(em, digit + '0') < 0 )
-    return -1;
+  EMIT_CHAR(em, digit + '0');
   v *= 10.0;
   v -= digit * 10.0;
 
-  if ( prec > 0 || fp->alternate ) {
-    if ( Emit_char(em, '.') < 0 )
-      return -1;
-  }
+  if ( prec > 0 || fp->alternate )
+    EMIT_CHAR(em, '.');
 
   while ( prec > 0 ) {
     digit = (unsigned char)v  % 10;
-    if ( Emit_char(em, digit + '0') < 0 )
-      return -1;
+    EMIT_CHAR(em, digit + '0');
     v *= 10.0;
     v -= digit * 10.0;
     --prec;
   }
 
-  if ( Emit_char(em, isupper(fp->fmtchar) ? 'E' : 'e') < 0 )
-    return -1;
+  EMIT_CHAR(em, isupper(fp->fmtchar) ? 'E' : 'e');
 
   power = opower;
-  if ( Emit_char(em, (power < 0) ? '-' : '+') < 0 )
-    return -1;
+  EMIT_CHAR(em, (power < 0) ? '-' : '+');
   
   if ( power < 0 )
     power =  -power;
-  if ( power < 10 ) {
-    if ( Emit_char(em, '0') < 0 )
-      return -1;
-  }
+  if ( power < 10 )
+    EMIT_CHAR(em, '0');
 
   if ( power == 0 ) {
     exp[0] = '0';
@@ -925,8 +894,7 @@ static int fmt_exp_double_help(long double v, struct emitter *em,
   exp[i] = '\0';
   reverse_string(exp, i);
 
-  if ( Emit_string(em, exp) < 0 )
-    return -1;
+  EMIT_STRING(em, exp);
 
   *flen = tlen + spaces;
 
@@ -935,7 +903,7 @@ static int fmt_exp_double_help(long double v, struct emitter *em,
 
 
 static int fmt_exp_double(struct emitter *em, struct format_params *fp,
-              struct va_list_s *app, int *flen)
+                          struct va_list_s *app, int *flen)
 {
   long double v;
   abort_unless(em && fp && app && flen);
@@ -947,7 +915,7 @@ static int fmt_exp_double(struct emitter *em, struct format_params *fp,
 
 
 static int fmt_variable_double(struct emitter *em, struct format_params *fp,
-             struct va_list_s *app, int *flen)
+                               struct va_list_s *app, int *flen)
 {
   long double v;
   int power;
@@ -969,7 +937,7 @@ static int fmt_variable_double(struct emitter *em, struct format_params *fp,
 
 
 static int fmt_ptr(struct emitter *em, struct format_params *fp,
-       struct va_list_s *app, int *flen)
+                   struct va_list_s *app, int *flen)
 {
   CAT_MAXUTYPE v;
 
@@ -1020,7 +988,8 @@ struct {
 static const int format_tab_len = sizeof(format_tab) / sizeof(format_tab[0]);
 
 
-static format_f find_formatter(struct format_params *fp) {
+static format_f find_formatter(struct format_params *fp) 
+{
   int i;
   unsigned char fmtchar;
 
@@ -1040,7 +1009,7 @@ static format_f find_formatter(struct format_params *fp) {
 
 
 static int emit_format_help(struct emitter *em, const char **fmtp,
-                struct va_list_s *app, int *flen)
+                            struct va_list_s *app, int *flen)
 {
   struct format_params fp;
   format_f formatter;
@@ -1054,8 +1023,7 @@ static int emit_format_help(struct emitter *em, const char **fmtp,
 
   /* handle the %% case */
   if ( fp.fmtchar == '%' ) {
-    if ( Emit_char(em, '%') < 0 )
-      return -1;
+    EMIT_CHAR(em, '%');
     *flen = 1;
     return 0;
   } else if ( fp.fmtchar == '\0' )
@@ -1072,23 +1040,32 @@ int emit_format(struct emitter *em, const char *fmt, va_list ap)
 {
   int flen, len = 0;
   struct va_list_s val;
+  const char *fs;
 
   va_copy(val.ap, ap);
 
   abort_unless(em && fmt);
+  fs = fmt;
   while ( *fmt != '\0' ) {
     if ( *fmt == '%' ) {
+      if ( fs != fmt ) {
+        abort_unless(len < INT_MAX);
+        emit_raw(em, fs, fmt - fs);
+      }
       fmt++;
       if ( emit_format_help(em, &fmt, &val, &flen) < 0 )
         return -1;
       abort_unless(flen <= INT_MAX - len);
       len += flen;
+      fs = fmt;
     } else {
-      abort_unless(len < INT_MAX);
-      if ( Emit_char(em, *fmt++) < 0 )
-        return -1;
+      ++fmt;
       ++len;
     }
+  }
+  if ( fs != fmt ) {
+    abort_unless(len < INT_MAX);
+    emit_raw(em, fs, fmt - fs);
   }
 
   return len;
