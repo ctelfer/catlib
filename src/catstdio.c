@@ -501,7 +501,7 @@ int vfprintf(FILE *file, const char *fmt, va_list ap)
   struct file_emitter e = { {EMIT_OK, file_emit_func}, NULL };
   abort_unless(file && fmt);
   e.file = file;
-  return emit_format(&e.emitter, fmt, ap);
+  return emit_vformat(&e.emitter, fmt, ap);
 }
 
 
@@ -519,7 +519,7 @@ int vsnprintf(char *buf, size_t len, const char *fmt, va_list ap)
     string_emitter_init(&se, buf, len);
   else
     string_emitter_init(&se, tbuf, 1);
-  rlen = emit_format(&se.se_emitter, fmt, ap);
+  rlen = emit_vformat(&se.se_emitter, fmt, ap);
   string_emitter_terminate(&se);
   
   return rlen;
@@ -544,7 +544,7 @@ int snprintf(char *buf, size_t len, const char *fmt, ...)
 
   va_start(ap, fmt);
   string_emitter_init(&se, buf, len);
-  rlen = emit_format(&se.se_emitter, fmt, ap);
+  rlen = emit_vformat(&se.se_emitter, fmt, ap);
   string_emitter_terminate(&se);
   va_end(ap);
 

@@ -1036,7 +1036,7 @@ static int emit_format_help(struct emitter *em, const char **fmtp,
 }
 
 
-int emit_format(struct emitter *em, const char *fmt, va_list ap)
+int emit_vformat(struct emitter *em, const char *fmt, va_list ap)
 {
   int flen, len = 0;
   struct va_list_s val;
@@ -1069,4 +1069,15 @@ int emit_format(struct emitter *em, const char *fmt, va_list ap)
   }
 
   return len;
+}
+
+
+int emit_format(struct emitter *em, const char *fmt, ...)
+{
+  va_list ap;
+  int rv;
+  va_start(ap, fmt);
+  rv = emit_vformat(em, fmt, ap);
+  va_end(ap);
+  return rv;
 }

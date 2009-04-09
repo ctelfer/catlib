@@ -98,7 +98,7 @@ int str_vfmt(char *buf, size_t len, const char *fmt, va_list ap)
     string_emitter_init(&se, buf, len);
   else
     string_emitter_init(&se, tbuf, 1);
-  rlen = emit_format(&se.se_emitter, fmt, ap);
+  rlen = emit_vformat(&se.se_emitter, fmt, ap);
   string_emitter_terminate(&se);
 
   return rlen;
