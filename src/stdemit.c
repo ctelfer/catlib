@@ -34,6 +34,7 @@ void file_emitter_init(struct file_emitter *fe, FILE *file)
   e = &fe->fe_emitter;
   e->emit_state = EMIT_OK;
   e->emit_func = file_emit_func;
+  fe->fe_file = file;
 }
 
 
