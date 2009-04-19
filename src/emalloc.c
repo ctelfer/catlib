@@ -83,7 +83,7 @@ void * ecalloc(size_t nmemb, size_t size)
     (*abort_func)("ecalloc: zero size!", NULL, size, 1, 0);
   if ( nmemb == 0 )
     (*abort_func)("ecalloc: zero nmemb!", NULL, size, 1, 0);
-  if ( (size_t)~0 / size > nmemb )
+  if ( (size_t)~0 / nmemb < size )
     (*abort_func)("ecalloc: size overflow!", NULL, size, 1, 0);
 
   tlen = nmemb * size;
