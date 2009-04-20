@@ -183,7 +183,16 @@ static int get_format_flags(const char **fmtp, struct format_params *fp,
       case 'l':
         if ( fp->argsize != ARG_REG )
           return -1;
+#if CAT_HAS_LONGLONG
+        if ( *(fmt+1) == 'l' ) {
+          ++fmt;
+          fp->argsize = ARG_LONGLONG;
+        } else {
+          fp->argsize = ARG_LONG;
+        }
+#else
         fp->argsize = ARG_LONG;
+#endif /* CAT_HAS_LONGLONG */
         break;
       case 'L':
         if ( fp->argsize != ARG_REG )
