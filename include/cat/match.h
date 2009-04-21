@@ -43,14 +43,14 @@ struct sfxedge {
 };
 
 struct suffix {
-        struct sfxnode *        node;
-        long                    start;
-        long                    end;
+  struct sfxnode *              node;
+  long                          start;
+  long                          end;
 };
 
 struct sfxedgekey {
-        struct sfxnode *        node;
-        unsigned short          character;
+  struct sfxnode *              node;
+  unsigned short                character;
 };
 
 struct sfxtree {
