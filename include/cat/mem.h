@@ -22,4 +22,21 @@ void mem_free(struct memsys *m, void *mem);
 
 extern void applyfree(void *data, void *memsys);
 
+
+struct arraymsys {
+  struct memsys         sys;
+  byte_t *              mem;
+  size_t                mlen;
+  size_t                fill;
+  int                   alignp2;
+  int                   hi2lo;
+};
+
+
+void amsys_init(struct arraymsys *sys, void *mem, size_t mlen, int align,
+                int hi2lo);
+void amsys_reset(struct arraymsys *sys);
+size_t amsys_get_fill(struct arraymsys *sys);
+size_t amsys_get_avail(struct arraymsys *sys);
+
 #endif /* __cat_mem_h */
