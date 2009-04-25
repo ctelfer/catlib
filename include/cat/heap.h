@@ -30,12 +30,12 @@ struct heap {
   int			fill;
   void **		elem;
   cmp_f			cmp;
-  struct memsys *	memsys;
+  struct memmgr *	mm;
 };
 
 
 DECL void   hp_init(struct heap *hp, void **elem, int size, int fill, 
-                    cmp_f cmp, struct memsys *ms);
+                    cmp_f cmp, struct memmgr *mm);
 DECL int    hp_add(struct heap *hp, void *elem, int *pos);
 DECL int    hp_find(struct heap *hp, void *data);
 DECL void * hp_extract(struct heap *hp);
@@ -98,7 +98,7 @@ LOCAL void reheapdown(struct heap *hp, int pos)
 
 
 DECL void hp_init(struct heap *hp, void **elem, int size, int fill,
-                  cmp_f cmp, struct memsys *ms)
+                  cmp_f cmp, struct memmgr *mm)
 {
   int i;
 
@@ -106,10 +106,10 @@ DECL void hp_init(struct heap *hp, void **elem, int size, int fill,
   abort_unless(size >= 0);
   abort_unless(fill >= 0);
   abort_unless(cmp);
-hp->size = size; 
+  hp->size = size; 
   hp->elem = elem;
   hp->cmp  = cmp;
-  hp->memsys = ms;
+  hp->mm = mm;
 
   if ( (hp->fill = fill) ) {
     if ( fill > size ) 		/* sanity check */
@@ -129,7 +129,7 @@ DECL int hp_add(struct heap *hp, void *elem, int *pos)
   abort_unless(hp);
 
   if ( hp->fill == hp->size ) {
-    if ( ! hp->memsys ) 
+    if ( ! hp->mm ) 
       return -1;
 
     if ( ! hp->size )
@@ -140,7 +140,7 @@ DECL int hp_add(struct heap *hp, void *elem, int *pos)
     if ( n < hp->size ) /* XXX check for overflow */
       return -1;
     
-    p = mem_resize(hp->memsys, hp->elem, n * sizeof(void *));
+    p = mem_resize(hp->mm, hp->elem, n * sizeof(void *));
     if ( p == NULL )
       return -1;
 

@@ -22,7 +22,7 @@ static void shell_free_value(struct shell_value *val)
 {
   free_f freep;
   if ( (freep = val->sval_free) )
-    (*freep)(val->sval_mem, val->sval_ptr);
+    (*freep)(val->sval_mm, val->sval_ptr);
 }
 
 
@@ -212,7 +212,7 @@ void shell_free_var(struct shell_var *sv)
   sv->sv_name[0] = '\0';
   val->sval_type = SVT_NIL;
   val->sval_free = NULL;
-  val->sval_mem = NULL;
+  val->sval_mm = NULL;
   val->sval_int = 0;
 }
 

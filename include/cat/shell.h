@@ -21,7 +21,7 @@ enum {
 struct shell_value {
   int			sval_type;
   scalar_t		sval_val;
-  struct memsys *	sval_mem;
+  struct memmgr *	sval_mm;
   free_f		sval_free;
 };
 #define sval_int	sval_val.int_val

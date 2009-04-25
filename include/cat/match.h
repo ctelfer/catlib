@@ -54,14 +54,14 @@ struct sfxedgekey {
 };
 
 struct sfxtree {
-  struct memsys			sys;
+  struct memmgr			mm;
   struct raw			str;
   struct htab			edges;
   struct sfxnode		root;
 };
 
 
-int  sfx_init(struct sfxtree *sfx, struct raw *str, struct memsys *sys);
+int  sfx_init(struct sfxtree *sfx, struct raw *str, struct memmgr *mm);
 int  sfx_match(struct sfxtree *sfx, struct raw *pat, unsigned long *off);
 void sfx_clear(struct sfxtree *sfx);
 struct sfxnode *sfx_next(struct sfxtree *t, struct sfxnode *cur, int ch);
@@ -107,7 +107,7 @@ struct rex_choice {
 };
 
 struct rex_pat {
-  struct memsys		sys;
+  struct memmgr		mm;
   int			start_anchor;
   struct rex_group 	start;
   struct rex_group 	end;
@@ -124,7 +124,7 @@ struct rex_match_loc {
 #define REX_NOMATCH	1
 #define REX_ERROR	-1
 
-int rex_init(struct rex_pat *rxp, struct raw *pat, struct memsys *sys,
+int rex_init(struct rex_pat *rxp, struct raw *pat, struct memmgr *mm,
              int *error);
 int rex_match(struct rex_pat *rxp, struct raw *str, struct rex_match_loc *m,
               unsigned nm);

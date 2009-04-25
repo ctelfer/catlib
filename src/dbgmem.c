@@ -15,7 +15,7 @@
 #define CAT_DBGMEM_NBUCKETS	4096
 #endif /* CAT_DBGMEM_NBUCKETS */
 
-struct memsys dbgmem = { dbg_mem_get, dbg_mem_resize, dbg_mem_free, NULL };
+struct memmgr dbgmem = { dbg_mem_get, dbg_mem_resize, dbg_mem_free, NULL };
 static unsigned long dbg_alloc_amt = 0;
 static unsigned long dbg_num_alloc = 0;
 
@@ -57,13 +57,13 @@ static void dbg_initialize(void)
 
 
 
-void *dbg_mem_get(struct memsys *m, size_t amt)
+void *dbg_mem_get(struct memmgr *mm, size_t amt)
 {
   size_t ramt;
   struct dbg_header *dh;
   void *p;
 
-  abort_unless(m == &dbgmem);
+  abort_unless(mm == &dbgmem);
   if ( !initialized )
     dbg_initialize();
 
@@ -86,7 +86,7 @@ void *dbg_mem_get(struct memsys *m, size_t amt)
 }
 
 
-void *dbg_mem_resize(struct memsys *m, void *p, size_t newsize)
+void *dbg_mem_resize(struct memmgr *mm, void *p, size_t newsize)
 {
   size_t ramt;
   struct dbg_header *dh;
@@ -94,7 +94,7 @@ void *dbg_mem_resize(struct memsys *m, void *p, size_t newsize)
   void *p2;
   size_t osize;
 
-  abort_unless(m == &dbgmem);
+  abort_unless(mm == &dbgmem);
   if ( !initialized )
     dbg_initialize();
 
@@ -133,12 +133,12 @@ void *dbg_mem_resize(struct memsys *m, void *p, size_t newsize)
 }
 
 
-void dbg_mem_free(struct memsys *m, void *p)
+void dbg_mem_free(struct memmgr *mm, void *p)
 {
   struct hnode *hn;
   struct dbg_header *dh;
 
-  abort_unless(m == &dbgmem);
+  abort_unless(mm == &dbgmem);
   if ( !initialized )
     dbg_initialize();
 

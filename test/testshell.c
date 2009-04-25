@@ -62,7 +62,7 @@ int func(struct shell_env *env, int nargs, char *args[], struct shell_value *rv)
 		printf("String val: %s\n", sval);
 		rv->sval_type = SVT_STRING;
 		rv->sval_str = str_copy_a(sval);
-		rv->sval_mem = &estdmem;
+		rv->sval_mm = &estdmem;
 		rv->sval_free = mem_free;
 	} else if ( strcmp(args[0], "pval") == 0 ) {
 		void *pval;

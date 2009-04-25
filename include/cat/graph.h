@@ -32,14 +32,14 @@ struct gr_edge {
 
 
 struct graph {
-  struct list 	nodes;
-  struct list	edges;
-  int		isbi;
-  struct memsys * mem;
+  struct list 	        nodes;
+  struct list	        edges;
+  int		        isbi;
+  struct memmgr *       mm;
 };
 
 
-struct graph *   gr_new(struct memsys *mem, int isbi);
+struct graph *   gr_new(struct memmgr *mm, int isbi);
 struct gr_node * gr_add_node(struct graph *g, union scalar_u decor);
 struct gr_edge * gr_add_edge(struct gr_node *src, struct gr_node *dst, 
                              union scalar_u decor);

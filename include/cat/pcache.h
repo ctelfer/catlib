@@ -19,7 +19,7 @@ struct pcache {
   unsigned		npools;
   unsigned		maxpools;
   unsigned		hiwat;
-  struct memsys *	memsys;
+  struct memmgr *	mm;
 };
 
 
@@ -37,7 +37,7 @@ union pc_pool_u {
 
 
 void  pc_init(struct pcache *pc, size_t asiz, size_t pgsiz, unsigned hiwat, 
-              unsigned maxpools, struct memsys *memsys);
+              unsigned maxpools, struct memmgr *mm);
 void  pc_freeall(struct pcache *pc);
 void *pc_alloc(struct pcache *pc);
 void  pc_free(void *item);

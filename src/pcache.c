@@ -7,7 +7,7 @@ typedef union {
 
 
 void pc_init(struct pcache *pc, size_t asiz, size_t pgsiz, unsigned hiwat, 
-             unsigned maxpools, struct memsys *memsys)
+             unsigned maxpools, struct memmgr *mm)
 {
   abort_unless(pc);
   abort_unless(asiz > 0);
@@ -21,7 +21,7 @@ void pc_init(struct pcache *pc, size_t asiz, size_t pgsiz, unsigned hiwat,
     maxpools = ~0;
 
   pc->asiz     = asiz + sizeof(cat_pcpad_t);
-  pc->memsys   = memsys;
+  pc->mm       = mm;
   pc->pgsiz    = pgsiz;
   pc->hiwat    = hiwat;
   pc->maxpools = maxpools;
@@ -36,12 +36,12 @@ void pc_freeall(struct pcache *pc)
 {
   struct list *lp;
 
-  if ( ! pc->memsys ) 
+  if ( ! pc->mm ) 
     return;
   while ( (lp = l_pop(&pc->avail)) )
-    mem_free(pc->memsys, lp);
+    mem_free(pc->mm, lp);
   while ( (lp = l_pop(&pc->empty)) )
-    mem_free(pc->memsys, lp);
+    mem_free(pc->mm, lp);
 }
 
 
@@ -54,10 +54,10 @@ void * pc_alloc(struct pcache *pc)
 
   if ( l_isempty(&pc->avail) ) { 
 
-    if ( ! pc->memsys || (pc->npools == pc->maxpools) )
+    if ( ! pc->mm || (pc->npools == pc->maxpools) )
       return NULL;
 
-    pcp = mem_get(pc->memsys, pc->pgsiz);
+    pcp = mem_get(pc->mm, pc->pgsiz);
     if ( ! pcp ) 
       return NULL;
     pc_addpg(pc, pcp, pc->pgsiz);
@@ -98,9 +98,9 @@ void pc_free(void *item)
   if ( pp->fill == pp->max ) { 
     pc = pcp->cache;
 
-    if (pc->memsys && (pc->hiwat > 0) && (pc->npools > pc->hiwat)) {
+    if (pc->mm && (pc->hiwat > 0) && (pc->npools > pc->hiwat)) {
       l_rem(&pcp->entry);
-      mem_free(pc->memsys, pcp);
+      mem_free(pc->mm, pcp);
       pc->npools -= 1;
     }
   }

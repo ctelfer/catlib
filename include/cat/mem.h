@@ -3,28 +3,28 @@
 #include <cat/cat.h>
 #include <cat/aux.h>
 
-struct memsys;
-typedef void *(*alloc_f)(struct memsys *msys, size_t size);
-typedef void *(*resize_f)(struct memsys *msys, void *old, size_t size);
-typedef void  (*free_f)(struct memsys *msys, void * tofree);
+struct memmgr;
+typedef void *(*alloc_f)(struct memmgr *mm, size_t size);
+typedef void *(*resize_f)(struct memmgr *mm, void *old, size_t size);
+typedef void  (*free_f)(struct memmgr *mm, void * tofree);
 
-struct memsys {
-  alloc_f	ms_alloc;
-  resize_f	ms_resize;
-  free_f	ms_free;
-  void *	ms_ctx;
+struct memmgr {
+  alloc_f	mm_alloc;
+  resize_f	mm_resize;
+  free_f	mm_free;
+  void *	mm_ctx;
 };
 
 
-void *mem_get(struct memsys *m, size_t len);
-void *mem_resize(struct memsys *m, void *mem, size_t len);
-void mem_free(struct memsys *m, void *mem);
+void *mem_get(struct memmgr *m, size_t len);
+void *mem_resize(struct memmgr *m, void *mem, size_t len);
+void mem_free(struct memmgr *m, void *mem);
 
-extern void applyfree(void *data, void *memsys);
+extern void applyfree(void *data, void *memmgr);
 
 
-struct arraymsys {
-  struct memsys         sys;
+struct arraymm {
+  struct memmgr         mm;
   byte_t *              mem;
   size_t                mlen;
   size_t                fill;
@@ -33,10 +33,10 @@ struct arraymsys {
 };
 
 
-void amsys_init(struct arraymsys *sys, void *mem, size_t mlen, int align,
+void amm_init(struct arraymm *amm, void *mem, size_t mlen, int align,
                 int hi2lo);
-void amsys_reset(struct arraymsys *sys);
-size_t amsys_get_fill(struct arraymsys *sys);
-size_t amsys_get_avail(struct arraymsys *sys);
+void amm_reset(struct arraymm *amm);
+size_t amm_get_fill(struct arraymm *amm);
+size_t amm_get_avail(struct arraymm *amm);
 
 #endif /* __cat_mem_h */

@@ -14,8 +14,8 @@
 int grow(byte_t **ptr, size_t *len, size_t min);
 int agrow(void **ptr, size_t isiz, size_t *lenp, size_t min);
 
-int mem_grow(struct memsys *m, byte_t **ptr, size_t *len, size_t min);
-int mem_agrow(struct memsys *m, void **ptr, size_t isiz, size_t *lenp, 
+int mem_grow(struct memmgr *mm, byte_t **ptr, size_t *len, size_t min);
+int mem_agrow(struct memmgr *mm, void **ptr, size_t isiz, size_t *lenp, 
               size_t min);
 
 #endif /* __grow_h */

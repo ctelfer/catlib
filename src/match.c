@@ -175,10 +175,10 @@ static unsigned edgehash(void *key, void *notused)
 static struct hnode * newedge(void *k, void *d, unsigned h, void *c)
 {
   struct sfxedge *edge;
-  struct memsys *msys = c;
+  struct memmgr *mm = c;
   struct sfxedgekey *ek = k, *nk;
 
-  edge = mem_get(msys, sizeof(struct sfxedge)+sizeof(struct sfxedgekey));
+  edge = mem_get(mm, sizeof(struct sfxedge)+sizeof(struct sfxedgekey));
   nk = (struct sfxedgekey *)(edge + 1);
   memset(nk, 0, sizeof(*nk));
   nk->node = ek->node;
@@ -199,7 +199,7 @@ static void freeedge(struct hnode *n, void *ctx)
 /* returns 0 if the node was already there or 1 if the node was created   */
 
 static struct sfxedge *getedge(struct sfxtree *t, struct sfxnode *par, int ch,
-             int *create)
+                               int *create)
 {
   struct sfxedgekey ek;
   struct hnode *node;
@@ -211,7 +211,7 @@ static struct sfxedge *getedge(struct sfxtree *t, struct sfxnode *par, int ch,
   if ( !(node = ht_lkup(ht, &ek, &hash)) ) {
     if ( !*create )
       return NULL;
-    if ( !(node = newedge(&ek, NULL, hash, &t->sys)) ) {
+    if ( !(node = newedge(&ek, NULL, hash, &t->mm)) ) {
       *create = 0;
       return NULL;
     }
@@ -227,7 +227,7 @@ static struct sfxedge *getedge(struct sfxtree *t, struct sfxnode *par, int ch,
 static struct sfxnode *newnode(struct sfxtree *sfx)
 {
   struct sfxnode *node;
-  if ( !(node = mem_get(&sfx->sys, sizeof(*node))) )
+  if ( !(node = mem_get(&sfx->mm, sizeof(*node))) )
     return NULL;
   node->sptr = NULL;
   return node;
@@ -249,7 +249,7 @@ static struct sfxnode *split(struct sfxtree *sfx, struct sfxedge *edge,
     return NULL;
   create = 1;
   if ( !(e1 = getedge(sfx, newint, text[edge->start + off], &create)) ) {
-    mem_free(&sfx->sys, newint);
+    mem_free(&sfx->mm, newint);
     return NULL;
   }
   newint->sptr = ((struct sfxedgekey *)edge->hentry.key)->node;
@@ -361,7 +361,7 @@ static int sfx_build(struct sfxtree *sfx)
 }
 
 
-int sfx_init(struct sfxtree *sfx, struct raw *str, struct memsys *sys)
+int sfx_init(struct sfxtree *sfx, struct raw *str, struct memmgr *mm)
 {
   struct list *entries;
   struct sfxnode *root;
@@ -371,12 +371,12 @@ int sfx_init(struct sfxtree *sfx, struct raw *str, struct memsys *sys)
   abort_unless(str && str->data);
   abort_unless(str->len <= CAT_SFX_MAXLEN);
 
-  sfx->sys = *sys;
+  sfx->mm = *mm;
   sfx->str = *str;
   /* XXX fix size? */
   if ( ((unsigned long)~0) / sizeof(struct list) < str->len )
     return -1;
-  if ( !(entries = mem_get(sys, sizeof(struct list) * str->len)) )
+  if ( !(entries = mem_get(mm, sizeof(struct list) * str->len)) )
     return -1;
   ht_init(&sfx->edges, entries, str->len, &sfxhsys);
   root = &sfx->root;
@@ -442,20 +442,20 @@ static void ap_edgefree(void *data, void *ctx)
   struct sfxtree *t = ctx;
   ht_rem(node);
   if ( node->data )
-    mem_free(&t->sys, node->data);
-  freeedge(node, &t->sys);
+    mem_free(&t->mm, node->data);
+  freeedge(node, &t->mm);
 }
 
 
 void sfx_clear(struct sfxtree *sfx)
 {
   ht_apply(&sfx->edges, ap_edgefree, sfx);
-  mem_free(&sfx->sys, sfx->edges.tab);
+  mem_free(&sfx->mm, sfx->edges.tab);
 }
 
 
 struct rex_parse_aux {
-  struct memsys *sys;
+  struct memmgr *mm;
   struct rex_group *initial;
   struct rex_group *final;
   unsigned char *start;
@@ -569,7 +569,7 @@ static int rex_parse_str(struct rex_node **rxnn, unsigned char *p,
   struct rex_node_str *rs;
   unsigned char *s, *op;
 
-  if ( !(rs = mem_get(aux->sys, sizeof(*rs))) )
+  if ( !(rs = mem_get(aux->mm, sizeof(*rs))) )
     return rex_parse_error(rxnn, aux, NULL);
   *rxnn = (struct rex_node *)rs;
   rs->base.type = REX_T_STRING;
@@ -608,7 +608,7 @@ static int rex_parse_str(struct rex_node **rxnn, unsigned char *p,
   if ( p != op ) { 
     if ( rs->len > 1 ) {
       struct rex_node_str *rs2;
-      if ( !(rs2 = mem_get(aux->sys, sizeof(*rs2))) )
+      if ( !(rs2 = mem_get(aux->mm, sizeof(*rs2))) )
         return rex_parse_error(rxnn, aux, NULL);
       rs->len -= 1;
       *rxnn = (struct rex_node *)rs2;
@@ -644,7 +644,7 @@ static int rex_parse_class(struct rex_node **rxnn, unsigned char *p,
   if ( end == start || end == aux->end )
     rex_parse_error(rxnn, aux, p - 1);
 
-  if ( !(rxc = mem_get(aux->sys, sizeof(*rxc))) )
+  if ( !(rxc = mem_get(aux->mm, sizeof(*rxc))) )
     return rex_parse_error(rxnn, aux, NULL);
   *rxnn = &rxc->base;
   rxc->base.type = REX_T_CLASS;
@@ -686,7 +686,7 @@ static int rex_parse_any(struct rex_node **rxnn, unsigned char *p,
   struct rex_ascii_class *rc;
   int rv;
 
-  if ( !(rc = mem_get(aux->sys, sizeof(*rc))) )
+  if ( !(rc = mem_get(aux->mm, sizeof(*rc))) )
     return rex_parse_error(rxnn, aux, NULL);
   *rxnn = &rc->base;
   rc->base.type = REX_T_CLASS;
@@ -706,7 +706,7 @@ static int rex_parse_choice(struct rex_node **rxnn, unsigned char *p,
 {
   struct rex_choice *rc;
 
-  if ( !(rc = mem_get(aux->sys, sizeof(*rc))) )
+  if ( !(rc = mem_get(aux->mm, sizeof(*rc))) )
     return rex_parse_error(rxnn, aux, NULL);
   rc->base.type = REX_T_CHOICE;
   rc->base.repmin = rc->base.repmax = 1;
@@ -736,7 +736,7 @@ static int rex_parse_group_s(struct rex_node **rxnn, unsigned char *p,
 {
   struct rex_group *rg;
 
-  if ( !(rg = mem_get(aux->sys, sizeof(*rg))) )
+  if ( !(rg = mem_get(aux->mm, sizeof(*rg))) )
     return rex_parse_error(rxnn, aux, NULL);
   *rxnn = &rg->base;
   rg->base.type = REX_T_GROUP_S;
@@ -801,7 +801,7 @@ static int rex_parse_group_e(struct rex_node **rxnn, unsigned char *p,
 
 
   /* allocate node */
-  if ( !(rge = mem_get(aux->sys, sizeof(*rge))) )
+  if ( !(rge = mem_get(aux->mm, sizeof(*rge))) )
     return rex_parse_error(rxnn, aux, NULL);
   *rxnn = &rge->base;
   rge->base.type = REX_T_GROUP_E;
@@ -837,7 +837,7 @@ static int rex_parse_anchor(struct rex_node **rxnn, unsigned char *p,
                             struct rex_parse_aux *aux)
 {
   struct rex_node *rn;
-  if ( !(rn = mem_get(aux->sys, sizeof(*rn))) )
+  if ( !(rn = mem_get(aux->mm, sizeof(*rn))) )
     return rex_parse_error(rxnn, aux, NULL);
   *rxnn = rn;
   rn->type = (*p == '^') ? REX_T_BANCHOR : REX_T_EANCHOR;
@@ -852,7 +852,7 @@ static int rex_parse_anchor(struct rex_node **rxnn, unsigned char *p,
 static int rex_parse(struct rex_node **rxnn, unsigned char *p, 
                      struct rex_parse_aux *aux)
 {
-  abort_unless(aux && aux->end && aux->initial && aux->final && aux->sys);
+  abort_unless(aux && aux->end && aux->initial && aux->final && aux->mm);
 
   if ( p == aux->end ) {
     if ( aux->gstack != NULL )
@@ -907,13 +907,13 @@ static int all_paths_start(struct rex_node *rxn)
 }
 
 
-int rex_init(struct rex_pat *rxp, struct raw *pat, struct memsys *sys,
+int rex_init(struct rex_pat *rxp, struct raw *pat, struct memmgr *mm,
              int *error)
 {
   struct rex_parse_aux aux;
   int rv;
 
-  if ( !rxp || !pat || !pat->data || sys == NULL )
+  if ( !rxp || !pat || !pat->data || mm == NULL )
     return -1;
 
   rxp->start_anchor = 0;
@@ -932,8 +932,8 @@ int rex_init(struct rex_pat *rxp, struct raw *pat, struct memsys *sys,
   rxp->end.num = 0;
   rxp->end.other = &rxp->start;
 
-  rxp->sys = *sys;
-  aux.sys = &rxp->sys;
+  rxp->mm = *mm;
+  aux.mm = &rxp->mm;
   aux.initial = &rxp->start;
   aux.final = &rxp->end;
   aux.start = (unsigned char *)pat->data;
@@ -953,24 +953,24 @@ int rex_init(struct rex_pat *rxp, struct raw *pat, struct memsys *sys,
 
 
 static void rex_free_help(struct rex_node *node, struct rex_node *end, 
-                          struct memsys *sys)
+                          struct memmgr *mm)
 {
   if ( node == NULL || node == end ) {
     return;
   } else if ( node->type == REX_T_GROUP_S ) {
     struct rex_group *rg = (struct rex_group *)node;
-    rex_free_help(node->next, (struct rex_node *)rg->other, sys);
-    rex_free_help((struct rex_node *)rg->other, end, sys);
+    rex_free_help(node->next, (struct rex_node *)rg->other, mm);
+    rex_free_help((struct rex_node *)rg->other, end, mm);
     if ( rg->num > 0 )
-      mem_free(sys, node);
+      mem_free(mm, node);
   } else if ( node->type == REX_T_CHOICE ) {
     struct rex_choice *rc = (struct rex_choice *)node;
-    rex_free_help(rc->opt1, end, sys);
-    rex_free_help(rc->opt2, end, sys);
-    mem_free(sys, node);
+    rex_free_help(rc->opt1, end, mm);
+    rex_free_help(rc->opt2, end, mm);
+    mem_free(mm, node);
   } else {
-    rex_free_help(node->next, end, sys);
-    mem_free(sys, node);
+    rex_free_help(node->next, end, mm);
+    mem_free(mm, node);
   }
 }
 
@@ -978,7 +978,7 @@ static void rex_free_help(struct rex_node *node, struct rex_node *end,
 void rex_free(struct rex_pat *rxp)
 {
   abort_unless(rxp);
-  rex_free_help(&rxp->start.base, &rxp->end.base, &rxp->sys);
+  rex_free_help(&rxp->start.base, &rxp->end.base, &rxp->mm);
 }
 
 

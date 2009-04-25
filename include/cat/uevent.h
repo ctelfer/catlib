@@ -59,7 +59,7 @@ struct uemux {
 
 /* mux initialization, finalization and execution */
 void ue_init(struct uemux *mux);
-void ue_fini(struct uemux *mux, struct memsys *msys);
+void ue_fini(struct uemux *mux, struct memmgr *mm);
 void ue_stop(struct uemux *mux);
 void ue_next(struct uemux *mux);
 void ue_run(struct uemux *mux);

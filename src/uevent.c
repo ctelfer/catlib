@@ -69,22 +69,22 @@ void ue_init(struct uemux *mux)
 }
 
 
-void ue_fini(struct uemux *mux, struct memsys *msys)
+void ue_fini(struct uemux *mux, struct memmgr *mm)
 {
   struct ue_timer *t;
 
   abort_unless(mux);
 
-  if ( msys )
-    l_apply(&mux->iolist, applyfree, msys);
+  if ( mm )
+    l_apply(&mux->iolist, applyfree, mm);
   avl_free(mux->fdtab);
-  if ( msys )
-    avl_apply(mux->sigtab, applyfree, msys);
+  if ( mm )
+    avl_apply(mux->sigtab, applyfree, mm);
   avl_free(mux->sigtab);
 
   while ( (t = container(dl_deq(&mux->timers), struct ue_timer, entry)) ){
-    if ( msys ) 
-      mem_free(msys, t);
+    if ( mm ) 
+      mem_free(mm, t);
   }
 }
 

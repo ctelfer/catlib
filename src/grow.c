@@ -84,17 +84,17 @@ int agrow(void **ptr, size_t ilen, size_t *lenp, size_t min)
 }
 
 
-int mem_grow(struct memsys *mem, byte_t **ptr, size_t *lenp, size_t min)
+int mem_grow(struct memmgr *mm, byte_t **ptr, size_t *lenp, size_t min)
 {
   void *p2 = ptr;
   int rv;
-  rv = mem_agrow(mem, &p2, 1, lenp, min);
+  rv = mem_agrow(mm, &p2, 1, lenp, min);
   *ptr = p2;
   return rv;
 }
 
 
-int mem_agrow(struct memsys *mem, void **ptr, size_t ilen, size_t *lenp, 
+int mem_agrow(struct memmgr *mm, void **ptr, size_t ilen, size_t *lenp, 
               size_t min)
 {
   size_t len, n, newlen;
@@ -136,7 +136,7 @@ int mem_agrow(struct memsys *mem, void **ptr, size_t ilen, size_t *lenp,
       newlen = n;
   } 
 
-  p = (*mem->ms_resize)(mem, *ptr, newlen);
+  p = mem_resize(mm, *ptr, newlen);
   if ( !p )
     return -1;
 

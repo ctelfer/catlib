@@ -39,28 +39,28 @@
 
 /* Memory operations */
 
-static void * std_alloc(struct memsys *m, size_t size) 
+static void * std_alloc(struct memmgr *mm, size_t size) 
 {
-  abort_unless(m && size > 0);
+  abort_unless(mm && size > 0);
   return malloc(size);
 }
 
 
-static void * std_resize(struct memsys *m, void *old, size_t newsize) 
+static void * std_resize(struct memmgr *mm, void *old, size_t newsize) 
 {
-  abort_unless(m && newsize > 0);
+  abort_unless(mm && newsize > 0);
   return realloc(old, newsize);
 }
 
 
-static void std_free(struct memsys *m, void *old) 
+static void std_free(struct memmgr *mm, void *old) 
 {
-  abort_unless(m);
+  abort_unless(mm);
   free(old);
 }
 
 
-struct memsys stdmem = { 
+struct memmgr stdmem = { 
   std_alloc,
   std_resize,
   std_free, 
@@ -68,27 +68,27 @@ struct memsys stdmem = {
 };
 
 
-static void * std_ealloc(struct memsys *mc, size_t size) 
+static void * std_ealloc(struct memmgr *mm, size_t size) 
 {
   void *m;
-  abort_unless(mc && size > 0);
+  abort_unless(mm && size > 0);
   if ( !(m = malloc(size)) )
     errsys("malloc: ");
   return m;
 }
 
 
-static void * std_eresize(struct memsys *mc, void *old, size_t newsize) 
+static void * std_eresize(struct memmgr *mm, void *old, size_t newsize) 
 {
   void *m;
-  abort_unless(mc && newsize >= 0);
+  abort_unless(mm && newsize >= 0);
   if ( !(m = realloc(old, newsize)) )
     errsys("realloc: ");
   return m;
 }
 
 
-struct memsys estdmem = { 
+struct memmgr estdmem = { 
   std_ealloc,
   std_eresize,
   std_free,

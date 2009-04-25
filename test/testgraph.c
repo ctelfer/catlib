@@ -53,7 +53,7 @@ int gnew(struct shell_env *env, int na, char *args[], struct shell_value *rv)
 
 	rv->sval_type = SVT_PTR;
 	rv->sval_ptr = g;
-	rv->sval_mem = NULL;
+	rv->sval_mm = NULL;
 	rv->sval_free = NULL;
 
 	return 0;
@@ -78,7 +78,7 @@ int gdel(struct shell_env *env, int na, char *args[], struct shell_value *rv)
 
 	rv->sval_type = SVT_NIL;
 	rv->sval_int = 0;
-	rv->sval_mem = NULL;
+	rv->sval_mm = NULL;
 	rv->sval_free = NULL;
 
 	return 0;
@@ -114,7 +114,7 @@ int add_node(struct shell_env *env, int na, char *args[],
 
 	rv->sval_type = SVT_PTR;
 	rv->sval_ptr = n;
-	rv->sval_mem = NULL;
+	rv->sval_mm = NULL;
 	rv->sval_free = NULL;
 
 	return 0;
@@ -148,7 +148,7 @@ int del_node(struct shell_env *env, int na, char *args[],
 
 	rv->sval_type = SVT_NIL;
 	rv->sval_ptr = NULL;
-	rv->sval_mem = NULL;
+	rv->sval_mm = NULL;
 	rv->sval_free = NULL;
 
 	return 0;
@@ -206,7 +206,7 @@ int edge(struct shell_env *env, int na, char *args[], struct shell_value *rv)
 
 	rv->sval_type = SVT_NIL;
 	rv->sval_ptr = NULL;
-	rv->sval_mem = NULL;
+	rv->sval_mm = NULL;
 	rv->sval_free = NULL;
 
 	return 0;

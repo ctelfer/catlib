@@ -16,8 +16,8 @@
 
 #include <cat/mem.h>
 
-extern struct memsys stdmem;
-extern struct memsys estdmem;
+extern struct memmgr stdmem;
+extern struct memmgr estdmem;
 
 char *estrdup(const char *s);
 
