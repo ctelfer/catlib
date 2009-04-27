@@ -46,6 +46,7 @@ int init_null_emitter(struct emitter *em)
   abort_unless(em);
   em->emit_state = EMIT_OK;
   em->emit_func = null_emit_func;
+  return 0;
 }
 
 

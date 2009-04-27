@@ -216,4 +216,6 @@ static INLINE int ntz_64(uint64_t x) {
 
 #endif /* CAT_HAS_LONGLONG */
 
+#undef INLINE
+
 #endif /* __cat_archops_h */
