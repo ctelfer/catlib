@@ -34,7 +34,7 @@ struct arraymm {
 
 
 void amm_init(struct arraymm *amm, void *mem, size_t mlen, int align,
-                int hi2lo);
+              int hi2lo);
 void amm_reset(struct arraymm *amm);
 size_t amm_get_fill(struct arraymm *amm);
 size_t amm_get_avail(struct arraymm *amm);
