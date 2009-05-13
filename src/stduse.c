@@ -106,6 +106,28 @@ char * estrdup(const char *s)
 }
 
 
+union raw_u {
+  struct raw    raw;
+  cat_align_t   align;
+};
+
+
+struct raw *erawdup(struct raw const * const r)
+{
+  size_t s;
+  struct raw *rnew;
+  if ( !r || !r->data || !r->len )
+    err("erawdup: invalid raw provided");
+  s = r->len + sizeof(union raw_u);
+  if ( s < sizeof(union raw_u) )
+    err("erawdup: integer overflow");
+  rnew = emalloc(s);
+  rnew->len = r->len;
+  rnew->data = (union raw_u *)rnew + 1;
+  memcpy(rnew->data, r->data, r->len);
+  return rnew;
+}
+
 
 /* List operations */
 

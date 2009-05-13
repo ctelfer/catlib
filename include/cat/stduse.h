@@ -20,6 +20,7 @@ extern struct memmgr stdmem;
 extern struct memmgr estdmem;
 
 char *estrdup(const char *s);
+struct raw *erawdup(struct raw const * const r);
 
 
 
