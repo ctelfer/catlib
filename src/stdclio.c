@@ -1,5 +1,5 @@
 #include <cat/cat.h>
-#include <cat/stdemit.h>
+#include <cat/stdclio.h>
 
 #if CAT_USE_STDLIB
 #include <stdio.h>
@@ -56,6 +56,35 @@ int file_emitter_close(struct file_emitter *fe)
 }
 
 
+static int file_charport_readchar(struct charport *cp, char *ch)
+{
+  struct file_charport *fcp = (struct file_charport *)cp;
+  int rch;
+  abort_unless(fcp->file);
+  if ( feof(fcp->file) )
+    return READCHAR_END;
+  if ( ferror(fcp->file) )
+    return READCHAR_ERROR;
+  rch = fgetc(fcp->file);
+  if ( rch == EOF ) {
+    if ( feof(fcp->file) )
+      return READCHAR_END;
+    if ( ferror(fcp->file) )
+      return READCHAR_ERROR;
+  }
+  *ch = rch;
+  return READCHAR_CHAR;
+}
+
+
+void file_charport_init(struct file_charport *fcp, FILE *fp)
+{
+  abort_unless(fcp && fp);
+  fcp->cp.read = &file_charport_readchar;
+  fcp->file = fp;
+}
+
+
 #if CAT_HAS_POSIX
 #include <sys/types.h>
 #include <unistd.h>
@@ -93,6 +122,28 @@ void fd_emitter_init(struct fd_emitter *fde, int fd)
   e->emit_state = EMIT_OK;
   e->emit_func  = fd_emit_func;
   fde->fde_fd   = fd;
+}
+
+
+static int fd_charport_readchar(struct charport *cp, char *ch)
+{
+  int rv;
+  struct fd_charport *fdcp = (struct fd_charport *)cp;
+  abort_unless(fdcp->fd >= 0);
+  rv = read(fdcp->fd, ch, 1);
+  if ( rv == 1 )
+    return READCHAR_CHAR;
+  if ( rv == 0 )
+    return READCHAR_END;
+  return READCHAR_ERROR;
+}
+
+
+void fd_charport_init(struct fd_charport *fdcp, int fd)
+{
+  abort_unless(fdcp && (fd >= 0));
+  fdcp->cp.read = &fd_charport_readchar;
+  fdcp->fd = fd;
 }
 
 #endif /* CAT_HAS_POSIX */

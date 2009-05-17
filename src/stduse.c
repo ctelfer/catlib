@@ -123,7 +123,7 @@ struct raw *erawdup(struct raw const * const r)
     err("erawdup: integer overflow");
   rnew = emalloc(s);
   rnew->len = r->len;
-  rnew->data = (union raw_u *)rnew + 1;
+  rnew->data = (byte_t *)((union raw_u *)rnew + 1);
   memcpy(rnew->data, r->data, r->len);
   return rnew;
 }

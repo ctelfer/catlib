@@ -66,7 +66,7 @@ int kmp_match(const struct raw *str, struct kmppat *pat, unsigned long *loc)
 
 
 void bm_pinit(struct bmpat *bmp, struct raw *pat, unsigned long *skips, 
-        unsigned long *scratch)
+              unsigned long *scratch)
 {
   unsigned long i, j, len;
   byte_t *pp;
@@ -178,7 +178,7 @@ static struct hnode * newedge(void *k, void *d, unsigned h, void *c)
   struct memmgr *mm = c;
   struct sfxedgekey *ek = k, *nk;
 
-  edge = mem_get(mm, sizeof(struct sfxedge)+sizeof(struct sfxedgekey));
+  edge = mem_get(mm, sizeof(struct sfxedge) + sizeof(struct sfxedgekey));
   nk = (struct sfxedgekey *)(edge + 1);
   memset(nk, 0, sizeof(*nk));
   nk->node = ek->node;
@@ -468,11 +468,11 @@ struct rex_parse_aux {
 
 
 static int rex_parse(struct rex_node **rxnn, unsigned char *p, 
-         struct rex_parse_aux *aux);
+                     struct rex_parse_aux *aux);
 
 
 static int rex_parse_error(struct rex_node **rxnn, struct rex_parse_aux *aux, 
-         unsigned char *p)
+                           unsigned char *p)
 {
   *rxnn = NULL;
   if ( aux->eptr ) {
@@ -634,9 +634,9 @@ static int rex_parse_class(struct rex_node **rxnn, unsigned char *p,
 
   /* handle the special cases for the first character */
   if ( end == aux->end ) { return rex_parse_error(rxnn, aux, p - 1); }
-  if ( *end == '^' )      { ++invert; ++end; ++start; }
+  if ( *end == '^' )     { ++invert; ++end; ++start; }
   if ( end == aux->end ) { return rex_parse_error(rxnn, aux, p - 1); }
-  if ( *end == ']' )      { ++end; } 
+  if ( *end == ']' )     { ++end; } 
 
   /* find the end delimeter and make sure we */
   for ( ; end < aux->end && *end != ']'; ++end )

@@ -1,7 +1,8 @@
-#ifndef __cat_emit_file_h
-#define __cat_emit_file_h
+#ifndef __cat_stdclio_h
+#define __cat_stdclio_h
 #include <cat/cat.h>
 #include <cat/emit.h>
+#include <cat/charport.h>
 
 #if CAT_USE_STDLIB
 #include <stdio.h>
@@ -49,4 +50,23 @@ void dynstr_emitter_reset(struct dynstr_emitter *dse);
 void dynstr_emitter_clear(struct dynstr_emitter *dse);
 
 
-#endif /* __cat_emit_file_h */
+
+struct file_charport {
+  struct charport       cp;
+  FILE *                file;
+};
+
+void file_charport_init(struct file_charport *fcp, FILE *fp);
+
+
+#if CAT_HAS_POSIX
+struct fd_charport {
+  struct charport       cp;
+  int                   fd;
+};
+
+void fd_charport_init(struct fd_charport *fdcp, int fd);
+#endif /* CAT_HAS_POSIX */
+
+
+#endif /* __cat_stdclio_h */
