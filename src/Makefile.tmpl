@@ -210,7 +210,7 @@ NOLIBC_DEFS=-DCAT_HAS_POSIX=0 -DCAT_USE_STDLIB=0 -DCAT_HAS_LONGLONG=0
 NOLIBC_CFLAGS=-Wall -pedantic -Wno-sign-compare -Wno-pointer-sign $(NOLIBC_DEFS)
 NOLIBC_IFLAGS= -isystem ../include/std $(ICOMMON)
 
-all: ../lib/libcat.a ../lib/libcata.a ../lib/libcat_dbg.a ../lib/libcat_nostdc.a
+all: ../lib/libcat.a ../lib/libcata.a ../lib/libcat_dbg.a ../lib/libcat_nolibc.a
 
 ../lib/libcat.a: $(LCATOF)
 	ar rv libcat.a $(LCATOF)
@@ -227,18 +227,22 @@ all: ../lib/libcat.a ../lib/libcata.a ../lib/libcat_dbg.a ../lib/libcat_nostdc.a
 	ranlib libcat_dbg.a
 	mv libcat_dbg.a ../lib
 
-../lib/libcat_nostdc.a: $(LCAT_NO_LIBC_OF) 
-	ar rv libcat_nostdc.a $(LCAT_NO_LIBC_OF)
-	ranlib libcat_nostdc.a
-	mv libcat_nostdc.a ../lib
+../lib/libcat_nolibc.a: $(LCAT_NO_LIBC_OF) 
+	ar rv libcat_nolibc.a $(LCAT_NO_LIBC_OF)
+	ranlib libcat_nolibc.a
+	mv libcat_nolibc.a ../lib
 
 clean:
 	rm -f $(LCATODIR)/*.o $(LCATAODIR)/*.o $(LCAT_NO_LIBC_ODIR)/*.o \
-		../lib/libcat.a ../lib/libcata.a ../lib/libcat_nolibc.a
+		$(LCAT_DBG_OF) \
+		../lib/libcat.a ../lib/libcata.a ../lib/libcat_nolibc.a \
+		../lib/libcat_dbg.a
 
 veryclean:
 	rm -f $(LCATODIR)/*.o $(LCATAODIR)/*.o $(LCAT_NO_LIBC_ODIR)/*.o \
-		../lib/libcat.a ../lib/libcata.a ../lib/libcat_nolibc.a .depend
+		$(LCAT_DBG_OF) \
+		../lib/libcat.a ../lib/libcata.a ../lib/libcat_nolibc.a \
+		../lib/libcat_dbg.a .depend
 	rm -f Makefile
 	@echo "**** Makefile Destroyed ****"
 	@echo "**** Run buildmake.sh to regenerate it ****"
