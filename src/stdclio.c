@@ -56,20 +56,20 @@ int file_emitter_close(struct file_emitter *fe)
 }
 
 
-static int file_charport_readchar(struct charport *cp, char *ch)
+static int file_inport_readchar(struct inport *in, char *ch)
 {
-  struct file_charport *fcp = (struct file_charport *)cp;
+  struct file_inport *fin = (struct file_inport *)in;
   int rch;
-  abort_unless(fcp->file);
-  if ( feof(fcp->file) )
+  abort_unless(fin->file);
+  if ( feof(fin->file) )
     return READCHAR_END;
-  if ( ferror(fcp->file) )
+  if ( ferror(fin->file) )
     return READCHAR_ERROR;
-  rch = fgetc(fcp->file);
+  rch = fgetc(fin->file);
   if ( rch == EOF ) {
-    if ( feof(fcp->file) )
+    if ( feof(fin->file) )
       return READCHAR_END;
-    if ( ferror(fcp->file) )
+    if ( ferror(fin->file) )
       return READCHAR_ERROR;
   }
   *ch = rch;
@@ -77,11 +77,11 @@ static int file_charport_readchar(struct charport *cp, char *ch)
 }
 
 
-void file_charport_init(struct file_charport *fcp, FILE *fp)
+void file_inport_init(struct file_inport *fin, FILE *fp)
 {
-  abort_unless(fcp && fp);
-  fcp->cp.read = &file_charport_readchar;
-  fcp->file = fp;
+  abort_unless(fin && fp);
+  fin->in.read = &file_inport_readchar;
+  fin->file = fp;
 }
 
 
@@ -125,12 +125,12 @@ void fd_emitter_init(struct fd_emitter *fde, int fd)
 }
 
 
-static int fd_charport_readchar(struct charport *cp, char *ch)
+static int fd_inport_readchar(struct inport *in, char *ch)
 {
   int rv;
-  struct fd_charport *fdcp = (struct fd_charport *)cp;
-  abort_unless(fdcp->fd >= 0);
-  rv = read(fdcp->fd, ch, 1);
+  struct fd_inport *fdin = (struct fd_inport *)in;
+  abort_unless(fdin->fd >= 0);
+  rv = read(fdin->fd, ch, 1);
   if ( rv == 1 )
     return READCHAR_CHAR;
   if ( rv == 0 )
@@ -139,11 +139,11 @@ static int fd_charport_readchar(struct charport *cp, char *ch)
 }
 
 
-void fd_charport_init(struct fd_charport *fdcp, int fd)
+void fd_inport_init(struct fd_inport *fdin, int fd)
 {
-  abort_unless(fdcp && (fd >= 0));
-  fdcp->cp.read = &fd_charport_readchar;
-  fdcp->fd = fd;
+  abort_unless(fdin && (fd >= 0));
+  fdin->in.read = &fd_inport_readchar;
+  fdin->fd = fd;
 }
 
 #endif /* CAT_HAS_POSIX */
