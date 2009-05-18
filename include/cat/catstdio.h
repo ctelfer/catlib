@@ -57,6 +57,9 @@ int   fprintf(FILE *stream, const char *format, ...);
 int   vprintf(const char *format, va_list ap);
 int   vfprintf(FILE *stream, const char *format, va_list ap);
 
+/* not implemented */
+int   fgetc(FILE *stream);
+
 
 extern FILE *stdin, *stdout, *stderr;
 

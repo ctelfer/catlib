@@ -565,4 +565,10 @@ int sprintf(char *buf, const char *fmt, ...)
 }
 
 
+int fgetc(FILE *file)
+{
+  /* TODO: not yet implemented */
+  return EOF;
+}
+
 #endif /* !CAT_USE_STDLIB */
