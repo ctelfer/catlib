@@ -58,6 +58,10 @@ DECL struct rbnode * rb_ins(struct rbtree *t, struct rbnode *node,
                             struct rbnode *loc, int dir);
 DECL void            rb_rem(struct rbnode *node);
 DECL void            rb_apply(struct rbtree *t, apply_f func, void * ctx);
+DECL int             rb_isempty(struct rbtree *t);
+DECL struct rbnode * rb_getroot(struct rbtree *t);
+DECL struct rbnode * rb_getmin(struct rbtree *t);
+DECL struct rbnode * rb_getmax(struct rbtree *t);
 
 
 /* Auxiliary (helper) functions (don't use) */
@@ -414,6 +418,46 @@ DECL void rb_rem(struct rbnode *node)
     par->p[cdir]->col = CRB_BLACK;
 }
 #undef COL
+
+
+DECL int rb_isempty(struct rbtree *t)
+{
+  abort_unless(t);
+  return t->rb_root == NULL;
+}
+
+
+DECL struct rbnode * rb_getroot(struct rbtree *t)
+{
+  abort_unless(t);
+  return t->rb_root;
+}
+
+
+DECL struct rbnode * rb_getmin(struct rbtree *t)
+{
+  struct rbnode *node;
+  abort_unless(t);
+  node = t->rb_root;
+  if ( node != NULL ) {
+    while ( node->p[CRB_L] != NULL )
+      node = node->p[CRB_L];
+  }
+  return node;
+}
+
+
+DECL struct rbnode * rb_getmax(struct rbtree *t)
+{
+  struct rbnode *node;
+  abort_unless(t);
+  node = t->rb_root;
+  if ( node != NULL ) {
+    while ( node->p[CRB_R] != NULL )
+      node = node->p[CRB_R];
+  }
+  return node;
+}
 
 
 DECL void rb_fix(struct rbnode *par, struct rbnode *cld, int dir)
