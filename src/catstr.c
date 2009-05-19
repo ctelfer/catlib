@@ -63,6 +63,14 @@ void cs_init(struct catstr *cs, char *data, size_t size, int data_is_str)
 }
 
 
+void cs_clear(struct catstr *cs)
+{
+  CKCSN(cs);
+  cs->cs_dlen = 0;
+  cs->cs_data[0] = '\0';
+}
+
+
 size_t cs_set_cstr(struct catstr *cs, const char *cstr)
 {
   size_t cstrlen;
@@ -473,7 +481,7 @@ struct catstr *cs_grow(struct catstr *cs, size_t minlen)
   abort_unless(cs->cs_dynamic);
 
   csp = (byte_t *)cs;
-  olen = cs->cs_size;
+  tlen = olen = cs_alloc_size(cs->cs_size);
   if ( grow(&csp, &tlen, cs_alloc_size(minlen)) < 0 )
     err("cs_grow: could not increase allocation");
   abort_unless(tlen >= olen);
@@ -482,6 +490,21 @@ struct catstr *cs_grow(struct catstr *cs, size_t minlen)
   cs->cs_data = (char *)(cs + 1);
   cs->cs_size = (tlen - sizeof(struct catstr) - 1);
 
+  return cs;
+}
+
+
+struct catstr *cs_addch(struct catstr *cs, char ch)
+{
+  CKCSP(cs);
+  if ( cs->cs_dlen >= cs->cs_size ) {
+    if ( cs->cs_dynamic )
+      cs_grow(cs, cs->cs_dlen + 1);
+    else
+      return NULL;
+  }
+  cs->cs_data[cs->cs_dlen++] = ch;
+  cs->cs_data[cs->cs_dlen] = '\0';
   return cs;
 }
 

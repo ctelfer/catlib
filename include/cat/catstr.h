@@ -37,6 +37,7 @@ struct catstr {
   struct catstr name = { (len), 0, 0, __csbuf__##name }
 
 void   cs_init(struct catstr *cs, char *data, size_t size, int data_is_str);
+void   cs_clear(struct catstr *cs);
 size_t cs_set_cstr(struct catstr *cs, const char *cstr);
 size_t cs_trunc_d(struct catstr *cs, size_t len);
 size_t cs_concat_d(struct catstr *toappend, const struct catstr *scnd);
@@ -64,6 +65,7 @@ struct catstr *cs_from_chars(const char *s);
 struct catstr *cs_format(const char *fmt, ...);
 struct catstr *cs_concat(struct catstr *first, struct catstr *second);
 struct catstr *cs_grow(struct catstr *cs, size_t maxlen);
+struct catstr *cs_addch(struct catstr *cs, char ch);
 struct catstr *cs_substr(const struct catstr *cs, size_t off, size_t len);
 size_t         cs_rev_off(const struct catstr *cs, size_t roff);
 #if CAT_USE_STDLIB
