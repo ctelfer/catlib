@@ -1,6 +1,5 @@
 #include <cat/cat.h>
 #include <cat/str.h>
-#include <cat/emalloc.h>
 #include <cat/emit_format.h>
 #include <stdarg.h>
 
