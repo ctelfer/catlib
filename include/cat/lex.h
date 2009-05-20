@@ -7,6 +7,7 @@
 #include <cat/cat.h>
 #include <cat/list.h>
 #include <cat/match.h>
+#include <cat/mem.h>
 
 
 struct lexer_entry {
@@ -20,6 +21,7 @@ struct lexer {
   struct list		entries;
   struct raw		input;
   const char *		next_char;
+  struct memmgr         mm;
 };
 
 
@@ -31,7 +33,7 @@ enum {
 
 
 /* instantiate a new lexer */
-struct lexer *lex_new();
+struct lexer *lex_new(struct memmgr *mm);
 /* add a pattern and assign it to a token in the lexer */
 int  lex_add_entry(struct lexer *lex, const char *pattern, int token);
 /* reset the lexer with input to tokenize: must be null terminated */

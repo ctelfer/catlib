@@ -1,5 +1,6 @@
 #include <cat/lex.h>
 #include <cat/err.h>
+#include <cat/stduse.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -28,7 +29,7 @@ int main(int argc, char *argv[])
 	const char *tokp;
 	int toklen;
 
-	lex = lex_new();
+	lex = lex_new(&estdmem);
 	Lex_add(lex, "[ \t]+", WHITESPACE);
 	Lex_add(lex, "[\n\r]+", NEWLINE);
 	Lex_add(lex, "-?[0-9]+", NUMBER);
