@@ -11,6 +11,7 @@
 #define __cat_catstr_h
 
 #include <cat/cat.h>
+#include <cat/mem.h>
 
 #if CAT_USE_STDLIB
 #include <stdio.h>
@@ -73,5 +74,7 @@ struct catstr *cs_fd_readline(int fd);
 /* TODO: move out of here once we have input in the nolibc version*/
 struct catstr *cs_file_readline(FILE *file);
 #endif /* CAT_USE_STDLIB */
+
+void cs_setmm(struct memmgr *mm);
 
 #endif /* __cat_catstr_h */

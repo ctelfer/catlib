@@ -9,7 +9,6 @@
 
 #include <cat/catstr.h>
 #include <cat/str.h>
-#include <cat/emalloc.h>
 #include <cat/stduse.h>
 #include <cat/err.h>
 #include <cat/grow.h>
@@ -28,6 +27,10 @@
 #include <cat/catstdlib.h>
 #endif /* CAT_USE_STDLIB */
 
+
+static struct memmgr cs_mm;
+static struct memmgr *cs_mmp = &estdmem;
+
 #define CKCS(cs)							\
   if (!cs || !cs->cs_data ||					\
       (cs->cs_size > CS_MAXLEN) || (cs->cs_dlen > cs->cs_size))	\
@@ -42,6 +45,7 @@
   if (!cs || !cs->cs_data ||					\
       (cs->cs_size > CS_MAXLEN) || (cs->cs_dlen > cs->cs_size))	\
     return;
+
 
 void cs_init(struct catstr *cs, char *data, size_t size, int data_is_str)
 {
@@ -482,7 +486,7 @@ struct catstr *cs_grow(struct catstr *cs, size_t minlen)
 
   csp = (byte_t *)cs;
   tlen = olen = cs_alloc_size(cs->cs_size);
-  if ( grow(&csp, &tlen, cs_alloc_size(minlen)) < 0 )
+  if ( mem_grow(cs_mmp, &csp, &tlen, cs_alloc_size(minlen)) < 0 )
     err("cs_grow: could not increase allocation");
   abort_unless(tlen >= olen);
 
@@ -628,12 +632,13 @@ struct catstr *cs_alloc(size_t len)
   if ( len > CS_MAXLEN )
     err("cs_alloc: size overflow");
 
-  cs = emalloc(cs_alloc_size(len));
-  cs->cs_size = len;
-  cs->cs_dlen = 0;
-  cs->cs_data = (char *)(cs + 1);
-  cs->cs_data[0] = '\0';
-  cs->cs_dynamic = 1;
+  if ( (cs = mem_get(cs_mmp, cs_alloc_size(len))) != NULL ) {
+    cs->cs_size = len;
+    cs->cs_dlen = 0;
+    cs->cs_data = (char *)(cs + 1);
+    cs->cs_data[0] = '\0';
+    cs->cs_dynamic = 1;
+  }
 
   return cs;
 }
@@ -643,6 +648,14 @@ void cs_free(struct catstr *cs)
 {
   CKCSN(cs);
   abort_unless(cs->cs_dynamic);
-  free(cs);
+  mem_free(cs_mmp, cs);
+}
+
+
+void cs_setmm(struct memmgr *mm)
+{
+  abort_unless(mm);
+  cs_mm = *mm;
+  cs_mmp = &cs_mm;
 }
 
