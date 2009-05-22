@@ -319,7 +319,8 @@ unsigned long strtoul(const char *start, char **cpp, int base)
     if ( c >= 'A' && c <= 'Z' )
       c -= 'a' - 'A';
 
-    if ( ((c < '0') || (c > maxn)) && ((c < minc) || (c > maxc)) ) {
+    if ( ((c < '0') || (c > maxn)) && 
+         ((minc == 0) || (c < minc) || (c > maxc)) ) {
       if (cpp && adigit)
         *cpp = (char *)start;
       break;
