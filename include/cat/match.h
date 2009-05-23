@@ -54,7 +54,7 @@ struct sfxedgekey {
 };
 
 struct sfxtree {
-  struct memmgr			mm;
+  struct memmgr *		mm;
   struct raw			str;
   struct htab			edges;
   struct sfxnode		root;
@@ -107,7 +107,7 @@ struct rex_choice {
 };
 
 struct rex_pat {
-  struct memmgr		mm;
+  struct memmgr *       mm;
   int			start_anchor;
   struct rex_group 	start;
   struct rex_group 	end;

@@ -21,7 +21,7 @@ struct lexer {
   struct list		entries;
   struct raw		input;
   const char *		next_char;
-  struct memmgr         mm;
+  struct memmgr *       mm;
 };
 
 

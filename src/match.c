@@ -211,7 +211,7 @@ static struct sfxedge *getedge(struct sfxtree *t, struct sfxnode *par, int ch,
   if ( !(node = ht_lkup(ht, &ek, &hash)) ) {
     if ( !*create )
       return NULL;
-    if ( !(node = newedge(&ek, NULL, hash, &t->mm)) ) {
+    if ( !(node = newedge(&ek, NULL, hash, t->mm)) ) {
       *create = 0;
       return NULL;
     }
@@ -227,7 +227,7 @@ static struct sfxedge *getedge(struct sfxtree *t, struct sfxnode *par, int ch,
 static struct sfxnode *newnode(struct sfxtree *sfx)
 {
   struct sfxnode *node;
-  if ( !(node = mem_get(&sfx->mm, sizeof(*node))) )
+  if ( !(node = mem_get(sfx->mm, sizeof(*node))) )
     return NULL;
   node->sptr = NULL;
   return node;
@@ -249,7 +249,7 @@ static struct sfxnode *split(struct sfxtree *sfx, struct sfxedge *edge,
     return NULL;
   create = 1;
   if ( !(e1 = getedge(sfx, newint, text[edge->start + off], &create)) ) {
-    mem_free(&sfx->mm, newint);
+    mem_free(sfx->mm, newint);
     return NULL;
   }
   newint->sptr = ((struct sfxedgekey *)edge->hentry.key)->node;
@@ -371,7 +371,7 @@ int sfx_init(struct sfxtree *sfx, struct raw *str, struct memmgr *mm)
   abort_unless(str && str->data);
   abort_unless(str->len <= CAT_SFX_MAXLEN);
 
-  sfx->mm = *mm;
+  sfx->mm = mm;
   sfx->str = *str;
   /* XXX fix size? */
   if ( ((unsigned long)~0) / sizeof(struct list) < str->len )
@@ -442,15 +442,15 @@ static void ap_edgefree(void *data, void *ctx)
   struct sfxtree *t = ctx;
   ht_rem(node);
   if ( node->data )
-    mem_free(&t->mm, node->data);
-  freeedge(node, &t->mm);
+    mem_free(t->mm, node->data);
+  freeedge(node, t->mm);
 }
 
 
 void sfx_clear(struct sfxtree *sfx)
 {
   ht_apply(&sfx->edges, ap_edgefree, sfx);
-  mem_free(&sfx->mm, sfx->edges.tab);
+  mem_free(sfx->mm, sfx->edges.tab);
 }
 
 
@@ -932,8 +932,8 @@ int rex_init(struct rex_pat *rxp, struct raw *pat, struct memmgr *mm,
   rxp->end.num = 0;
   rxp->end.other = &rxp->start;
 
-  rxp->mm = *mm;
-  aux.mm = &rxp->mm;
+  rxp->mm = mm;
+  aux.mm = rxp->mm;
   aux.initial = &rxp->start;
   aux.final = &rxp->end;
   aux.start = (unsigned char *)pat->data;
@@ -978,7 +978,7 @@ static void rex_free_help(struct rex_node *node, struct rex_node *end,
 void rex_free(struct rex_pat *rxp)
 {
   abort_unless(rxp);
-  rex_free_help(&rxp->start.base, &rxp->end.base, &rxp->mm);
+  rex_free_help(&rxp->start.base, &rxp->end.base, rxp->mm);
 }
 
 

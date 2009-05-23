@@ -10,16 +10,16 @@
 
 #define node_to_lexent(node) container((node), struct lexer_entry, entry)
 
-struct lexer *lex_new(struct memmgr *mmp)
+struct lexer *lex_new(struct memmgr *mm)
 {
-  struct lexer *lex = mem_get(mmp, sizeof(*lex));
+  struct lexer *lex = mem_get(mm, sizeof(*lex));
   if ( lex == NULL )
     return NULL;
   l_init(&lex->entries);
   lex->input.data = NULL;
   lex->input.len = 0;
   lex->next_char = NULL;
-  lex->mm = *mmp;
+  lex->mm = mm;
   return lex;
 }
 
@@ -31,21 +31,21 @@ int lex_add_entry(struct lexer *lex, const char *pattern, int token)
   int rv; 
   if ( token < 0 )
     return -1;
-  if ( (ent = mem_get(&lex->mm, sizeof(*ent))) == NULL )
+  if ( (ent = mem_get(lex->mm, sizeof(*ent))) == NULL )
     return -1;
   l_init(&ent->entry);
   ent->token = token;
   r.len = strlen(pattern) + 1;
-  if ( (r.data = mem_get(&lex->mm, r.len + 1)) == NULL ) {
-    mem_free(&lex->mm, ent);
+  if ( (r.data = mem_get(lex->mm, r.len + 1)) == NULL ) {
+    mem_free(lex->mm, ent);
     return -1;
   }
   *(char *)r.data = '^';
   memcpy((char *)r.data + 1, pattern, r.len);
-  rv = rex_init(&ent->pattern, &r, &lex->mm, NULL);
-  mem_free(&lex->mm, r.data);
+  rv = rex_init(&ent->pattern, &r, lex->mm, NULL);
+  mem_free(lex->mm, r.data);
   if ( rv < 0 ) {
-    mem_free(&lex->mm, ent);
+    mem_free(lex->mm, ent);
     return -1;
   }
   l_enq(&lex->entries, &ent->entry);
@@ -98,12 +98,12 @@ int lex_next_token(struct lexer *lex, const char **string, int *len)
 void lex_destroy(struct lexer *lex)
 {
   struct list *node;
-  struct memmgr mm = lex->mm;
+  struct memmgr *mm = lex->mm;
   while ( (node = l_deq(&lex->entries)) != NULL ) {
     struct lexer_entry *ent = node_to_lexent(node);
     rex_free(&ent->pattern);
-    mem_free(&mm, ent);
+    mem_free(mm, ent);
   }
-  mem_free(&mm, lex);
+  mem_free(mm, lex);
 }
 
