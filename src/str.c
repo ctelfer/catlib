@@ -2,6 +2,7 @@
 #include <cat/str.h>
 #include <cat/emit_format.h>
 #include <stdarg.h>
+#include <limits.h>
 
 #if CAT_USE_STDLIB
 #include <string.h>

@@ -1,5 +1,6 @@
 #include <cat/cat.h>
 #include <stdarg.h>
+#include <limits.h>
 
 #if !CAT_USE_STDLIB
 #include <cat/catstdio.h>

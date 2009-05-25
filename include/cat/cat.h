@@ -75,13 +75,21 @@ typedef CAT_ALIGN	cat_align_t;
   qual CAT_ALIGN name[ALIGN_ROUNDUP(len) / sizeof(CAT_ALIGN)]
 
 typedef unsigned char byte_t;
-typedef unsigned char u_char;
-typedef unsigned short u_short;
-typedef unsigned int u_int;
-typedef unsigned long u_long;
+typedef signed char schar;
+
+#ifndef CAT_NEED_UTYPEDEFS
+#define CAT_NEED_UTYPEDEFS 1
+#endif /* CAT_NEED_UTYPEDEFS */
+
+#if CAT_NEED_UTYPEDEFS
+typedef unsigned char uchar;
+typedef unsigned short ushort;
+typedef unsigned int uint;
+typedef unsigned long ulong;
 #if CAT_HAS_LONGLONG
-typedef unsigned long long u_longlong;
+typedef unsigned long long ulonglong;
 #endif /* CAT_HAS_LONGLONG */
+#endif /* CAT_NEED_UTYPEDEFS */
 
 #if CAT_USE_STDLIB
 
@@ -100,7 +108,6 @@ typedef unsigned long long u_longlong;
 #endif /* CAT_USE_STDLIB */
 
 #include <stddef.h>
-#include <limits.h>
 
 
 /* We redefined this here because we might be including a c89 stddef.h */
@@ -120,21 +127,21 @@ struct raw {
 /* Generic scalar value union */
 union scalar_u {
   int			int_val;
-  unsigned int		uint_val;
+  uint                  uint_val;
   double		dbl_val;
   void *		ptr_val;
   char *		str_val;
 
 #if CAT_HAS_LONG_LONG
   long long		llong_val;
-  unsigned long long	ullong_val;
+  ulonglong             ullong_val;
 #endif /* CAT_HAS_LONG_LONG */
   long			long_val;
-  unsigned long		ulong_val;
-  short int		short_val;
-  unsigned short int	ushort_val;
-  signed char 		sch_val;
-  unsigned char		uch_val;
+  ulong                 ulong_val;
+  short                 short_val;
+  ushort                ushort_val;
+  schar                 sch_val;
+  uchar                 uch_val;
   long double		ldbl_val;
   float			float_val;
 };
