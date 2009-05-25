@@ -17,14 +17,14 @@
 
    e - little endian
    E - big endian
-   b - byte (8 bits)
-   h - half-word (16 bits)
-   w - word (32 bits)
-   j - jumbo word (64 bits)
-   B - signed 8 bit value 
-   H - signed 16 bit value
-   W - signed 32 bit value
-   J - signed 64 bit value
+   b - byte (8 bits)            -- pass in byte_t / unsigned char / uchar
+   h - half-word (16 bits)      -- pass in unsigned short / ushort
+   w - word (32 bits)           -- pass in unsigned long / ulong
+   j - jumbo word (64 bits)     -- pass in unsigned long long / ulonglong
+   B - signed 8 bit value       -- pass in signed char / schar
+   H - signed 16 bit value      -- pass in short
+   W - signed 32 bit value      -- pass in long
+   J - signed 64 bit value      -- pass in long long
    r - (struct raw *) follows (pack only)
 
    Prefix with a number to indicate a count.  In this case source or 
