@@ -13,6 +13,7 @@
 #include <cat/io.h>
 
 #include <stdarg.h>
+#include <limits.h>
 #include <unistd.h>
 #include <errno.h>
 #include <signal.h>
