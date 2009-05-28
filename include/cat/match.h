@@ -115,8 +115,8 @@ struct rex_pat {
 
 struct rex_match_loc {
   int			valid;
-  unsigned		start;
-  unsigned		len;
+  size_t                start;
+  size_t                len;
 };
 
 
