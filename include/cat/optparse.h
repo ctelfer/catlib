@@ -7,8 +7,8 @@
  *
  */
 
-#ifndef __cat_aux_h
-#define __cat_aux_h
+#ifndef __cat_optparse_h
+#define __cat_optparse_h
 
 #include <cat/cat.h>
 
