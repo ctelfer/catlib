@@ -38,7 +38,7 @@ DECL int              tm_cmp(void *t1, void *t2);
 DECL double           tm_2dbl(struct cat_time *t);
 DECL struct cat_time *tm_dset(struct cat_time *t, double d);
 DECL struct cat_time *tm_lset(struct cat_time *t, long sec, long nsec);
-DECL struct cat_time *tm_mark(struct cat_time *old, struct cat_time *new);
+DECL struct cat_time *tm_mark(struct cat_time *old, struct cat_time *tnew);
 
 #if CAT_USE_STDLIB
 #include <time.h>
@@ -164,19 +164,19 @@ DECL struct cat_time *tm_lset(struct cat_time *t, long sec, long nsec)
 }
 
 
-DECL struct cat_time *tm_mark(struct cat_time *old, struct cat_time *new)
+DECL struct cat_time *tm_mark(struct cat_time *old, struct cat_time *tnew)
 {
   struct cat_time hold;
 
-  abort_unless(new);
+  abort_unless(tnew);
   abort_unless(old);
 
-  hold = *new;
-  if ( tm_sub(new, old) == NULL )
+  hold = *tnew;
+  if ( tm_sub(tnew, old) == NULL )
     return NULL;
   *old = hold;
   
-  return new;
+  return tnew;
 }
 
 
