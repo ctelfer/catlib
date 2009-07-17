@@ -158,4 +158,8 @@ extern void cat_abort(const char *fn, unsigned ln, const char *expr);
 #define abort_unless(x) \
   do { if (!(x)) { cat_abort(__FILE__, __LINE__, #x); } } while (0)
 
+
+#define CT_ERROR_IF(__name, __test) \
+static char __ct_##__name[(__test) ? -1 : 1];
+
 #endif /* __cat_cat_h */

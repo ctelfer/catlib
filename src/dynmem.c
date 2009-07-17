@@ -369,6 +369,8 @@ void dynmem_each_block(struct dynmempool *pool, apply_f f, void *ctx)
 
 #if CAT_HAS_FIXED_WIDTH
 
+CT_ERROR_IF(ck_lg2_unitsize, (1 << TLSF_LG2_UNITSIZE) != UNITSIZE)
+
 #if CAT_DEBUG_LEVEL > 0
 #define ASSERT(x) abort_unless(x)
 #else /* CAT_DEBUG_LEVEL > 0 */
