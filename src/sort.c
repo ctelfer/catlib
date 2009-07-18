@@ -195,14 +195,14 @@ struct qswork {
 	__ne = __stk[__t].nelem;		\
 	__qd = __stk[__t].qdepth;
 
-/* This is actually an "intro-sort" because it will only sort down to log2 */
+/* This is actually an "intro-sort" because it will only sort down to 2log2 */
 /* of the number of elements and will heap sort sub arrays past that. This */
 /* guarantees nlogn performance.  Also, the sort uses insertion sort for   */
-/* subarrays of 7 elements or less. */
+/* subarrays of 8 elements or less. */
 void qsort_array(void *arr, const size_t nelem, const size_t esize, cmp_f cmp)
 {
 	byte_t *pivot, *lo, *hi, *end;
-	int bailout_depth = 1, depth;
+	int bailout_depth = 0, depth;
 	struct qswork stack[QS_MAXDEPTH];
 	int top = 0;
 	size_t n;
@@ -211,12 +211,11 @@ void qsort_array(void *arr, const size_t nelem, const size_t esize, cmp_f cmp)
 	if ( arr == NULL || nelem <= 1 || esize == 0 || cmp == NULL )
 		return;
 
-	/* find floor(log2(nelem)) + 1 */
+	/* find 2*floor(log2(nelem)) */
 	n = nelem;
-	do {
+	while ( (n >>= 1) )
 		++bailout_depth;
-		n >>= 1;
-	} while ( n );
+	bailout_depth <<= 1;
 
 	PUSH(stack, top, arr, nelem, 1);
 
@@ -233,10 +232,37 @@ void qsort_array(void *arr, const size_t nelem, const size_t esize, cmp_f cmp)
 			continue;
 		}
 
-		/* actual quicsort:  we must have 9 or more elements now */
-		lo = pivot + esize;
+		/* actual quicksort:  we must have 9 or more elements now */
 		end = pivot + esize * n;
 		hi = end - esize;
+
+		/* find median-of-3: median of the low, mid and high elements */
+		/* use the 'lo' pointer for the middle, and 'pivot' pointer */
+		/* for the low */
+		lo = pivot + (n >> 2) * esize;
+		if ( (*cmp)(pivot, lo) < 0 ) { 
+			/* (p,l,h),(p,h,l),(h,p,l) */
+			if ( (*cmp)(lo, hi) < 0 ) {
+				/* (p,l.h) */
+				SWAP(pivot, lo, swaptype);
+			} else if ( (*cmp)(pivot, hi) < 0 ) {
+				/* (p,h,l) */
+				SWAP(pivot, hi, swaptype);
+			} /* else (h,p,l): do nothing */
+		} else {  /* pivot >= lo */
+			/* (l,p,h),(h,l,p),(l,h,p) */
+			if ( (*cmp)(lo, hi) >= 0 ) {
+				/* (h,l,p) */
+				SWAP(pivot, lo, swaptype);
+			} else if ( (*cmp)(pivot, hi) >= 0 ) {
+				/* (l,h,p) */
+				SWAP(pivot, hi, swaptype);
+			} /* else do nothing */
+		}
+
+		/* set the 'lo' variable properly */
+		lo = pivot + esize;
+
 		while ( lo < hi ) {
 			while ( (lo < hi) && (*cmp)(pivot, lo) >= 0 )
 				lo += esize;

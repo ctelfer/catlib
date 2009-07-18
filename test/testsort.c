@@ -218,7 +218,6 @@ void test_speed()
 
 	spd_ncmps = 0;
 	gettimeofday(&start, NULL);
-	memcpy(spd_arr2, spd_arr1, sizeof(spd_arr1));
 	for ( j = 0 ; j < NTRIES ; ++j ) {
 		memcpy(spd_arr2, spd_arr1, sizeof(spd_arr1));
 		qsort(spd_arr2, SPEEDLEN, sizeof(void *), &ptr_cmp);
