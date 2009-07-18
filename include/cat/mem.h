@@ -9,10 +9,10 @@ typedef void *(*resize_f)(struct memmgr *mm, void *old, size_t size);
 typedef void  (*free_f)(struct memmgr *mm, void * tofree);
 
 struct memmgr {
-  alloc_f	mm_alloc;
-  resize_f	mm_resize;
-  free_f	mm_free;
-  void *	mm_ctx;
+	alloc_f		mm_alloc;
+	resize_f	mm_resize;
+	free_f		mm_free;
+	void *		mm_ctx;
 };
 
 
@@ -24,17 +24,16 @@ extern void applyfree(void *data, void *memmgr);
 
 
 struct arraymm {
-  struct memmgr         mm;
-  byte_t *              mem;
-  size_t                mlen;
-  size_t                fill;
-  int                   alignp2;
-  int                   hi2lo;
+	struct memmgr	mm;
+	byte_t *	mem;
+	size_t		mlen;
+	size_t		fill;
+	int		alignp2;
+	int		hi2lo;
 };
 
 
-void amm_init(struct arraymm *amm, void *mem, size_t mlen, int align,
-              int hi2lo);
+void amm_init(struct arraymm *amm, void *mem, size_t mlen, int algn, int hi2lo);
 void amm_reset(struct arraymm *amm);
 size_t amm_get_fill(struct arraymm *amm);
 size_t amm_get_avail(struct arraymm *amm);

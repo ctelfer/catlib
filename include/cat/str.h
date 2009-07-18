@@ -19,17 +19,17 @@ size_t str_cspan(const char *s, const char *reject);
 
 /* UTF conversion routines */
 extern const signed char utf8_lentab[256];
-#define utf8_nbytes(c) (utf8_lentab[(unsigned char)(c)])
-int utf8_find_nbytes(const unsigned char firstc);
+#define utf8_nbytes(c) (utf8_lentab[(uchar)(c)])
+int utf8_find_nbytes(const uchar firstc);
 
 int utf8_validate_char(const char *str, size_t max);
 int utf8_validate_str(const char *str, char const **errp);
 int utf8_validate(const char *str, size_t slen, char const **errp, int term);
 size_t utf8_nchars(const char *str, size_t slen, int *maxlen);
-int utf8_to_utf32(unsigned long *dst, size_t dlen, const char *s, size_t slen);
-int utf8_to_utf16(unsigned short *dst, size_t dlen, const char *s, size_t slen);
-int utf32_to_utf8(char *dst, size_t dlen, const unsigned long *s, size_t slen);
-int utf16_to_utf8(char *dst, size_t dlen, const unsigned short *src, size_t sl);
+int utf8_to_utf32(ulong *dst, size_t dlen, const char *s, size_t slen);
+int utf8_to_utf16(ushort *dst, size_t dlen, const char *s, size_t slen);
+int utf32_to_utf8(char *dst, size_t dlen, const ulong *s, size_t slen);
+int utf16_to_utf8(char *dst, size_t dlen, const ushort *src, size_t sl);
 char * utf8_skip(char *start, size_t nchar);
 char * utf8_skip_tck(char *start, size_t nchar);
 

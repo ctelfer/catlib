@@ -13,22 +13,22 @@
 #include <cat/cat.h>
 
 /* 
-   "eEbhwjBHWJr"
+	 "eEbhwjBHWJr"
 
-   e - little endian
-   E - big endian
-   b - byte (8 bits)            -- pass in byte_t / unsigned char / uchar
-   h - half-word (16 bits)      -- pass in unsigned short / ushort
-   w - word (32 bits)           -- pass in unsigned long / ulong
-   j - jumbo word (64 bits)     -- pass in unsigned long long / ulonglong
-   B - signed 8 bit value       -- pass in signed char / schar
-   H - signed 16 bit value      -- pass in short
-   W - signed 32 bit value      -- pass in long
-   J - signed 64 bit value      -- pass in long long
-   r - (struct raw *) follows (pack only)
+	 e - little endian
+	 E - big endian
+	 b - byte (8 bits)            -- pass in byte_t / uchar / uchar
+	 h - half-word (16 bits)      -- pass in ushort / ushort
+	 w - word (32 bits)           -- pass in ulong / ulong
+	 j - jumbo word (64 bits)     -- pass in ulonglong / ulonglong
+	 B - signed 8 bit value       -- pass in signed char / schar
+	 H - signed 16 bit value      -- pass in short
+	 W - signed 32 bit value      -- pass in long
+	 J - signed 64 bit value      -- pass in long long
+	 r - (struct raw *) follows (pack only)
 
-   Prefix with a number to indicate a count.  In this case source or 
-   destination operand is an array of the type indicated.
+	 Prefix with a number to indicate a count.  In this case source or 
+	 destination operand is an array of the type indicated.
 */
 
 size_t pack(void * buf, size_t len, const char *fmt, ... ); 
@@ -58,56 +58,56 @@ size_t packlen(const char *fmt, ... );
 
 /* These functions all assume that CHAR_BIT == 8 */
 DECL uint16_t ntoh16(uint16_t v) {
-  register byte_t *p = (byte_t*)&v;
-  return (p[0] << 8) | p[1];
+	register byte_t *p = (byte_t*)&v;
+	return (p[0] << 8) | p[1];
 }
 
 DECL uint16_t hton16(register uint16_t v) {
-  uint16_t ov = 0;
-  register byte_t *p = (byte_t*)&ov;
-  *p++ = v >> 8;
-  *p = v;
-  return ov;
+	uint16_t ov = 0;
+	register byte_t *p = (byte_t*)&ov;
+	*p++ = v >> 8;
+	*p = v;
+	return ov;
 }
 
 DECL uint32_t ntoh32(uint32_t v) {
-  register byte_t *p = (byte_t*)&v;
-  return ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16) | 
-          ((uint32_t)p[2] << 8) | (uint32_t)p[3];
+	register byte_t *p = (byte_t*)&v;
+	return ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16) | 
+		((uint32_t)p[2] << 8) | (uint32_t)p[3];
 }
 
 DECL uint32_t hton32(register uint32_t v) {
-  uint32_t ov = 0;
-  register byte_t *p = (byte_t*)&ov;
-  *p++ = v >> 24;
-  *p++ = v >> 16;
-  *p++ = v >> 8;
-  *p = v;
-  return ov;
+	uint32_t ov = 0;
+	register byte_t *p = (byte_t*)&ov;
+	*p++ = v >> 24;
+	*p++ = v >> 16;
+	*p++ = v >> 8;
+	*p = v;
+	return ov;
 }
 
 
 #if CAT_HAS_LONGLONG
 DECL uint64_t ntoh64(uint64_t v) {
-  register byte_t *p = (byte_t*)&v;
-  return ((uint64_t)p[0] << 56) | ((uint64_t)p[1] << 48) | 
-          ((uint64_t)p[2] << 40) | ((uint64_t)p[3] << 32) | 
-          ((uint64_t)p[4] << 24) | ((uint64_t)p[5] << 16) | 
-          ((uint64_t)p[6] << 8) | (uint64_t)p[7];
+	register byte_t *p = (byte_t*)&v;
+	return ((uint64_t)p[0] << 56) | ((uint64_t)p[1] << 48) | 
+		((uint64_t)p[2] << 40) | ((uint64_t)p[3] << 32) | 
+		((uint64_t)p[4] << 24) | ((uint64_t)p[5] << 16) | 
+		((uint64_t)p[6] << 8) | (uint64_t)p[7];
 }
 
 DECL uint64_t hton64(register uint64_t v) {
-  uint64_t ov = 0;
-  register byte_t *p = (byte_t*)&ov;
-  *p++ = v >> 56;
-  *p++ = v >> 48;
-  *p++ = v >> 40;
-  *p++ = v >> 32;
-  *p++ = v >> 24;
-  *p++ = v >> 16;
-  *p++ = v >> 8;
-  *p = v;
-  return ov;
+	uint64_t ov = 0;
+	register byte_t *p = (byte_t*)&ov;
+	*p++ = v >> 56;
+	*p++ = v >> 48;
+	*p++ = v >> 40;
+	*p++ = v >> 32;
+	*p++ = v >> 24;
+	*p++ = v >> 16;
+	*p++ = v >> 8;
+	*p = v;
+	return ov;
 }
 #endif /* CAT_HAS_LONGLONG */
 

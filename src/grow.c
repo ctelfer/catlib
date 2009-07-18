@@ -24,126 +24,126 @@
 
 int grow(byte_t **ptr, size_t *lenp, size_t min)
 {
-  void *p2 = ptr;
-  int rv;
-  rv = agrow(&p2, 1, lenp, min);
-  *ptr = p2;
-  return rv;
+	void *p2 = ptr;
+	int rv;
+	rv = agrow(&p2, 1, lenp, min);
+	*ptr = p2;
+	return rv;
 }
 
 
 int agrow(void **ptr, size_t ilen, size_t *lenp, size_t min)
 {
-  size_t len, n, newlen;
-  byte_t *p;
-  size_t maxmem = (size_t)~0;
+	size_t len, n, newlen;
+	byte_t *p;
+	size_t maxmem = (size_t)~0;
 
-  abort_unless(ptr);
-  abort_unless(ilen > 0);
-  abort_unless(lenp);
+	abort_unless(ptr);
+	abort_unless(ilen > 0);
+	abort_unless(lenp);
 
-  maxmem /= ilen;
-  len = *lenp;
-  abort_unless((len > 0) || (*ptr == NULL));
-  abort_unless(len <= maxmem);
+	maxmem /= ilen;
+	len = *lenp;
+	abort_unless((len > 0) || (*ptr == NULL));
+	abort_unless(len <= maxmem);
 
-  if ( min > maxmem )
-    return -1;
+	if ( min > maxmem )
+		return -1;
 
-  /* When min == 0 && len == maxmem fall through to return 0 */
-  if ( (min == 0) && (len < maxmem) )
-    min = len + 1;
+	/* When min == 0 && len == maxmem fall through to return 0 */
+	if ( (min == 0) && (len < maxmem) )
+		min = len + 1;
 
-  if ( min <= len )
-    return 0;
+	if ( min <= len )
+		return 0;
 
-  if ( len > 0 ) {
-    newlen = len;
-  } else {
-    newlen = CAT_MINGROW / ilen;
-    if ( newlen == 0 )
-      newlen = 1;
-  }
+	if ( len > 0 ) {
+		newlen = len;
+	} else {
+		newlen = CAT_MINGROW / ilen;
+		if ( newlen == 0 )
+			newlen = 1;
+	}
 
-  while ( newlen < min ) { 
-    n = newlen << 1;
-    if ( (n < newlen) || (n > maxmem) )
-      newlen = maxmem;
-    else
-      newlen = n;
-  } 
+	while ( newlen < min ) { 
+		n = newlen << 1;
+		if ( (n < newlen) || (n > maxmem) )
+			newlen = maxmem;
+		else
+			newlen = n;
+	} 
 
-  p = realloc(*ptr, newlen * ilen);
-  if ( !p )
-    return -1;
+	p = realloc(*ptr, newlen * ilen);
+	if ( !p )
+		return -1;
 
-  *ptr = p;
-  *lenp = newlen;
+	*ptr = p;
+	*lenp = newlen;
 
-  return 0;
+	return 0;
 }
 
 
 int mem_grow(struct memmgr *mm, byte_t **ptr, size_t *lenp, size_t min)
 {
-  void *p2 = ptr;
-  int rv;
-  rv = mem_agrow(mm, &p2, 1, lenp, min);
-  *ptr = p2;
-  return rv;
+	void *p2 = ptr;
+	int rv;
+	rv = mem_agrow(mm, &p2, 1, lenp, min);
+	*ptr = p2;
+	return rv;
 }
 
 
 int mem_agrow(struct memmgr *mm, void **ptr, size_t ilen, size_t *lenp, 
-              size_t min)
+	      size_t min)
 {
-  size_t len, n, newlen;
-  byte_t *p;
-  size_t maxmem = (size_t)~0;
+	size_t len, n, newlen;
+	byte_t *p;
+	size_t maxmem = (size_t)~0;
 
-  abort_unless(ptr);
-  abort_unless(ilen > 0);
-  abort_unless(lenp);
+	abort_unless(ptr);
+	abort_unless(ilen > 0);
+	abort_unless(lenp);
 
-  maxmem /= ilen;
-  len = *lenp;
-  abort_unless((len > 0) || (*ptr == NULL));
-  abort_unless(len <= maxmem);
+	maxmem /= ilen;
+	len = *lenp;
+	abort_unless((len > 0) || (*ptr == NULL));
+	abort_unless(len <= maxmem);
 
-  if ( min > maxmem )
-    return -1;
+	if ( min > maxmem )
+		return -1;
 
-  /* When min == 0 && len == maxmem fall through to return 0 */
-  if ( (min == 0) && (len < maxmem) )
-    min = len + 1;
+	/* When min == 0 && len == maxmem fall through to return 0 */
+	if ( (min == 0) && (len < maxmem) )
+		min = len + 1;
 
-  if ( min <= len )
-    return 0;
+	if ( min <= len )
+		return 0;
 
-  if ( len > 0 ) {
-    newlen = len;
-  } else {
-    newlen = CAT_MINGROW / ilen;
-    if ( newlen == 0 )
-      newlen = 1;
-  }
+	if ( len > 0 ) {
+		newlen = len;
+	} else {
+		newlen = CAT_MINGROW / ilen;
+		if ( newlen == 0 )
+			newlen = 1;
+	}
 
-  while ( newlen < min ) { 
-    n = newlen << 1;
-    if ( (n < newlen) || (n > maxmem) )
-      newlen = maxmem;
-    else
-      newlen = n;
-  } 
+	while ( newlen < min ) { 
+		n = newlen << 1;
+		if ( (n < newlen) || (n > maxmem) )
+			newlen = maxmem;
+		else
+			newlen = n;
+	} 
 
-  p = mem_resize(mm, *ptr, newlen);
-  if ( !p )
-    return -1;
+	p = mem_resize(mm, *ptr, newlen);
+	if ( !p )
+		return -1;
 
-  *ptr = p;
-  *lenp = newlen;
+	*ptr = p;
+	*lenp = newlen;
 
-  return 0;
+	return 0;
 }
 
 

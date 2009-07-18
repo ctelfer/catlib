@@ -13,11 +13,11 @@
 
 
 struct ue_ioevent {
-  struct callback	cb;
-  struct list		fdlist;
-  int			fd;
-  int			type;
-  struct uemux *	mux;
+	struct callback		cb;
+	struct list		fdlist;
+	int			fd;
+	int			type;
+	struct uemux *		mux;
 };
 
 #define UE_RD		1
@@ -26,10 +26,10 @@ struct ue_ioevent {
 
 
 struct ue_timer {
-  struct dlist		entry;
-  int 			flags;
-  unsigned long		orig;
-  struct callback	cb;
+	struct dlist		entry;
+	int 			flags;
+	ulong			orig;
+	struct callback		cb;
 };
 
 #define UE_TIMEOUT	0
@@ -38,22 +38,22 @@ struct ue_timer {
 
 
 struct ue_sigevent {
-  struct callback	cb;
-  int			signum;
-  struct uemux *	mux;
+	struct callback		cb;
+	int			signum;
+	struct uemux *		mux;
 };
 
 
 struct uemux {
-  struct dlist		timers;
-  int 			maxfd;
-  struct avl *		fdtab;
-  struct list		iolist;
-  fd_set		rset;
-  fd_set		wset;
-  fd_set		eset;
-  struct avl *		sigtab;
-  int                   done;
+	struct dlist		timers;
+	int 			maxfd;
+	struct avl *		fdtab;
+	struct list		iolist;
+	fd_set			rset;
+	fd_set			wset;
+	fd_set			eset;
+	struct avl *		sigtab;
+	int			done;
 };
 
 
@@ -63,11 +63,11 @@ void ue_fini(struct uemux *mux, struct memmgr *mm);
 void ue_stop(struct uemux *mux);
 void ue_next(struct uemux *mux);
 void ue_run(struct uemux *mux);
-void ue_runfor(struct uemux *mux, unsigned long msec);
+void ue_runfor(struct uemux *mux, ulong msec);
 
 /* timer events */
-void ue_tm_init(struct ue_timer *t, int type, unsigned long ttl, callback_f tof,
-                void *arg);
+void ue_tm_init(struct ue_timer *t, int type, ulong ttl, callback_f tof,
+		void *arg);
 void ue_tm_reg(struct uemux *mux, struct ue_timer *t);
 void ue_tm_cancel(struct ue_timer *t);
 
@@ -84,11 +84,11 @@ void ue_sig_clear(void);
 
 /* dynamic memory allocation versions */
 struct ue_ioevent * ue_io_new(struct uemux *m, int type, int fd, callback_f f, 
-                              void *ctx);
-struct ue_timer * ue_tm_new(struct uemux *m, int type, unsigned long ttl, 
-                            callback_f f, void *ctx);
+		              void *ctx);
+struct ue_timer * ue_tm_new(struct uemux *m, int type, ulong ttl, 
+		            callback_f f, void *ctx);
 struct ue_sigevent * ue_sig_new(struct uemux *m, int signum, callback_f f, 
-                                void *ctx);
+		                void *ctx);
 void ue_tm_del(void *);
 void ue_io_del(void *);
 void ue_sig_del(void *);

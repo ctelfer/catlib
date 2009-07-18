@@ -29,9 +29,9 @@ int io_setnblk(int fd);
 int io_clrnblk(int fd);
 
 enum {
-  CAT_IOT_READ = 1,
-  CAT_IOT_WRITE = 2,
-  CAT_IOT_EXCEPT = 3
+	CAT_IOT_READ = 1,
+	CAT_IOT_WRITE = 2,
+	CAT_IOT_EXCEPT = 3
 };
 
 #endif /* CAT_HAS_POSIX */

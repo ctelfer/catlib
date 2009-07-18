@@ -25,29 +25,29 @@
 #define CLORET_RESET	-4
 
 struct clopt {
-  int		type;
-  char 		ch;
-  const char *	str;
-  const char *	desc;
-  scalar_t	val;
+	int		type;
+	char 		ch;
+	const char *	str;
+	const char *	desc;
+	scalar_t	val;
 };
 
 #define CLOPT_INIT(type, ch, str, desc) { type, ch, str, desc, {0} }
 
 struct clopt_parser {
-  struct clopt *	options;
-  size_t		num;
-  int			argc;
-  char **		argv;
-  int			vidx;
-  int 			non_opt;
-  int			used_arg;
-  const char *		chptr;
-  char 			errbuf[128];
+	struct clopt *	options;
+	size_t		num;
+	int		argc;
+	char **		argv;
+	int		vidx;
+	int 		non_opt;
+	int		used_arg;
+	const char *	chptr;
+	char 		errbuf[128];
 };
 
 #define CLOPTPARSER_INIT(optarr, arrlen) \
-  { optarr, arrlen, 0, NULL, 0, 0, 0, NULL, { 0 } }
+	{ optarr, arrlen, 0, NULL, 0, 0, 0, NULL, { 0 } }
 
 /* returns 0 if the parser, argc, and argv are well formatted */
 int optparse_reset(struct clopt_parser *clp, int argc, char *argv[]);

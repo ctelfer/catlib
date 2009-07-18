@@ -34,7 +34,7 @@ int tolower(int c);
 
 /* stdlib.h */
 long strtol(const char *start, char **cp, int base);
-unsigned long strtoul(const char *start, char **cp, int base);
+ulong strtoul(const char *start, char **cp, int base);
 double strtod(const char *start, char **cp);
 
 void *malloc(size_t len);

@@ -47,12 +47,12 @@
 /* CAT_ALIGN is a union representing the most restrictive alignment type */
 #ifndef CAT_ALIGN
 typedef union { 
-  long			l;
-  void *		vp;
-  char *		cp;
-  double 		d;
+	long			l;
+	void *			vp;
+	char *			cp;
+	double 			d;
 #if CAT_HAS_LONGLONG
-  unsigned long long	ull;
+	unsigned long long	ull;
 #endif /* CAT_HAS_LONGLONG */
 } cat_align_t;
 #define CAT_ALIGN	cat_align_t
@@ -69,10 +69,10 @@ typedef CAT_ALIGN	cat_align_t;
  */
 #define ALIGN_ROUNDUP(x) (((x) + sizeof(CAT_ALIGN) - 1) & (sizeof(CAT_ALIGN)-1))
 #define CAT_DECLARE_ALIGNED_DATA(name, len) \
-  CAT_DECLARE_ALIGNED_DATA_Q(,name,len)
+	CAT_DECLARE_ALIGNED_DATA_Q(,name,len)
 /* qual - (e.g. static volatile), name - variable name, len - in bytes */
 #define CAT_DECLARE_ALIGNED_DATA_Q(qual, name, len) \
-  qual CAT_ALIGN name[ALIGN_ROUNDUP(len) / sizeof(CAT_ALIGN)]
+	qual CAT_ALIGN name[ALIGN_ROUNDUP(len) / sizeof(CAT_ALIGN)]
 
 typedef unsigned char byte_t;
 typedef signed char schar;
@@ -112,38 +112,38 @@ typedef unsigned long long ulonglong;
 
 /* We redefined this here because we might be including a c89 stddef.h */
 #ifndef offsetof
-#define offsetof(type, field) ((unsigned long)&((type *)0)->field)
+#define offsetof(type, field) ((ulong)&((type *)0)->field)
 #endif
 #define container(ptr, type, field) \
-  ((type *)((char*)(ptr)-offsetof(type,field)))
+	((type *)((char*)(ptr)-offsetof(type,field)))
 #define array_length(arr) (sizeof(arr) / sizeof(arr[0]))
 
 /* generic binary data container */
 struct raw {
-  size_t	len;
-  byte_t *	data;
+	size_t		len;
+	byte_t *	data;
 } ;
 
 /* Generic scalar value union */
 union scalar_u {
-  int			int_val;
-  uint                  uint_val;
-  double		dbl_val;
-  void *		ptr_val;
-  char *		str_val;
+	int		int_val;
+	unsigned int	uint_val;
+	double		dbl_val;
+	void *		ptr_val;
+	char *		str_val;
 
 #if CAT_HAS_LONG_LONG
-  long long		llong_val;
-  ulonglong             ullong_val;
+	long long		llong_val;
+	unsigned long long	ullong_val;
 #endif /* CAT_HAS_LONG_LONG */
-  long			long_val;
-  ulong                 ulong_val;
-  short                 short_val;
-  ushort                ushort_val;
-  schar                 sch_val;
-  uchar                 uch_val;
-  long double		ldbl_val;
-  float			float_val;
+	long		long_val;
+	unsigned long	ulong_val;
+	short		short_val;
+	unsigned short	ushort_val;
+	signed char	sch_val;
+	unsigned char	uch_val;
+	long double	ldbl_val;
+	float		float_val;
 };
 
 typedef union scalar_u scalar_t;
@@ -156,7 +156,7 @@ typedef void (*copy_f)(void *src, void **dst);
 
 extern void cat_abort(const char *fn, unsigned ln, const char *expr);
 #define abort_unless(x) \
-  do { if (!(x)) { cat_abort(__FILE__, __LINE__, #x); } } while (0)
+	do { if (!(x)) { cat_abort(__FILE__, __LINE__, #x); } } while (0)
 
 
 #define CT_ERROR_IF(__name, __test) \

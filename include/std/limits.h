@@ -7,10 +7,10 @@
  */
 
 #define CHAR_BIT	8
-#define UCHAR_MAX	((unsigned char)~0)
-#define UINT_MAX	((unsigned int)~0)
-#define USHRT_MAX	((unsigned short)~0)
-#define ULONG_MAX	((unsigned long)~0)
+#define UCHAR_MAX	((uchar)~0)
+#define UINT_MAX	((uint)~0)
+#define USHRT_MAX	((ushort)~0)
+#define ULONG_MAX	((ulong)~0)
 #define SCHAR_MAX	((signed char)(UCHAR_MAX >> 1))
 #define SCHAR_MIN	((signed char)-SCHAR_MAX)
 #define SHRT_MAX	((short)(USHRT_MAX >> 1))

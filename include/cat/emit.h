@@ -4,9 +4,9 @@
 #include <cat/cat.h>
 
 enum {
-  EMIT_OK = 0,
-  EMIT_EOS = 1,
-  EMIT_ERR = -1
+	EMIT_OK = 0,
+	EMIT_EOS = 1,
+	EMIT_ERR = -1
 };
 
 struct emitter;
@@ -14,8 +14,8 @@ struct emitter;
 typedef int (*emit_f)(struct emitter *ectx, const void *buf, size_t len);
 
 struct emitter {
-  int 		emit_state;
-  emit_f	emit_func;
+	int 		emit_state;
+	emit_f		emit_func;
 };
 
 int emit_raw(struct emitter *em, const void *buf, size_t len);
@@ -30,9 +30,9 @@ void null_emitter_init(struct emitter *em);
 
 /* String Emitter - emit to a fixed length string */
 struct string_emitter {
-  struct emitter	se_emitter;
-  struct raw		se_raw;
-  size_t		se_fill;
+	struct emitter	se_emitter;
+	struct raw	se_raw;
+	size_t		se_fill;
 };
 
 void string_emitter_init(struct string_emitter *se, char *buf, size_t len);

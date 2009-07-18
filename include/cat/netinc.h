@@ -40,7 +40,7 @@
 
 #ifndef SUN_LEN
 #define SUN_LEN(su) \
-        (sizeof(*(su)) - sizeof((su)->sun_path) + strlen((su)->sun_path))
+	(sizeof(*(su)) - sizeof((su)->sun_path) + strlen((su)->sun_path))
 #endif /* SUN_LEN */
 
 #endif /* __CAT_NETINC_H */

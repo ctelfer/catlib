@@ -9,10 +9,10 @@ typedef char *va_list;
 
 #define va_start(ap, last)	((ap)=(char*)&(last)+__CAT_ROUND(sizeof(last)))
 #define va_arg(ap, type)						\
-  ((sizeof(type) < sizeof(int)) ?					\
-   ((ap) += sizeof(int), *((type *)((ap) - sizeof(int)))) :	\
-   ((ap) += sizeof(type), *((type *)((ap) - sizeof(type)))))
-   
+	((sizeof(type) < sizeof(int)) ?					\
+	 ((ap) += sizeof(int), *((type *)((ap) - sizeof(int)))) :	\
+	 ((ap) += sizeof(type), *((type *)((ap) - sizeof(type)))))
+	 
 #define va_copy(dst, src)	((dst) = (src))
 #define __va_copy(d,s)		va_copy(d,s)
 #define va_end(ap)		((void) 0)

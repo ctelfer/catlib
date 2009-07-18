@@ -11,33 +11,33 @@
 
 
 struct pcache { 
-  struct list		avail;
-  struct list		full;
-  struct list		empty;
-  size_t		asiz;
-  size_t		pgsiz;
-  unsigned		npools;
-  unsigned		maxpools;
-  unsigned		hiwat;
-  struct memmgr *	mm;
+	struct list		avail;
+	struct list		full;
+	struct list		empty;
+	size_t			asiz;
+	size_t			pgsiz;
+	unsigned		npools;
+	unsigned		maxpools;
+	unsigned		hiwat;
+	struct memmgr *	mm;
 };
 
 
 struct pc_pool {
-  struct list		entry;
-  struct pcache * 	cache;
-  struct pool		pool;
+	struct list		entry;
+	struct pcache * 	cache;
+	struct pool		pool;
 };
 
 
 union pc_pool_u { 
-  cat_align_t		align;
-  struct pc_pool	pool;
+	cat_align_t		align;
+	struct pc_pool		pool;
 };
 
 
-void  pc_init(struct pcache *pc, size_t asiz, size_t pgsiz, unsigned hiwat, 
-              unsigned maxpools, struct memmgr *mm);
+void  pc_init(struct pcache *pc, size_t asiz, size_t pgsiz, uint hiwat, 
+	      uint maxpools, struct memmgr *mm);
 void  pc_freeall(struct pcache *pc);
 void *pc_alloc(struct pcache *pc);
 void  pc_free(void *item);

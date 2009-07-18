@@ -11,17 +11,17 @@ struct inport;
 typedef int (*readchar_f)(struct inport *in, char *out);
 
 struct inport {
-  readchar_f            read;
+	readchar_f            read;
 };
 
 int readchar(struct inport *in, char *ch);
 
 
 struct string_inport {
-  struct inport         in;
-  const char *          start;
-  const char *          end;
-  const char *          cur;
+	struct inport         in;
+	const char *          start;
+	const char *          end;
+	const char *          cur;
 };
 
 void string_inport_init(struct string_inport *sin, const char *s);

@@ -26,7 +26,7 @@ int reader(void *arg, struct callback *cb)
 	struct ring *r = cb->ctx;
 	struct ue_ioevent *io = (struct ue_ioevent *)cb;
 	int fd = io->fd, rv;
-	unsigned long last, toend, olen;
+	ulong last, toend, olen;
 
 	last = ring_last(r);
 	toend = r->alloc - last;
@@ -69,7 +69,7 @@ int writer(void *arg, struct callback *cb)
 	struct ring *r = cb->ctx;
 	struct ue_ioevent *io = (struct ue_ioevent *)cb;
 	int fd = io->fd, rv;
-	unsigned long toend, oavail;
+	ulong toend, oavail;
 
 	toend = r->alloc - r->start;
 	if ( r->len < toend )

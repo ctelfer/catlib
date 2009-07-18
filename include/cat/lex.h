@@ -1,7 +1,7 @@
 /*
-   lex.h -- Simple lexical analyzer using simple regexes
-   Copyright 2009
-   Christopher Telfer
+	 lex.h -- Simple lexical analyzer using simple regexes
+	 Copyright 2009
+	 Christopher Telfer
 */
 
 #include <cat/cat.h>
@@ -11,24 +11,24 @@
 
 
 struct lexer_entry {
-  struct list		entry;
-  int			token;
-  struct rex_pat	pattern;
+	struct list		entry;
+	int			token;
+	struct rex_pat		pattern;
 };
 
 
 struct lexer { 
-  struct list		entries;
-  struct raw		input;
-  const char *		next_char;
-  struct memmgr *       mm;
+	struct list		entries;
+	struct raw		input;
+	const char *		next_char;
+	struct memmgr *		mm;
 };
 
 
 enum {
-  LEX_END = -1,
-  LEX_NOMATCH = -2,
-  LEX_ERROR = -3
+	LEX_END = -1,
+	LEX_NOMATCH = -2,
+	LEX_ERROR = -3
 };
 
 

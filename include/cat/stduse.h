@@ -27,8 +27,8 @@ struct raw *erawdup(struct raw const * const r);
 #include <cat/list.h>
 
 union clist_node_u { 
-  struct list	entry;
-  cat_align_t	align;
+	struct list	entry;
+	cat_align_t	align;
 };
 
 /* basic data access */
@@ -53,18 +53,18 @@ struct list *clist_head_node(struct list *list);
 
 /* queue operations */
 #define clist_enq(list, type, val)                                             \
-  do { 								       \
-  (clist_data(clist_insert_tail((list),clist_new(type)),type) = (val));  \
-  } while (0)
+	do { 								       \
+	(clist_data(clist_insert_tail((list),clist_new(type)),type) = (val));  \
+	} while (0)
 #define clist_deq(list) clist_delete_head(list)
 #define clist_qnext_node(list) clist_head_node(list)
 #define clist_qnext(list, type) clist_data(clist_qnext_node(list), type)
 
 /* stack operations */
 #define clist_push(list, type, val)                                            \
-  do { 								       \
-  (clist_data(clist_insert_head((list), clist_new(type)),type) = (val)); \
-  } while (0)
+	do { 								       \
+	(clist_data(clist_insert_head((list), clist_new(type)),type) = (val)); \
+	} while (0)
 #define clist_pop(list) clist_delete_head(list)
 #define clist_top_node(list) clist_head_node(list)
 #define clist_top(list, type) clist_data(clist_top_node(list), type)
@@ -101,13 +101,13 @@ void *	       cdl_free(struct dlist *node);
 /*  Plus, dynamically allocated and freed table */
 struct htab *	ht_new(size_t size, int type);
 void		ht_free(struct htab *t);
-struct hnode *	ht_snalloc(void *k, void *d, unsigned h, void *c);
+struct hnode *	ht_snalloc(void *k, void *d, uint h, void *c);
 void		ht_snfree(struct hnode *n, void *ctx);
 void *		ht_get(struct htab *t, void *key);
 void		ht_put(struct htab *t, void *key, void *data);
 void		ht_clr(struct htab *t, void *key);
 struct hnode *	ht_nnew(struct hashsys *sys, void *key, void *data, 
-                        unsigned hash);
+		        uint hash);
 void		ht_nfree(struct hashsys *sys, struct hnode *node);
 
 
@@ -124,8 +124,8 @@ struct anode *	avl_nnew(struct avl *t, void *key, void *data);
 void		avl_nfree(struct avl *t, struct anode *node);
 
 struct xavl {
-  struct avl	avl;
-  void *		ctx;
+	struct avl	avl;
+	void *		ctx;
 };
 
 
@@ -142,8 +142,8 @@ struct rbnode *	rb_nnew(struct rbtree *t, void *key, void *data);
 void		rb_nfree(struct rbtree *t, struct rbnode *node);
 
 struct xrbtree {
-  struct rbtree	rbt;
-  void *		ctx;
+	struct rbtree	rbt;
+	void *		ctx;
 };
 
 
@@ -160,8 +160,8 @@ struct stnode *	st_nnew(struct splay *t, void *key, void *data);
 void		st_nfree(struct splay *t, struct stnode *node);
 
 struct xsplay {
-  struct splay	tree;
-  void *		ctx;
+	struct splay	tree;
+	void *		ctx;
 };
 
 
@@ -194,20 +194,20 @@ void		 sfx_free(struct sfxtree *sfx);
 #include <cat/bitset.h>
 
 struct safebitset {
-  unsigned int	nbits;
-  unsigned int	len;
-  bitset_t *	set;
+	uint	nbits;
+	uint	len;
+	bitset_t *	set;
 };
 
-struct safebitset *sbs_new(unsigned nbits);
+struct safebitset *sbs_new(uint nbits);
 void sbs_free(struct safebitset *set);
 void sbs_zero(struct safebitset *set);
 void sbs_fill(struct safebitset *set);
-unsigned int sbs_copy(struct safebitset *dst, struct safebitset *src);
-int  sbs_test(struct safebitset *set, unsigned int index);
-void sbs_set(struct safebitset *set, unsigned int index);
-void sbs_clr(struct safebitset *set, unsigned int index);
-void sbs_set_to(struct safebitset *set, unsigned int index, int val);
+uint sbs_copy(struct safebitset *dst, struct safebitset *src);
+int  sbs_test(struct safebitset *set, uint index);
+void sbs_set(struct safebitset *set, uint index);
+void sbs_clr(struct safebitset *set, uint index);
+void sbs_set_to(struct safebitset *set, uint index, int val);
 
 
 #if CAT_HAS_POSIX 

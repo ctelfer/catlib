@@ -20,10 +20,10 @@
 #endif
 
 struct catstr {
-  size_t	cs_size;
-  size_t	cs_dlen;
-  char		cs_dynamic;
-  char *	cs_data;
+	size_t	cs_size;
+	size_t	cs_dlen;
+	char	cs_dynamic;
+	char *	cs_data;
 };
 
 #define cs_alloc_size(dsiz)	(sizeof(struct catstr) + (dsiz) + 1)
@@ -34,8 +34,8 @@ struct catstr {
 #define CS_NOTFOUND		(CS_MAXLEN + 2)
 #define CS_DECLARE(name, len)	CS_DECLARE_Q(, name, len)
 #define CS_DECLARE_Q(qual, name, len)		    		\
-  qual char __csbuf__##name[cs_alloc_size(len)] = { 0 };	\
-  struct catstr name = { (len), 0, 0, __csbuf__##name }
+	qual char __csbuf__##name[cs_alloc_size(len)] = { 0 };	\
+	struct catstr name = { (len), 0, 0, __csbuf__##name }
 
 void   cs_init(struct catstr *cs, char *data, size_t size, int data_is_str);
 void   cs_clear(struct catstr *cs);

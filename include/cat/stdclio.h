@@ -11,8 +11,8 @@
 #endif /* CAT_USE_STDLIB */
 
 struct file_emitter {
-  struct emitter	fe_emitter;
-  FILE *		fe_file;
+	struct emitter	fe_emitter;
+	FILE *		fe_file;
 };
 
 void file_emitter_init(struct file_emitter *fe, FILE *file);
@@ -25,8 +25,8 @@ int file_emit_func(struct emitter *em, const void *buf, size_t len);
 #if CAT_HAS_POSIX
 /* File Descriptor Emitter - emit to a Posix file descriptor */
 struct fd_emitter {
-  struct emitter	fde_emitter;
-  int			fde_fd;
+	struct emitter		fde_emitter;
+	int			fde_fd;
 };
 
 void fd_emitter_init(struct fd_emitter *fde, int fd);
@@ -34,10 +34,10 @@ void fd_emitter_init(struct fd_emitter *fde, int fd);
 
 
 struct dynstr_emitter {
-  struct emitter        ds_emitter;
-  struct raw            ds_str;
-  size_t                ds_fill;
-  size_t                ds_max;
+	struct emitter		ds_emitter;
+	struct raw		ds_str;
+	size_t			ds_fill;
+	size_t			ds_max;
 };
 
 /* initialize an emitter that resizes its string buffer.  */
@@ -52,8 +52,8 @@ void dynstr_emitter_clear(struct dynstr_emitter *dse);
 
 
 struct file_inport {
-  struct inport         in;
-  FILE *                file;
+	struct inport		in;
+	FILE *			file;
 };
 
 void file_inport_init(struct file_inport *fin, FILE *fp);
@@ -61,8 +61,8 @@ void file_inport_init(struct file_inport *fin, FILE *fp);
 
 #if CAT_HAS_POSIX
 struct fd_inport {
-  struct inport         in;
-  int                   fd;
+	struct inport		in;
+	int			fd;
 };
 
 void fd_inport_init(struct fd_inport *fdin, int fd);

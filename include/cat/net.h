@@ -27,7 +27,7 @@ int tcp_cli(const char *host, const char *serv);
 int udp_sock(char *lhost, char *lserv);
 
 int net_resolv(const char *addr, const char *port, const char *proto,
-               struct sockaddr_storage *sas);
+	       struct sockaddr_storage *sas);
 char * net_tostr(struct sockaddr *sa, char *buffer, size_t len);
 
 #ifndef CAT_LISTENQ

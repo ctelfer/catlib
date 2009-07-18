@@ -5,35 +5,35 @@
 
 /* core alignment type */
 union align_u {
-  long		l;
-  size_t	sz;
+	long		l;
+	size_t	sz;
 };
 #define UNITSIZE	sizeof(union align_u)
 
 struct memblk {
-  union align_u		mb_len;
-  struct list		mb_entry;
+	union align_u		mb_len;
+	struct list		mb_entry;
 };
 
 struct dynmem { 
-  struct list dm_pools;
-  struct list dm_blocks;
-  struct list *dm_current;
-  void *(*add_mem_func)(size_t len);
+	struct list		dm_pools;
+	struct list		dm_blocks;
+	struct list *		dm_current;
+	void *			(*add_mem_func)(size_t len);
 };
 
 struct dynmempool {
-  struct list 	dmp_entry;
-  size_t	dmp_total_len;
-  size_t	dmp_useable_len;
-  void *	dmp_start;
+	struct list 		dmp_entry;
+	size_t			dmp_total_len;
+	size_t			dmp_useable_len;
+	void *			dmp_start;
 };
 
 struct dynmem_block_fake { 
-  int		allocated;
-  int		prev_allocated;
-  size_t	size;
-  void *	ptr;
+	int			allocated;
+	int			prev_allocated;
+	size_t			size;
+	void *			ptr;
 };
 
 void dynmem_init(struct dynmem *dm);
@@ -60,7 +60,7 @@ void dynmem_each_block(struct dynmempool *pool, apply_f f, void *ctx);
 
 typedef uint64_t tlsf_sz_t;
 #define TLSF_SZ_BITS 64
-#define TLSF_LG2_UNITSIZE 3 /* XXX guess: verify by assert */
+#define TLSF_LG2_UNITSIZE 3 /* guess: verify by assert */
 
 #ifndef TLSF_L2_LEN
 #define TLSF_L2_LEN 6
@@ -81,7 +81,7 @@ typedef uint64_t tlsf_sz_t;
 
 typedef uint32_t tlsf_sz_t;
 #define TLSF_SZ_BITS 32
-#define TLSF_LG2_UNITSIZE 2 /* XXX guess: verify by assert */
+#define TLSF_LG2_UNITSIZE 2 /* guess: verify by assert */
 
 #ifndef TLSF_L2_LEN
 #define TLSF_L2_LEN 5
@@ -104,42 +104,42 @@ typedef uint32_t tlsf_sz_t;
 #define TLSF_NUMSMALL	(TLSF_NUML2 - TLSF_NUMFULL)
 
 /* 
-   TLSF_L2_LEN list heads for each list with a # of UNITSIZE slots >= to min 
-   size for the list head.  Then consider the smaller lists.  
-   Number of slots there is MINSZ/UNITSIZE for slot MINSZ, 2*MINSZ/UNITSIZE for
-   slot MINSZ*2, 4*MINSZ/UNITSIZE for slot MINSZ*4 ... 
-   So there are (MINSZ/UNITSIZE) * 2^TLSF_NUMSMALL-1 blocks in all for small
-   lists.
+	 TLSF_L2_LEN list heads for each list with a # of UNITSIZE slots >= to min 
+	 size for the list head.  Then consider the smaller lists.  
+	 Number of slots there is MINSZ/UNITSIZE for slot MINSZ, 2*MINSZ/UNITSIZE for
+	 slot MINSZ*2, 4*MINSZ/UNITSIZE for slot MINSZ*4 ... 
+	 So there are (MINSZ/UNITSIZE) * 2^TLSF_NUMSMALL-1 blocks in all for small
+	 lists.
 */
 #define TLSF_MINBINS  TLSF_MINNU
 #define TLSF_NUMHEADS ((TLSF_NUMFULL * TLSF_FULLBLLEN) + \
-           (TLSF_MINBINS * ((1 << TLSF_NUMSMALL) - 1)))
+					 (TLSF_MINBINS * ((1 << TLSF_NUMSMALL) - 1)))
 
 struct tlsf_l2 {
-  tlsf_sz_t		tl2_bm;
-  int			tl2_nblists;
-  struct list *		tl2_blists;
+	tlsf_sz_t		tl2_bm;
+	int			tl2_nblists;
+	struct list *		tl2_blists;
 };
 
 struct tlsf { 
-  struct list		tlsf_pools;
-  tlsf_sz_t 		tlsf_l1bm;
-  struct tlsf_l2	tlsf_l1[TLSF_NUML2];
-  struct list		tlsf_lists[TLSF_NUMHEADS];
+	struct list		tlsf_pools;
+	tlsf_sz_t 		tlsf_l1bm;
+	struct tlsf_l2		tlsf_l1[TLSF_NUML2];
+	struct list		tlsf_lists[TLSF_NUMHEADS];
 };
 
 struct tlsfpool {
-  struct list 		tpl_entry;
-  size_t		tpl_total_len;
-  size_t		tpl_useable_len;
-  void *		tpl_start;
+	struct list 		tpl_entry;
+	size_t			tpl_total_len;
+	size_t			tpl_useable_len;
+	void *			tpl_start;
 };
 
 struct tlsf_block_fake { 
-  int			allocated;
-  int			prev_allocated;
-  size_t		size;
-  void *		ptr;
+	int			allocated;
+	int			prev_allocated;
+	size_t			size;
+	void *			ptr;
 };
 
 

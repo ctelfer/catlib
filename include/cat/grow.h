@@ -16,6 +16,6 @@ int agrow(void **ptr, size_t isiz, size_t *lenp, size_t min);
 
 int mem_grow(struct memmgr *mm, byte_t **ptr, size_t *len, size_t min);
 int mem_agrow(struct memmgr *mm, void **ptr, size_t isiz, size_t *lenp, 
-              size_t min);
+	      size_t min);
 
 #endif /* __grow_h */

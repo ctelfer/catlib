@@ -21,13 +21,13 @@
 #endif /* CAT_USE_INLINE */
 
 struct dlist { 
-  struct list		entry;
-  struct cat_time	ttl;
-} ;
+	struct list		entry;
+	struct cat_time		ttl;
+};
 
 struct cdlist { 
-  struct dlist		entry;
-  void *		data;
+	struct dlist		entry;
+	void *			data;
 };
 
 
@@ -36,7 +36,7 @@ DECL void           dl_ins(struct dlist *list, struct dlist *node);
 DECL void	    dl_first(struct dlist *list, struct cat_time *next);
 DECL struct dlist * dl_deq(struct dlist *list);
 DECL void           dl_adv(struct dlist *list, struct cat_time *amt, 
-                           struct list *out);
+		           struct list *out);
 DECL void           dl_rem(struct dlist *elem);
 
 #define dl_head(list)	((list)->entry.next)
@@ -52,140 +52,140 @@ DECL void           cdl_set(struct dlist *node, void *data);
 
 DECL void dl_init(struct dlist *node, long sec, long nsec)
 {
-  abort_unless(node);
-  l_init(&node->entry);
-  if (sec < 0 || nsec < 0)
-    tm_clr(&node->ttl);
-  else
-    tm_lset(&node->ttl, sec, nsec);
+	abort_unless(node);
+	l_init(&node->entry);
+	if (sec < 0 || nsec < 0)
+		tm_clr(&node->ttl);
+	else
+		tm_lset(&node->ttl, sec, nsec);
 }
 
 
 DECL void dl_ins(struct dlist *dlist, struct dlist *node)
 {
-  struct cat_time ttl;
-  struct list *t, *list;
-  struct dlist *dl;
+	struct cat_time ttl;
+	struct list *t, *list;
+	struct dlist *dl;
 
-  abort_unless(dlist);
-  abort_unless(node);
+	abort_unless(dlist);
+	abort_unless(node);
 
-  list = &dlist->entry;
+	list = &dlist->entry;
 
-  ttl = node->ttl;
-  for ( t = l_head(list) ; t != l_end(list) ; t = t->next ) { 
-    dl = container(t, struct dlist, entry);
-    if ( tm_cmp(&ttl, &dl->ttl) < 0 ) 
-      break;
-    else
-      tm_sub(&ttl, &dl->ttl);
-  }
+	ttl = node->ttl;
+	for ( t = l_head(list) ; t != l_end(list) ; t = t->next ) { 
+		dl = container(t, struct dlist, entry);
+		if ( tm_cmp(&ttl, &dl->ttl) < 0 ) 
+			break;
+		else
+			tm_sub(&ttl, &dl->ttl);
+	}
 
-  if ( t != l_end(list) )
-    tm_sub(&dl->ttl, &ttl);
-  l_ins(t->prev, &node->entry);
-  node->ttl = ttl;
+	if ( t != l_end(list) )
+		tm_sub(&dl->ttl, &ttl);
+	l_ins(t->prev, &node->entry);
+	node->ttl = ttl;
 }
 
 
 DECL void dl_first(struct dlist *dlist, struct cat_time *tm)
 {
-  abort_unless(dlist);
-  abort_unless(tm);
+	abort_unless(dlist);
+	abort_unless(tm);
 
-  if ( l_isempty(&dlist->entry) )
-    tm_clr(tm);
-  else
-    *tm = container(l_head(&dlist->entry), 
-        struct dlist, entry)->ttl;
+	if ( l_isempty(&dlist->entry) )
+		tm_clr(tm);
+	else
+		*tm = container(l_head(&dlist->entry), 
+				struct dlist, entry)->ttl;
 }
 
 
 DECL struct dlist * dl_deq(struct dlist *dlist)
 {
-  struct list *list, *node;
+	struct list *list, *node;
 
-  abort_unless(dlist);
+	abort_unless(dlist);
 
-  list = &dlist->entry;
-  if ( l_isempty(list) ) 
-    return NULL;
-  else {
-    node = l_head(list);
-    l_rem(node);
-    return container(node, struct dlist, entry);
-  }
+	list = &dlist->entry;
+	if ( l_isempty(list) ) 
+		return NULL;
+	else {
+		node = l_head(list);
+		l_rem(node);
+		return container(node, struct dlist, entry);
+	}
 }
 
 
 DECL void dl_adv(struct dlist *dlist, struct cat_time *deltap, 
-      struct list *out)
+		 struct list *out)
 {
-  struct dlist *dl;
-  struct list *t, *head, *list;
-  struct cat_time delta;
+	struct dlist *dl;
+	struct list *t, *head, *list;
+	struct cat_time delta;
 
-  abort_unless(dlist);
-  abort_unless(tm_isset(deltap));
-  abort_unless(out);
-  delta = *deltap;
+	abort_unless(dlist);
+	abort_unless(tm_isset(deltap));
+	abort_unless(out);
+	delta = *deltap;
 
-  list = &dlist->entry;
+	list = &dlist->entry;
 
-  if ( l_isempty(list) )
-    return;
+	if ( l_isempty(list) )
+		return;
 
-  for ( t = l_head(list) ; t != l_end(list) ; t = t->next ) { 
-    dl = container(t, struct dlist, entry);
-    if ( tm_cmp(&dl->ttl, &delta) > 0 ) 
-      break;
-    else
-      tm_sub(&delta, &dl->ttl);
-  }
+	for ( t = l_head(list) ; t != l_end(list) ; t = t->next ) { 
+		dl = container(t, struct dlist, entry);
+		if ( tm_cmp(&dl->ttl, &delta) > 0 ) 
+			break;
+		else
+			tm_sub(&delta, &dl->ttl);
+	}
 
-  if ( t != l_end(list) )
-    tm_sub(&dl->ttl, &delta);
-  head = l_head(list);
-  t = t->prev;
+	if ( t != l_end(list) )
+		tm_sub(&dl->ttl, &delta);
+	head = l_head(list);
+	t = t->prev;
 
-  if ( t->next == head ) 
-    return;
+	if ( t->next == head ) 
+		return;
 
-  list->next = t->next;
-  t->next->prev = list;
+	list->next = t->next;
+	t->next->prev = list;
 
-  head->prev = out;
-  out->next  = head;
-  t->next    = out;
-  out->prev  = t;
+	head->prev = out;
+	out->next  = head;
+	t->next    = out;
+	out->prev  = t;
 }
 
 
 DECL void dl_rem(struct dlist *elem)
 {
-  struct dlist *next;
+	struct dlist *next;
 
-  if ( l_onlist(&elem->entry) ) {
-    next = container(elem->entry.next, struct dlist, entry);
-    if ( tm_isset(&next->ttl) )
-      tm_add(&next->ttl, &elem->ttl);
-    l_rem(&elem->entry);
-  }
+	if ( l_onlist(&elem->entry) ) {
+		next = container(elem->entry.next, struct dlist, entry);
+		if ( tm_isset(&next->ttl) )
+			tm_add(&next->ttl, &elem->ttl);
+		l_rem(&elem->entry);
+	}
 }
 
 
 DECL void * cdl_data(struct dlist *nodep)
 {
 
-  abort_unless(nodep);
-  return container(nodep, struct cdlist, entry)->data;
+	abort_unless(nodep);
+	return container(nodep, struct cdlist, entry)->data;
 }
 
 
 DECL void cdl_set(struct dlist *nodep, void *data)
 {
-  abort_unless(nodep);
-  container(nodep, struct cdlist, entry)->data = data;
+	abort_unless(nodep);
+	container(nodep, struct cdlist, entry)->data = data;
 }
 
 #endif /* CAT_DLIST_DO_DECL */

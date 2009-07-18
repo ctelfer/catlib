@@ -8,8 +8,8 @@
 #include <cat/csv.h>
 
 struct csv_record {
-  unsigned long	cr_nfields;
-  char **	cr_fields;
+	ulong	cr_nfields;
+	char **	cr_fields;
 };
 
 int  csv_fopen(struct csv_state *csv, const char *filename);

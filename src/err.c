@@ -39,8 +39,8 @@ static void eout(int, int, char *, va_list);
 
 
 static struct file_emitter def_log_emitter = { 
-  { EMIT_OK, def_log_emit_func },
-  NULL,
+	{ EMIT_OK, def_log_emit_func },
+	NULL,
 };
 
 static log_close_f log_close_func = def_log_close_func;
@@ -50,119 +50,119 @@ static int log_threshold = 0;	/* The mode for debugging */
 
 static int def_log_emit_func(struct emitter *em, const void *buf, size_t len)
 {
-  static int initialized = 0;
-  if ( !initialized ) {
-    def_log_emitter.fe_file = stderr;
-    initialized = 1;
-  }
-  return file_emit_func(em, buf, len);
+	static int initialized = 0;
+	if ( !initialized ) {
+		def_log_emitter.fe_file = stderr;
+		initialized = 1;
+	}
+	return file_emit_func(em, buf, len);
 }
 
 
 static void def_log_close_func(struct emitter *em)
 {
-  struct file_emitter *fe = (struct file_emitter *)em;
-  fclose(fe->fe_file);
+	struct file_emitter *fe = (struct file_emitter *)em;
+	fclose(fe->fe_file);
 }
 
 
 /* This is for fatal errors.  Assume we quit */
 void err(char *fmt, ...) 
 { 
-  va_list ap; 
+	va_list ap; 
 
-  va_start(ap, fmt);
-  eout(LOG_ERR, 0, fmt, ap); 
-  va_end(ap);
+	va_start(ap, fmt);
+	eout(LOG_ERR, 0, fmt, ap); 
+	va_end(ap);
 #if defined(CAT_DIE_DUMP) && CAT_DIE_DUMP
-  abort();
+	abort();
 #else /* CAT_DIE_DUMP */
-  exit(1); 
+	exit(1); 
 #endif /* CAT_DIE_DUMP */
 } 
 
 
 void errsys(char *fmt, ...) 
 { 
-  va_list ap; 
+	va_list ap; 
 
-  va_start(ap, fmt);
-  eout(LOG_ERR, 1, fmt, ap); 
-  va_end(ap);
+	va_start(ap, fmt);
+	eout(LOG_ERR, 1, fmt, ap); 
+	va_end(ap);
 #if defined(CAT_DIE_DUMP) && CAT_DIE_DUMP
-  abort();
+	abort();
 #else /* CAT_DIE_DUMP */
-  exit(1); 
+	exit(1); 
 #endif /* CAT_DIE_DUMP */
 } 
 
 
 void logrec(int level, char *fmt, ...) 
 { 
-  va_list ap; 
+	va_list ap; 
 
-  va_start(ap, fmt);
-  if ( level >= log_threshold ) 
-    eout(LOG_INFO, 0, fmt, ap); 
-  va_end(ap);
+	va_start(ap, fmt);
+	if ( level >= log_threshold ) 
+		eout(LOG_INFO, 0, fmt, ap); 
+	va_end(ap);
 } 
 
 
 void logsys(int level, char *fmt, ...) 
 { 
-  va_list ap; 
+	va_list ap; 
 
-  va_start(ap, fmt);
-  if ( level >= log_threshold ) 
-    eout(LOG_INFO, 1, fmt, ap); 
-  va_end(ap);
+	va_start(ap, fmt);
+	if ( level >= log_threshold ) 
+		eout(LOG_INFO, 1, fmt, ap); 
+	va_end(ap);
 } 
 
 
 void set_logger(struct emitter *em, log_close_f new_close_func)
 { 
-  abort_unless(em);
+	abort_unless(em);
 
-  if ( log_close_func != NULL )
-    (*log_close_func)(log_emitter);
+	if ( log_close_func != NULL )
+		(*log_close_func)(log_emitter);
 
-  log_emitter = em;
-  log_close_func = new_close_func;
+	log_emitter = em;
+	log_close_func = new_close_func;
 } 
 
 
 void setlogthresh(int thresh)
 {
-  log_threshold = thresh;
+	log_threshold = thresh;
 }
 
 
 static void eout(int level, int sys, char *fmt, va_list ap) 
 { 
-  char buf[256];
-  int len;
+	char buf[256];
+	int len;
 
 #if CAT_HAS_POSIX
-  int savee = 0;
-  if ( sys ) 
-    savee = errno;
+	int savee = 0;
+	if ( sys ) 
+		savee = errno;
 #endif /* CAT_HAS_POSIX */
 
-  len = str_vfmt(buf, sizeof(buf)-1, fmt, ap);
+	len = str_vfmt(buf, sizeof(buf)-1, fmt, ap);
 
 #if CAT_HAS_POSIX
-  if ( sys && len >= 0 && len < sizeof(buf) )
-    len = str_fmt(buf + len, sizeof(buf) - len, "%s\n",
-            strerror(savee)); 
+	if ( sys && len >= 0 && len < sizeof(buf) )
+		len = str_fmt(buf + len, sizeof(buf) - len, "%s\n",
+			      strerror(savee)); 
 #endif /* CAT_HAS_POSIX */
 
-  if ( len < 0 ) 
-    str_copy(buf, "eout() -> error with string formatting\n",
-       sizeof(buf)); 
-  emit_string(log_emitter, buf);
+	if ( len < 0 ) 
+		str_copy(buf, "eout() -> error with string formatting\n",
+			 sizeof(buf)); 
+	emit_string(log_emitter, buf);
 
 #if CAT_HAS_POSIX
-  if ( sys ) 
-    errno = savee;
+	if ( sys ) 
+		errno = savee;
 #endif /* CAT_HAS_POSIX */
 }

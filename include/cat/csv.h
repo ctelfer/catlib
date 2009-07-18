@@ -3,25 +3,25 @@
 #include <cat/cat.h>
 
 enum {
-  CSV_ERR = -1,
-  CSV_EOF = 0,
-  CSV_OK  = 1,
-  CSV_FLD = 2,
-  CSV_REC = 3,
-  CSV_CNT = 4,
-  CSV_GETC_EOF = -1,
-  CSV_GETC_ERR = -2
+	CSV_ERR = -1,
+	CSV_EOF = 0,
+	CSV_OK  = 1,
+	CSV_FLD = 2,
+	CSV_REC = 3,
+	CSV_CNT = 4,
+	CSV_GETC_EOF = -1,
+	CSV_GETC_ERR = -2
 };
 
 typedef int (*getchar_f)(void *aux);
 
 struct csv_state {
-  getchar_f	csv_getc;
-  void *	csv_gcctx;
-  int		csv_done;
-  int		csv_inquote;
-  int		csv_sawquote;
-  int		csv_last;
+	getchar_f	csv_getc;
+	void *		csv_gcctx;
+	int		csv_done;
+	int		csv_inquote;
+	int		csv_sawquote;
+	int		csv_last;
 };
 
 void csv_init(struct csv_state *csv, getchar_f gc, void *gcctx);
