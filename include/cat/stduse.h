@@ -13,7 +13,7 @@
 #include <cat/cat.h>
 #include <cat/emalloc.h>
 
-
+/* Memory manager extras */
 #include <cat/mem.h>
 
 extern struct memmgr stdmem;
@@ -23,7 +23,7 @@ char *estrdup(const char *s);
 struct raw *erawdup(struct raw const * const r);
 
 
-
+/* external container list */
 #include <cat/list.h>
 
 union clist_node_u { 
@@ -40,7 +40,6 @@ union clist_node_u {
 /* basic manipulation */
 struct list *clist_new_sz(size_t len); /* create a new node */
 struct list *clist_newlist();
-void clist_init(struct list *list);
 void clist_freelist(struct list *list);
 void clist_clearlist(struct list *list);
 int clist_isempty(struct list *list);
