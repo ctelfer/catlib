@@ -40,9 +40,10 @@ enum {
 };
 
 struct ps_fd_entry {
+	struct list	entry;
 	int 		locfd;
 	int		pipefd;
-	struct list *	remfds;
+	struct list 	remfds;
 	int		type;
 	FILE *		file;
 	const char *	path;
@@ -50,7 +51,7 @@ struct ps_fd_entry {
 };
 
 struct ps_spec {
-	struct list *	fdelist;
+	struct list 	fdelist;
 };
 
 /* initilize a process spawn specification */
@@ -60,7 +61,8 @@ void ps_spec_init(struct ps_spec *spec);
 void ps_spec_cleanup(struct ps_spec *spec);
 
 /* copy a process spawn specification */
-void ps_spec_copy(struct ps_spec *dst, const struct ps_spec *src);
+/* returns 0 on success, -1 on error (most likely lack fo memory) */
+int ps_spec_copy(struct ps_spec *dst, const struct ps_spec *src);
 
 
 
@@ -120,7 +122,8 @@ void ps_spec_del_fde(struct ps_spec *spec, struct ps_fd_entry *psfde);
 
 /* add a file descriptor to a file descriptor entry.  This specifies */
 /* which file descriptor the child process will have for this entry */
-void ps_fde_addfd(struct ps_fd_entry *psfde, int fd);
+/* returns 0 on success and -1 if out of memory */
+int ps_fde_addfd(struct ps_fd_entry *psfde, int fd);
 
 /* delete a child file descriptor from a file descriptor entry */
 void ps_fde_delfd(struct ps_fd_entry *psfde, int fd);
@@ -198,7 +201,7 @@ int ps_cleanup(struct pspawn *ps, int wait);
 /* 1+2 means redirect stdout and stderr to the same stream */
 /* note that unless handling signals in your program yourself you should */
 /* call ps_ignore_sigcld() (only once is necessary) before calling ps_launch */
-struct pspawn *ps_run_std(const char *mode, ...);
+struct pspawn *ps_spawn(const char *mode, ...);
 
 
 #endif /* CAT_HAS_POSIX */

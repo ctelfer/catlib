@@ -9,7 +9,8 @@
 #endif
 
 #include <cat/pspawn.h>
-#include <cat/stduse.h>
+#include <cat/cds.h>
+#include <cat/bitset.h>
 #include <cat/io.h>
 
 #include <stdarg.h>
@@ -25,18 +26,24 @@
 #include <fcntl.h>
 #include <stdlib.h>
 
+/* data structures */
+CDS_NEWSTRUCT(struct list, int, fdnode_s);
+#define ln_to_fd(node)	CDS_DATA(node, fdnode_s)
+#define ln_to_fde(node)	container(node, struct ps_fd_entry, entry)
+
+
 /* Helper functions */
 static struct ps_fd_entry *ps_spec_newfde(struct ps_spec *spec, int type);
 static int ps_fds_type_ok(int type);
-static void ps_fd_entry_cleanup(void *ep, void *unused);
+static void ps_fd_entry_cleanup(struct ps_fd_entry *psfde);
 static struct ps_fd_entry *ps_fde_find(struct pspawn *ps, int remfd);
 static int spec_ok(struct ps_spec *spec);
 static int create_pipes(struct pspawn *ps);
 static int open_stdio_files(struct pspawn *ps);
 static int open_rdr_files(struct pspawn *ps);
 static int set_up_fds(struct pspawn *ps, int *retfd);
-static int set_up_fd(struct pspawn *ps, struct safebitset *pipefds, int tfd, 
-		     int sfd, int *retfd, int *nomap);
+static int set_up_fd(struct pspawn *ps, bitset_t *pipefds, int tfd, int sfd, 
+		     int *retfd, int *nomap);
 static void ps_launch_child(struct pspawn *ps, int pipefds[2],
 		            char * const *argv, char * const *envp);
 static int ps_launch_parent(struct pspawn *ps, int pipefds[2]);
@@ -50,20 +57,25 @@ void ps_ignore_sigcld()
 
 void ps_spec_init(struct ps_spec *spec)
 {
-	spec->fdelist = clist_newlist();
+	l_init(&spec->fdelist);
 }
 
 
 void ps_spec_cleanup(struct ps_spec *spec)
 {
-	l_apply(spec->fdelist, ps_fd_entry_cleanup, NULL);
-	clist_freelist(spec->fdelist);
+	struct list *node;
+	struct ps_fd_entry *psfde;
+	while ( (node = l_deq(&spec->fdelist)) != NULL ) {
+		psfde = ln_to_fde(node);
+		ps_fd_entry_cleanup(psfde);
+		free(psfde);
+	}
 }
 
 
-static void ps_fd_entry_cleanup(void *ep, void *unused)
+static void ps_fd_entry_cleanup(struct ps_fd_entry *e)
 {
-	struct ps_fd_entry *e = clist_dptr(ep, struct ps_fd_entry);
+	struct list *node;
 	if ( e->file != NULL ) {
 		fclose(e->file);
 		e->file = NULL;
@@ -74,46 +86,58 @@ static void ps_fd_entry_cleanup(void *ep, void *unused)
 		close(e->pipefd);
 	e->locfd = -1;
 	e->pipefd = -1;
-	clist_freelist(e->remfds);
+
+	while ( (node = l_deq(&e->remfds)) != NULL )
+		CDS_FREE(node);
 }
 
 
-void ps_spec_copy(struct ps_spec *dst, const struct ps_spec *src)
+int ps_spec_copy(struct ps_spec *dst, const struct ps_spec *src)
 {
-	struct list *t, *t2, *fdes, *rfds;
+	struct list *t, *t2;
 	struct ps_fd_entry *old, *new;
+	struct fdnode_s *fdn;
 	abort_unless(dst != NULL);
 	abort_unless(src != NULL);
 
-	fdes = src->fdelist;
 	ps_spec_init(dst);
-	for ( t = l_head(fdes); t != l_end(fdes) ; t = t->next ) {
-		old = clist_dptr(t, struct ps_fd_entry);
-		new = ps_spec_newfde(dst, old->type);
+	l_for_each(t, &src->fdelist) {
+		old = ln_to_fde(t);
+		if ( (new = ps_spec_newfde(dst, old->type)) == NULL )
+			goto err;
 		new->pipefd = old->pipefd;
 		new->locfd = old->locfd;
-		rfds = old->remfds;
-		for ( t2 = l_head(rfds); t2 != l_end(rfds); t2 = t2->next ) 
-			clist_enq(new->remfds, int, clist_data(t2, int));
+		l_for_each(t2, &old->remfds) {
+			CDS_NEW(fdn, ln_to_fd(t2));
+			if ( fdn == NULL )
+				goto err;
+			l_enq(&new->remfds, &fdn->node);
+		}
 	}
+
+	return 0;
+
+err:
+	ps_spec_cleanup(dst);
+	return -1;
 }
 
 
 static struct ps_fd_entry *ps_spec_newfde(struct ps_spec *spec, int type)
 {
-	struct list *node;
 	struct ps_fd_entry *psfde;
 
-	node = clist_new(struct ps_fd_entry);
-	psfde = clist_dptr(node, struct ps_fd_entry);
+	psfde = malloc(sizeof(struct ps_fd_entry));
+	if ( psfde == NULL )
+		return NULL;
 	psfde->locfd = -1;
 	psfde->pipefd = -1;
-	psfde->remfds = clist_newlist();
+	l_init(&psfde->remfds);
 	psfde->type = type;
 	psfde->file = NULL;
 	psfde->path = NULL;
 	psfde->mode = 0644;
-	clist_insert_tail(spec->fdelist, node);
+	l_enq(&spec->fdelist, &psfde->entry);
 	return psfde;
 }
 
@@ -140,8 +164,8 @@ struct ps_fd_entry *ps_spec_add_remap(struct ps_spec *spec, int fd)
 		return NULL;
 	}
 		
-	psfde = ps_spec_newfde(spec, PSFD_REMAP);
-	psfde->pipefd = fd;
+	if ( (psfde = ps_spec_newfde(spec, PSFD_REMAP)) != NULL )
+		psfde->pipefd = fd;
 	return psfde;
 }
 
@@ -149,7 +173,8 @@ struct ps_fd_entry *ps_spec_add_remap(struct ps_spec *spec, int fd)
 struct ps_fd_entry *ps_spec_keepfd(struct ps_spec *spec, int fd)
 {
 	struct ps_fd_entry *psfde = ps_spec_add_remap(spec, fd);
-	ps_fde_addfd(psfde, fd);
+	if ( psfde != NULL )
+		ps_fde_addfd(psfde, fd);
 	return psfde;
 }
 
@@ -170,8 +195,8 @@ struct ps_fd_entry *ps_spec_add_fsrdr(struct ps_spec *spec, int type,
 		return NULL;
 	}
 
-	psfde = ps_spec_newfde(spec, type);
-	psfde->path = path;
+	if ( (psfde = ps_spec_newfde(spec, type)) != NULL )
+		psfde->path = path;
 	return psfde;
 }
 
@@ -213,28 +238,34 @@ static int ps_fds_type_ok(int type)
 
 void ps_spec_del_fde(struct ps_spec *spec, struct ps_fd_entry *psfde)
 {
-	struct list *node;
-	node = clist_ptr2node(psfde);
-	ps_fd_entry_cleanup(psfde, NULL);
-	clist_delete(spec->fdelist, node);
+	ps_fd_entry_cleanup(psfde);
+	l_rem(&psfde->entry);
+	free(psfde);
 }
 
 
-void ps_fde_addfd(struct ps_fd_entry *psfde, int fd)
+int ps_fde_addfd(struct ps_fd_entry *psfde, int fd)
 {
-	clist_enq(psfde->remfds, int, fd);
+	struct fdnode_s *fdn;
+	CDS_NEW(fdn, fd);
+	if ( fdn == NULL )
+		return -1;
+	l_enq(&psfde->remfds, &fdn->node);
+	return 0;
 }
 
 
 void ps_fde_delfd(struct ps_fd_entry *psfde, int fd)
 {
-	struct list *t, *h, *remfdl = psfde->remfds;
+	struct list *t, *h, *remfdl = &psfde->remfds;
 	t = l_head(remfdl);
 	while ( t != l_end(remfdl) ) {
 		h = t;
 		t = t->next;
-		if ( clist_data(h, int) == fd )
-			clist_delete(remfdl, h);
+		if ( ln_to_fd(h) == fd ) {
+			l_rem(h);
+			CDS_FREE(h);
+		}
 	}
 }
 
@@ -252,9 +283,13 @@ struct pspawn * ps_launch(char * const argv[], char * const envp[],
 		return NULL;
 	}
 
-	ps = ecalloc(1, sizeof(*ps));
+	if ( (ps = calloc(1, sizeof(*ps))) == NULL )
+		return NULL;
 	ps->cpid = -1;
-	ps_spec_copy(&ps->spec, spec);
+	if ( ps_spec_copy(&ps->spec, spec) < 0 ) {
+		rerrno = errno;
+		goto err;
+	}
 	ps->state = PSS_INIT;
 
 	if ( pipe(retpipe) < 0 ) {
@@ -306,46 +341,41 @@ err:
 
 static int spec_ok(struct ps_spec *spec)
 {
-	struct list *t, *lfde, *t2, *lrfd;
+	struct list *t, *t2;
 	struct ps_fd_entry *psfde;
-	struct safebitset *mapped;
+	DECLARE_BITSET(mapped, CAT_PS_MAXFDS);
 
-	mapped = sbs_new(CAT_PS_MAXFDS);
-	lfde = spec->fdelist;
-	for ( t = l_head(lfde); t != l_end(lfde); t = t->next ) {
-		psfde = clist_dptr(t, struct ps_fd_entry);
+	l_for_each(t, &spec->fdelist) {
+		psfde = ln_to_fde(t);
 		if ( !ps_fds_type_ok(psfde->type) ) 
 			goto fail;
-		if ( l_isempty(psfde->remfds) )
+		if ( l_isempty(&psfde->remfds) )
 			goto fail;
-		lrfd = psfde->remfds;
-		for ( t2 = l_head(lrfd); t2 != l_end(lrfd); t2 = t2->next ) {
-			int fd = clist_data(t2, int);
+		l_for_each(t2, &psfde->remfds) {
+			int fd = ln_to_fd(t2);
 			if ( (fd < 0) || (fd >= CAT_PS_MAXFDS) )
 				goto fail;
-			if ( sbs_test(mapped, fd) )
+			if ( bset_test(mapped, fd) )
 				goto fail;
-			sbs_set(mapped, fd);
+			bset_set(mapped, fd);
 		}
 	}
 
-	sbs_free(mapped);
 	return 1;
+
 fail:
-	sbs_free(mapped);
 	return 0;
 }
 
 
 static int create_pipes(struct pspawn *ps)
 {
-	struct list *t, *lfde;
+	struct list *t;
 	struct ps_fd_entry *psfde;
 	int pipefds[2];
 
-	lfde = ps->spec.fdelist;
-	for ( t = l_head(lfde); t != l_end(lfde); t = t->next ) {
-		psfde = clist_dptr(t, struct ps_fd_entry);
+	l_for_each(t, &ps->spec.fdelist) {
+		psfde = ln_to_fde(t);
 		if ( psfde->type == PSFD_REMAP )
 			continue;
 		if ( (psfde->type & PSFD_FSRDR) != 0 )
@@ -381,15 +411,14 @@ static int create_pipes(struct pspawn *ps)
 
 static int open_stdio_files(struct pspawn *ps)
 {
-	struct list *t, *lfde;
+	struct list *t;
 	struct ps_fd_entry *psfde;
 	const char *omode = NULL;
 	int bmode;
 	FILE *fp;
 
-	lfde = ps->spec.fdelist;
-	for ( t = l_head(lfde); t != l_end(lfde); t = t->next ) {
-		psfde = clist_dptr(t, struct ps_fd_entry);
+	l_for_each(t, &ps->spec.fdelist) {
+		psfde = ln_to_fde(t);
 		if ( (psfde->type & PSFD_STDIO) == 0 )
 			continue;
 		switch (psfde->type & PSFD_DMASK) {
@@ -483,14 +512,13 @@ err:
 
 static int open_rdr_files(struct pspawn *ps)
 {
-	struct list *t, *lfde;
+	struct list *t;
 	struct ps_fd_entry *psfde;
 	int fd;
 	int flags;
 
-	lfde = ps->spec.fdelist;
-	for ( t = l_head(lfde); t != l_end(lfde); t = t->next ) {
-		psfde = clist_dptr(t, struct ps_fd_entry);
+	l_for_each(t, &ps->spec.fdelist) {
+		psfde = ln_to_fde(t);
 		if ( (psfde->type & PSFD_FSRDR) == 0 )
 			continue;
 
@@ -524,34 +552,30 @@ static int open_rdr_files(struct pspawn *ps)
 static int set_up_fds(struct pspawn *ps, int *retfd)
 {
 	int i, rv, nomap;
-	struct list *t, *lfde;
-	struct list *t2, *lrfd;
-	struct safebitset *pipefds;
+	struct list *t, *t2;
 	struct ps_fd_entry *psfde;
+	DECLARE_BITSET(pipefds, CAT_PS_MAXFDS);
 
-	pipefds = sbs_new(CAT_PS_MAXFDS);
-	sbs_set(pipefds, *retfd);
+	bset_set(pipefds, *retfd);
 
 	/* populate the set of file descriptors we need to map */
-	lfde = ps->spec.fdelist;
-	for ( t = l_head(lfde); t != l_end(lfde); t = t->next ) {
-		psfde = clist_dptr(t, struct ps_fd_entry);
+	l_for_each(t, &ps->spec.fdelist) {
+		psfde = ln_to_fde(t);
 		if ( psfde->locfd >= 0 )
 			close(psfde->locfd);
-		sbs_set(pipefds, psfde->pipefd);
+		bset_set(pipefds, psfde->pipefd);
 	}
 
 	/* close all descriptors except the remaining pipes */
 	for ( i = 0 ; i < CAT_PS_MAXFDS ; i++ )
-		if ( !sbs_test(pipefds, i) )
+		if ( !bset_test(pipefds, i) )
 			close(i);
 
-	for ( t = l_head(lfde); t != l_end(lfde); t = t->next ) {
+	l_for_each(t, &ps->spec.fdelist) {
 		nomap = 0;
-		psfde = clist_dptr(t, struct ps_fd_entry);
-		lrfd = psfde->remfds;
-		for ( t2 = l_head(lrfd); t2 != l_end(lrfd); t2 = t2->next ) {
-			rv = set_up_fd(ps, pipefds, clist_data(t2, int), 
+		psfde = ln_to_fde(t);
+		l_for_each(t2, &psfde->remfds) {
+			rv = set_up_fd(ps, pipefds, ln_to_fd(t2), 
 				       psfde->pipefd, retfd, &nomap);
 			if ( rv < 0 ) {
 				ps->error = errno;
@@ -566,15 +590,14 @@ static int set_up_fds(struct pspawn *ps, int *retfd)
 
 	return 0;
 err: 
-	sbs_free(pipefds);
 	return -1;
 }
 
 
-static int set_up_fd(struct pspawn *ps, struct safebitset *pipefds, int tfd, 
+static int set_up_fd(struct pspawn *ps, bitset_t *pipefds, int tfd, 
 		     int sfd, int *retfd, int *nomap)
 {
-	struct list *t, *lfde;
+	struct list *t;
 	struct ps_fd_entry *psfde = NULL;
 	int dfd = -1;
 
@@ -583,7 +606,7 @@ static int set_up_fd(struct pspawn *ps, struct safebitset *pipefds, int tfd,
 		return 0;
 	}
 
-	if ( sbs_test(pipefds, tfd) ) { 
+	if ( bset_test(pipefds, tfd) ) {
 		/* duplicate the blocking fd */
 		if ( (dfd = dup(tfd)) < 0 )
 			return -1;
@@ -597,9 +620,8 @@ static int set_up_fd(struct pspawn *ps, struct safebitset *pipefds, int tfd,
 
 	if ( dfd >= 0 ) {
 		/* find the entry that was blocking us to update later */
-		lfde = ps->spec.fdelist;
-		for ( t = l_head(lfde); t != l_end(lfde); t = t->next ) {
-			psfde = clist_dptr(t, struct ps_fd_entry);
+		l_for_each(t, &ps->spec.fdelist) {
+			psfde = ln_to_fde(t);
 			if ( psfde->pipefd == tfd )
 				break;
 		}
@@ -611,7 +633,7 @@ static int set_up_fd(struct pspawn *ps, struct safebitset *pipefds, int tfd,
 		}
 	}
 
-	sbs_clr(pipefds, sfd);
+	bset_clr(pipefds, sfd);
 	return 0;
 }
 
@@ -619,12 +641,11 @@ static int set_up_fd(struct pspawn *ps, struct safebitset *pipefds, int tfd,
 static int ps_launch_parent(struct pspawn *ps, int retpipe[2])
 {
 	int rlen, rval;
-	struct list *t, *lfde;
+	struct list *t;
 	struct ps_fd_entry *psfde;
 
-	lfde = ps->spec.fdelist;
-	for ( t = l_head(lfde); t != l_end(lfde); t = t->next ) { 
-		psfde = clist_dptr(t, struct ps_fd_entry);
+	l_for_each(t, &ps->spec.fdelist) {
+		psfde = ln_to_fde(t);
 		if (psfde->type == PSFD_REMAP)
 			continue;
 		if (psfde->pipefd >= 0) { 
@@ -654,19 +675,18 @@ static int ps_launch_parent(struct pspawn *ps, int retpipe[2])
 
 static struct ps_fd_entry *ps_fde_find(struct pspawn *ps, int remfd) 
 {
-	struct list *t, *t2, *l, *l2;
+	struct list *t, *t2;
 	struct ps_fd_entry *psfde;
 
 	if ( ps == NULL )
 		return NULL;
 
-	l = ps->spec.fdelist;
-	for ( t = l_head(l) ; t != l_end(l) ; t = t->next ) {
-		psfde = clist_dptr(t, struct ps_fd_entry);
-		l2 = psfde->remfds;
-		for ( t2 = l_head(l2) ; t2 != l_end(l2) ; t2 = t2->next )
-			if ( clist_data(t2, int) == remfd )
+	l_for_each(t, &ps->spec.fdelist) {
+		psfde = ln_to_fde(t);
+		l_for_each(t2, &psfde->remfds) {
+			if ( ln_to_fd(t2) == remfd )
 				return psfde;
+		}
 	}
 
 	return NULL;
@@ -758,12 +778,12 @@ static int modech_ok(int ch)
 
 
 #define PS_ARGARR_SIZE	16
-struct pspawn *ps_run_std(const char *mode, ...)
+struct pspawn *ps_spawn(const char *mode, ...)
 {
 	va_list ap;
 	uint i, narg = 1, type, bmode;
 	int minfd = -1, fd;
-	char **args, *argarr[PS_ARGARR_SIZE];
+	char **args = NULL, *argarr[PS_ARGARR_SIZE];
 	char * const * envp = NULL;
 	int rerrno = 0;
 	int keepfds[3] = { 1, 1, 1 };
@@ -789,7 +809,8 @@ struct pspawn *ps_run_std(const char *mode, ...)
 			errno = EINVAL;
 			return NULL;
 		}
-		args = emalloc(sizeof(char *) * narg);
+		if ( (args = malloc(sizeof(char *) * narg)) == NULL )
+			return NULL;
 	} else { 
 		args = argarr;
 	}
@@ -804,7 +825,7 @@ struct pspawn *ps_run_std(const char *mode, ...)
 
 	ps_spec_init(&spec);
 
-	while ( *mode != '\0' ) { 
+	while ( *mode != '\0' ) {
 		bmode = PSFD_FULLBUF;
 		if ( *mode == 'n' ) {
 			bmode = PSFD_NOBUF;
@@ -824,7 +845,10 @@ struct pspawn *ps_run_std(const char *mode, ...)
 				goto out;
 			}
 			fd = 2;
-			ps_fde_addfd(psfde, 2);
+			if ( ps_fde_addfd(psfde, 2) < 0 ) {
+				rerrno = errno;
+				goto out;
+			}
 		} else {
 			fd = *mode - '0';
 			if ( fd <= minfd ) {
@@ -833,16 +857,28 @@ struct pspawn *ps_run_std(const char *mode, ...)
 			}
 			type = PSFD_STDIO | bmode;
 			type |= (fd == 0 ?  PSFD_IN : PSFD_OUT);
-			psfde = ps_spec_add_pipe(&spec, type);
-			ps_fde_addfd(psfde, fd);
+			if ( (psfde = ps_spec_add_pipe(&spec, type)) == NULL ) {
+				rerrno = errno;
+				goto out;
+			}
+			if ( ps_fde_addfd(psfde, fd) < 0 ) {
+				rerrno = errno;
+				goto out;
+			}
 			minfd = fd;
 		}
 		keepfds[fd] = 0;
 		++mode;
 	}
-	for ( i = 0 ; i < 3 ; i++ )
-		if ( keepfds[i] )
-			ps_spec_keepfd(&spec, i);
+
+	for ( i = 0 ; i < 3 ; i++ ) {
+		if ( keepfds[i] ) {
+			if ( ps_spec_keepfd(&spec, i) == NULL ) {
+				rerrno = errno;
+				goto out;
+			}
+		}
+	}
 
 	ps = ps_launch(args, envp, &spec);
 	if ( ps == NULL ) 

@@ -61,7 +61,7 @@ void test1(char *file)
 		fflush(stdout);
 	}
 
-	ps_cleanup(ps, 1);
+	printf("cleanup return code = %d\n", ps_cleanup(ps, 1));
 
 	printf("Done 1\n");
 }
@@ -74,7 +74,7 @@ void test2(char *file)
 	char line[256];
 	int running;
 
-	ps = ps_run_std("el01", environ, "/bin/cat", file, "-", NULL);
+	ps = ps_spawn("el01", environ, "/bin/cat", file, "-", NULL);
 	if (ps == NULL)
 		errsys("error2 launching /bin/cat:\n");
 
@@ -111,7 +111,7 @@ void test2(char *file)
 		fflush(stdout);
 	}
 
-	ps_cleanup(ps, 1);
+	printf("cleanup return code = %d\n", ps_cleanup(ps, 1));
 
 	printf("Done 2\n");
 }
@@ -125,7 +125,7 @@ void test3()
 	char line[256];
 	int running;
 
-	if ((ps = ps_run_std("el01+2", environ, "/usr/bin/env", NULL)) == NULL)
+	if ((ps = ps_spawn("el01+2", environ, "/usr/bin/env", NULL)) == NULL)
 		errsys("error2 launching /bin/cat:\n");
 
 	printf("7: Process %d is %s\n", ps->cpid, 
@@ -148,7 +148,7 @@ void test3()
 		fflush(stdout);
 	}
 
-	ps_cleanup(ps, 1);
+	printf("cleanup return code = %d\n", ps_cleanup(ps, 1));
 
 	printf("Done 3\n");
 }
