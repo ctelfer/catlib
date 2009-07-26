@@ -16,8 +16,7 @@
 /* Memory manager extras */
 #include <cat/mem.h>
 
-extern struct memmgr stdmem;
-extern struct memmgr estdmem;
+extern struct memmgr estdmm;
 
 char *estrdup(const char *s);
 struct raw *erawdup(struct raw const * const r);

@@ -106,3 +106,37 @@ size_t amm_get_avail(struct arraymm *amm)
 	return (amm->mlen - amm->fill) << amm->alignp2;
 }
 
+
+#if CAT_USE_STDLIB
+#include <stdlib.h>
+#else /* CAT_USE_STDLIB */
+#include <cat/catstdlib.h>
+#endif /* CAT_USE_STDLIB */
+
+static void * std_alloc(struct memmgr *mm, size_t size) 
+{
+	abort_unless(mm && size > 0);
+	return malloc(size);
+}
+
+
+static void * std_resize(struct memmgr *mm, void *old, size_t newsize) 
+{
+	abort_unless(mm && newsize > 0);
+	return realloc(old, newsize);
+}
+
+
+static void std_free(struct memmgr *mm, void *old) 
+{
+	abort_unless(mm);
+	free(old);
+}
+
+
+struct memmgr stdmm = { 
+	std_alloc,
+	std_resize,
+	std_free, 
+	&stdmm
+};

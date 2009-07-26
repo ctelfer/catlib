@@ -14,7 +14,7 @@ void tmatch(char *pat, char *str)
 	struct raw r;
 	int rv, e, i;
 
-	if ( rex_init(&rp, str_to_raw(&r, pat, 0), &estdmem, &e) < 0 ) {
+	if ( rex_init(&rp, str_to_raw(&r, pat, 0), &estdmm, &e) < 0 ) {
 		printf("Error parsing pattern '%s' at position %d\n", e+1);
 		return;
 	}

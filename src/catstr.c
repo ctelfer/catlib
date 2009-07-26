@@ -3,17 +3,14 @@
  *
  * by Christopher Adam Telfer
  *  
- * Copyright 2007, 2008 See accompanying license
+ * Copyright 2007, 2008, 2009 See accompanying license
  *  
  */
 
 #include <cat/catstr.h>
 #include <cat/str.h>
-#include <cat/stduse.h>
-#include <cat/err.h>
 #include <cat/grow.h>
 #include <cat/match.h>
-#include <cat/stduse.h>
 
 /* for memmove and strlen */
 #if CAT_USE_STDLIB
@@ -28,8 +25,7 @@
 #endif /* CAT_USE_STDLIB */
 
 
-static struct memmgr cs_mm;
-static struct memmgr *cs_mmp = &estdmem;
+static struct memmgr *cs_mmp = &stdmm;
 
 #define CKCS(cs)							\
 	if (!cs || !cs->cs_data ||					\
@@ -40,6 +36,11 @@ static struct memmgr *cs_mmp = &estdmem;
 	if (!cs || !cs->cs_data || 					\
 	    (cs->cs_size > CS_MAXLEN) || (cs->cs_dlen > cs->cs_size))	\
 		return NULL;
+
+#define CKCSI(cs)							\
+	if (!cs || !cs->cs_data || 					\
+	    (cs->cs_size > CS_MAXLEN) || (cs->cs_dlen > cs->cs_size))	\
+		return -1;
 
 #define CKCSN(cs)							\
 	if (!cs || !cs->cs_data ||					\
@@ -357,7 +358,6 @@ out:
 
 
 
-#if CAT_USE_STDLIB
 size_t cs_find(const struct catstr *findin, const struct catstr *find)
 {
 	struct raw praw;
@@ -385,7 +385,7 @@ size_t cs_find_str(const struct catstr *findin, const char *s)
 
 size_t cs_find_raw(const struct catstr *findin, const struct raw *r)
 {
-	struct bmpat *bmp;
+	struct bmpat bmp;
 	ulong off;
 	int rv;
 	struct raw rstr;
@@ -394,31 +394,28 @@ size_t cs_find_raw(const struct catstr *findin, const struct raw *r)
 
 	/* TODO: fix bm_* so it uses size_t */
 	abort_unless(r->len <= (ulong)~0);
-	bmp = bm_pnew((struct raw *)r);
+	bm_pinit_lite(&bmp, (struct raw *)r);
 
 	rstr.len = findin->cs_dlen;
 	rstr.data = (char *)findin->cs_data;
-	rv = bm_match(&rstr, bmp, &off);
-	free(bmp);
+	rv = bm_match(&rstr, &bmp, &off);
 
 	if ( rv < 0 )
 		return CS_NOTFOUND;
 	else
 		return off;
 }
-#endif /* CAT_USE_STDLIB */
 
 
-struct catstr *cs_from_chars(const char *s)
+struct catstr *cs_copy_from_chars(const char *s)
 {
 	size_t slen;
 	struct catstr *cs;
 
 	slen = strlen(s);
 
-	cs = cs_alloc(slen);
-	abort_unless(cs && (cs->cs_size == cs_alloc_size(slen)));
-	cs->cs_dlen = slen;
+	if ( (cs = cs_alloc(slen)) == NULL )
+		return NULL;
 	memmove(cs->cs_data, s, slen);
 	cs->cs_dlen = slen;
 	cs->cs_data[slen] = '\0';
@@ -440,10 +437,10 @@ struct catstr *cs_format(const char *fmt, ...)
 	rv = str_vfmt(dummy, sizeof(dummy), fmt, ap);
 	va_end(ap);
 
-	if ( rv < 0 )
-		err("cs_format: error in formatting");
-
-	cs = cs_alloc(rv);
+	if ( (rv < 0) || (rv + 1 <= 0) )
+		return NULL;
+	if ( (cs = cs_alloc(rv)) == NULL )
+		return NULL;
 	cs->cs_dlen = rv;
 	va_start(ap, fmt);
 	rv2 = str_vfmt((char *)cs->cs_data, rv+1, fmt, ap);
@@ -454,62 +451,61 @@ struct catstr *cs_format(const char *fmt, ...)
 }
 
 
-struct catstr *cs_concat(struct catstr *first, struct catstr *second)
+int cs_concat(struct catstr *dst, struct catstr *src)
 {
-	struct catstr *cs;
 	size_t newlen;
 
-	CKCSP(first);
-	CKCSP(second);
+	CKCSI(dst);
+	CKCSI(src);
 
-	if ( CS_MAXLEN - first->cs_dlen > second->cs_dlen )
-		err("cs_concat:  size overflow");
-	newlen = first->cs_dlen + second->cs_dlen;
-	cs = cs_alloc(newlen);
-	abort_unless(cs && (cs->cs_size == cs_alloc_size(newlen)));
-	memmove(cs->cs_data, first->cs_data, first->cs_dlen);
-	memmove(cs->cs_data + first->cs_dlen, second->cs_data, second->cs_dlen);
-	cs->cs_dlen = newlen;
-	cs->cs_data[newlen] = '\0';
+	if ( CS_MAXLEN - dst->cs_dlen > src->cs_dlen )
+		return -1;
+	newlen = dst->cs_dlen + src->cs_dlen;
+	if ( cs_grow(dst, newlen) < 0 )
+		return -1;
+	memmove(dst->cs_data + dst->cs_dlen, src->cs_data, dst->cs_dlen);
+	dst->cs_dlen = newlen;
+	dst->cs_data[newlen] = '\0';
 
-	return cs;
+	return 0;
 }
 
 
-struct catstr *cs_grow(struct catstr *cs, size_t minlen)
+int cs_grow(struct catstr *cs, size_t minlen)
 {
 	byte_t *csp;
 	size_t tlen, olen;
-	CKCSP(cs);
+	CKCSI(cs);
 	abort_unless(minlen <= CS_MAXLEN);
 	abort_unless(cs->cs_dynamic);
 
-	csp = (byte_t *)cs;
+	csp = (byte_t *)&cs->cs_data;
 	tlen = olen = cs_alloc_size(cs->cs_size);
 	if ( mem_grow(cs_mmp, &csp, &tlen, cs_alloc_size(minlen)) < 0 )
-		err("cs_grow: could not increase allocation");
+		return -1;
 	abort_unless(tlen >= olen);
 
-	cs = (struct catstr *)csp;
-	cs->cs_data = (char *)(cs + 1);
-	cs->cs_size = (tlen - sizeof(struct catstr) - 1);
+	cs->cs_data = csp;
+	cs->cs_size = tlen - 1;
 
-	return cs;
+	return 0;
 }
 
 
-struct catstr *cs_addch(struct catstr *cs, char ch)
+int cs_addch(struct catstr *cs, char ch)
 {
-	CKCSP(cs);
+	CKCSI(cs);
 	if ( cs->cs_dlen >= cs->cs_size ) {
-		if ( cs->cs_dynamic )
-			cs_grow(cs, cs->cs_dlen + 1);
-		else
-			return NULL;
+		if ( cs->cs_dynamic ) {
+			if ( cs_grow(cs, cs->cs_dlen + 1) < 0 )
+				return -1;
+		} else {
+			return -1;
+		}
 	}
 	cs->cs_data[cs->cs_dlen++] = ch;
 	cs->cs_data[cs->cs_dlen] = '\0';
-	return cs;
+	return 0;
 }
 
 
@@ -527,7 +523,8 @@ struct catstr *cs_substr(const struct catstr *orig, size_t off, size_t len)
 	if ( remaining > len )
 		len = remaining;
 
-	cs = cs_alloc(len);
+	if ( (cs = cs_alloc(len)) == NULL )
+		return NULL;
 	cs->cs_dlen = len;
 	memmove(cs->cs_data, orig->cs_data + off, len);
 	cs->cs_data[len] = '\0';
@@ -548,15 +545,18 @@ size_t cs_rev_off(const struct catstr *cs, size_t roff)
 
 
 #if CAT_USE_STDLIB
-struct catstr *cs_fd_readline(int fd)
+int cs_fd_readline(int fd, struct catstr **csp)
 {
 	struct catstr *cs;
 	char *p;
 	int eol = 0, rv;
 	size_t sofar = 0;
 
-	cs = cs_alloc(128);
-	abort_unless(cs);
+	abort_unless(csp);
+
+	if ( (cs = cs_alloc(128)) == NULL )
+		return -1;
+
 	while ( !eol ) {
 		p = cs->cs_data + sofar;
 		if ( (rv = read(fd, p, 1)) < 1 ) {
@@ -566,61 +566,77 @@ struct catstr *cs_fd_readline(int fd)
 				if ( errno == EINTR )
 					continue;
 				cs_free(cs);
-				return NULL;
+				*csp = NULL;
+				return -1;
 			}
 		} else if ( *p == '\n' ) {
 			++sofar;
 			eol = 1;
 		} else {
 			++sofar;
-			if ( sofar == cs_tlen(*cs) - 1 )
-				cs = cs_grow(cs, cs_tlen(*cs) * 2);
+			if ( cs_isfull(cs) ) {
+				if ( cs_grow(cs, cs->cs_size * 2) < 0 ) {
+					cs_free(cs);
+					*csp = NULL;
+					return -1;
+				}
+			}
 			abort_unless(cs);
 		}
 	}
 
 	cs->cs_dlen = sofar;
 	cs->cs_data[sofar] = '\0';
+	*csp = cs;
 
-	return cs;
+	return 0;
 }
 
 
-struct catstr *cs_file_readline(FILE *file)
+int cs_file_readline(FILE *file, struct catstr **csp)
 {
 	struct catstr *cs;
 	char *p, *trav;
 	int eol = 0;
-	size_t sofar = 0, toget;
+	size_t sofar = 0, avail;
 
-	cs = cs_alloc(128);
-	abort_unless(cs);
+	abort_unless(csp);
+
+	if ( (cs = cs_alloc(128)) == NULL )
+		return -1;
+
 	while ( !eol ) {
 		p = cs->cs_data + sofar;
-		toget = cs_tlen(*cs) - sofar;
-		abort_unless(toget > 2);
-		if ( fgets((char *)p, toget, file) == NULL ) {
+		avail = cs->cs_size - sofar;
+		abort_unless(avail > 2);
+		if ( fgets((char *)p, avail+1, file) == NULL ) {
 			cs_free(cs);
-			return NULL;
+			*csp = NULL;
+			return -1;
 		}
-		for ( trav = p ; trav < p + toget ; ++trav )
+		for ( trav = p ; trav < p + avail; ++trav )
 			if ( *trav == '\n' )
 				break;
-		if ( trav != p + toget ) {
+		if ( trav != p + avail ) {
 			eol = 1;
-			abort_unless(trav - p + 1 < toget);
+			abort_unless(trav - p + 1 <= avail);
 			cs->cs_dlen = sofar + (trav - p + 1);
 			/* guaranteed by fgets() */
 			abort_unless(cs->cs_data[cs->cs_dlen] == '\0');
 		} else {
 			/* guaranteed by fgets() */
-			abort_unless(p[toget - 1] == '\0');
-			sofar += toget - 1;
-			cs = cs_grow(cs, cs_tlen(*cs) * 2);
-			abort_unless(cs);
+			abort_unless(p[avail] == '\0');
+			sofar += avail;
+			if ( cs_grow(cs, cs->cs_size * 2) < 0 ) {
+				cs_free(cs);
+				*csp = NULL;
+				return -1;
+			}
 		}
 	}
-	return cs;
+
+	*csp = cs;
+	return 0;
 }
 #endif /* CAT_USE_STDLIB */
 
@@ -630,15 +646,18 @@ struct catstr *cs_alloc(size_t len)
 	struct catstr *cs;
 
 	if ( len > CS_MAXLEN )
-		err("cs_alloc: size overflow");
-
-	if ( (cs = mem_get(cs_mmp, cs_alloc_size(len))) != NULL ) {
-		cs->cs_size = len;
-		cs->cs_dlen = 0;
-		cs->cs_data = (char *)(cs + 1);
-		cs->cs_data[0] = '\0';
-		cs->cs_dynamic = 1;
+		return NULL;
+	if ( (cs = mem_get(cs_mmp, sizeof(*cs))) == NULL )
+		return NULL;
+	if ( (cs->cs_data = mem_get(cs_mmp, cs_alloc_size(len))) == NULL ) {
+		mem_free(cs_mmp, cs);
+		return NULL;
 	}
+
+	cs->cs_size = len;
+	cs->cs_dlen = 0;
+	cs->cs_data[0] = '\0';
+	cs->cs_dynamic = 1;
 
 	return cs;
 }
@@ -648,6 +667,7 @@ void cs_free(struct catstr *cs)
 {
 	CKCSN(cs);
 	abort_unless(cs->cs_dynamic);
+	mem_free(cs_mmp, cs->cs_data);
 	mem_free(cs_mmp, cs);
 }
 
@@ -655,7 +675,6 @@ void cs_free(struct catstr *cs)
 void cs_setmm(struct memmgr *mm)
 {
 	abort_unless(mm);
-	cs_mm = *mm;
-	cs_mmp = &cs_mm;
+	cs_mmp = mm;
 }
 

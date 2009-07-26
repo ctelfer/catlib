@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
 	const char *tokp;
 	int toklen;
 
-	lex = lex_new(&estdmem);
+	lex = lex_new(&estdmm);
 	Lex_add(lex, "[ \t]+", WHITESPACE);
 	Lex_add(lex, "[\n\r]+", NEWLINE);
 	Lex_add(lex, "-?[0-9]+", NUMBER);

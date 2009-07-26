@@ -3,7 +3,7 @@ TESTS=	testlist testhash testtcpc testtcps testudpc testudps testpool \
 	testpcache testuemux testrb markov markov2 testmatch \
 	testsplay testcsv testbitset testshell testgraph testprintf teststr \
 	testbitops testpspawn testdynmem testtlsf testmalloc testregex \
-	testlex testsort testoptparse
+	testlex testsort testoptparse testcatstr
 	
 CFILES= testlist.c testhash.c testtcpc.c testtcps.c testudpc.c testudps.c \
 	testpool.c testmem.c testheap.c testhw.c testtime.c testavl.c \
@@ -11,7 +11,7 @@ CFILES= testlist.c testhash.c testtcpc.c testtcps.c testudpc.c testudps.c \
 	markov2.c testmatch.c testsplay.c testcsv.c testbitset.c \
 	testshell.c testgraph.c testprintf.c teststr.c testbitops.c \
 	testdynmem.c testtlsf.c testmalloc.c testregex.c testlex.c testsort.c \
-	testoptparse.c
+	testoptparse.c testcatstr.c
 
 CC=gcc
 
@@ -152,12 +152,8 @@ testlex: testlex.c $(CAT_DBG_LIBDEP)
 testoptparse: testoptparse.c $(CAT_DBG_LIBDEP)
 	$(CC) $(CAT_DBG_CF) -o testoptparse testoptparse.c $(INC) $(CAT_DBG_LIB)
 
-#testsort: testsort.c $(CAT_DBG_LIBDEP)
-#	$(CC) $(CAT_DBG_CF) -o testsort testsort.c $(INC) $(CAT_DBG_LIB)
-
 testsort: testsort.c $(CAT_LIBDEP)
 	$(CC) $(CAT_CF) -o testsort testsort.c $(INC) $(CAT_LIB)
 
-# for profiling
-#testmalloc: testmalloc.c $(CAT_DBG_LIBDEP)
-#	$(CC) $(CAT_DBG_CF) -o testmalloc testmalloc.c $(INC) $(CAT_DBG_LIB)
+testcatstr: testcatstr.c $(CAT_DBG_LIBDEP)
+	$(CC) $(CAT_DBG_CF) -o testcatstr testcatstr.c $(INC) $(CAT_DBG_LIB)

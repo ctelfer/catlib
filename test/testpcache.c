@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
   psiz = atoi(argv[2]);
   na = atoi(argv[3]);
 
-  pc_init(&Pcache, atoi(argv[1]), psiz, 1, 0, &estdmem);
+  pc_init(&Pcache, atoi(argv[1]), psiz, 1, 0, &estdmm);
 
   /* add one page */
   pc_addpg(&Pcache, emalloc(psiz), psiz);

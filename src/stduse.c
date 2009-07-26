@@ -39,35 +39,6 @@
 
 /* Memory operations */
 
-static void * std_alloc(struct memmgr *mm, size_t size) 
-{
-	abort_unless(mm && size > 0);
-	return malloc(size);
-}
-
-
-static void * std_resize(struct memmgr *mm, void *old, size_t newsize) 
-{
-	abort_unless(mm && newsize > 0);
-	return realloc(old, newsize);
-}
-
-
-static void std_free(struct memmgr *mm, void *old) 
-{
-	abort_unless(mm);
-	free(old);
-}
-
-
-struct memmgr stdmem = { 
-	std_alloc,
-	std_resize,
-	std_free, 
-	&stdmem
-};
-
-
 static void * std_ealloc(struct memmgr *mm, size_t size) 
 {
 	void *m;
@@ -88,11 +59,17 @@ static void * std_eresize(struct memmgr *mm, void *old, size_t newsize)
 }
 
 
-struct memmgr estdmem = { 
+static void std_efree(struct memmgr *mm, void *p)
+{
+	free(p);
+}
+
+
+struct memmgr estdmm = {
 	std_ealloc,
 	std_eresize,
-	std_free,
-	&estdmem
+	std_efree,
+	&estdmm
 };
 
 
@@ -1259,7 +1236,7 @@ struct heap * hp_new(int size, cmp_f cmp)
 	hp = emalloc(sizeof(struct heap));
 	if ( size )
 		elem = emalloc(size * sizeof(void*));
-	hp_init(hp, elem, size, 0, cmp, &estdmem);
+	hp_init(hp, elem, size, 0, cmp, &estdmm);
 
 	return hp;
 }
@@ -1413,7 +1390,7 @@ struct sfxtree *sfx_new(struct raw *str)
 {
 	struct sfxtree *sfx;
 	sfx = emalloc(sizeof(*sfx));
-	sfx_init(sfx, str, &estdmem);
+	sfx_init(sfx, str, &estdmm);
 	return sfx;
 }
 

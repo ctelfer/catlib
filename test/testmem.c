@@ -37,27 +37,27 @@ int main(int argc, char *argv[])
 	int k;
 	
 	TEST(m=malloc(50); free(m));
-	TEST(m=mem_get(&estdmem,50); mem_free(&estdmem,m));
+	TEST(m=mem_get(&estdmm,50); mem_free(&estdmm,m));
 
 	printf("\n");
 	TEST(m=malloc(256); free(m));
-	TEST(m=mem_get(&estdmem,256); mem_free(&estdmem,m));
+	TEST(m=mem_get(&estdmm,256); mem_free(&estdmm,m));
 
 	printf("\n");
 	TEST(m=malloc(4096); free(m));
-	TEST(m=mem_get(&estdmem,4096); mem_free(&estdmem,m));
+	TEST(m=mem_get(&estdmm,4096); mem_free(&estdmm,m));
 
 	printf("\n");
 	TEST(m=malloc(65536); free(m));
-	TEST(m=mem_get(&estdmem,65536); mem_free(&estdmem,m));
+	TEST(m=mem_get(&estdmm,65536); mem_free(&estdmm,m));
 
 	printf("\n");
 	TEST(m=malloc(65538); free(m));
-	TEST(m=mem_get(&estdmem,65538); mem_free(&estdmem,m));
+	TEST(m=mem_get(&estdmm,65538); mem_free(&estdmm,m));
 
 	printf("\n");
 	TEST(for(k=0;k<NMEM;++k)arr[k]=malloc(256);while(k-->0)free(arr[k]););
-	TEST(for(k=0;k<NMEM;++k)arr[k]=mem_get(&estdmem,256);while(k-->0)mem_free(&estdmem,arr[k]););
+	TEST(for(k=0;k<NMEM;++k)arr[k]=mem_get(&estdmm,256);while(k-->0)mem_free(&estdmm,arr[k]););
 
 	return 0;
 }

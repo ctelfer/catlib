@@ -48,7 +48,7 @@ int gnew(struct shell_env *env, int na, char *args[], struct shell_value *rv)
 	}
 
 	g = emalloc(sizeof(*g));
-	g->graph = gr_new(&estdmem, isbi);
+	g->graph = gr_new(&estdmm, isbi);
 	g->node_tab = ht_new(32, CAT_DT_NUM);
 
 	rv->sval_type = SVT_PTR;

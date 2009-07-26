@@ -5,6 +5,8 @@
 #include <cat/list.h>
 #include <cat/hash.h>
 
+/* Knuth-Morris-Pratt String matching */
+
 struct kmppat {
 	ulong *		skips;
 	struct raw	pat;
@@ -12,6 +14,9 @@ struct kmppat {
 
 void kmp_pinit(struct kmppat *p, struct raw *pat, ulong *skips);
 int kmp_match(const struct raw *str, struct kmppat *pat, ulong *loc);
+
+
+/* Boyer-Moore String matching */
 
 
 struct bmpat {
@@ -22,8 +27,17 @@ struct bmpat {
 
 void bm_pinit(struct bmpat *bmp, struct raw *pat, ulong *skips, 
 	      ulong *scratch);
+
+/* This function initializes a Boyer-Moore pattern, but does not perform */
+/* skip-ahead calculation.  (i.e. the algorithm will only skip forward */
+/* based on the last time the mismatched character was seen.  This is */
+/* quicker to initialize and lower memory, but can be less efficient */
+/* especially for longer patterns. */
+void bm_pinit_lite(struct bmpat *bmp, struct raw *pat);
 int bm_match(struct raw *str, struct bmpat *pat, ulong *loc);
 
+
+/* Suffix Tree string matching */
 
 #ifndef CAT_SFX_MAXLEN
 #define CAT_SFX_MAXLEN 0x7ffffffe
@@ -65,6 +79,9 @@ int  sfx_init(struct sfxtree *sfx, struct raw *str, struct memmgr *mm);
 int  sfx_match(struct sfxtree *sfx, struct raw *pat, ulong *off);
 void sfx_clear(struct sfxtree *sfx);
 struct sfxnode *sfx_next(struct sfxtree *t, struct sfxnode *cur, int ch);
+
+
+/* Regular expression string matching */
 
 
 #define REX_T_STRING		0

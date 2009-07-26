@@ -112,6 +112,29 @@ void bm_pinit(struct bmpat *bmp, struct raw *pat, ulong *skips,
 }
 
 
+void bm_pinit_lite(struct bmpat *bmp, struct raw *pat)
+{
+	ulong i, len;
+	byte_t *pp;
+
+	abort_unless(bmp);
+	abort_unless(pat);
+	abort_unless(pat->len <= ((ulong)~0 - 1));
+
+	bmp->pat = *pat;
+	bmp->skips = NULL;
+	len = pat->len;
+	pp = pat->data;
+
+	if ( len == 0 )
+		return;
+	for ( i = 0 ; i < 256 ; ++i )
+		bmp->last[i] = 0;
+	for ( i = 0 ; i < len ; ++i )
+		bmp->last[pp[i]] = i + 1;
+}
+
+
 int bm_match(struct raw *str, struct bmpat *pat, ulong *loc)
 {
 	ulong i, j, slen, plen, skip;
@@ -139,8 +162,8 @@ int bm_match(struct raw *str, struct bmpat *pat, ulong *loc)
 			if ( skip < j )
 				skip = j - skip;
 			else
-				skip = 0;
-			if ( skip < pat->skips[j-1] )
+				skip = 1;
+			if ( (pat->skips != NULL) && (skip < pat->skips[j-1]) )
 				skip = pat->skips[j-1];
 			i += skip;
 		}

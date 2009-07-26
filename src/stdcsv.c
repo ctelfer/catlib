@@ -56,7 +56,7 @@ int csv_read_field(struct csv_state *csv, char **res)
 		abort_unless(slen + 2 > slen);
 		if ( soff > slen - 2 ) {
 			byte_t *bp = (byte_t*)s;
-			mem_grow(&estdmem, &bp, &slen, slen + 2);
+			mem_grow(&estdmm, &bp, &slen, slen + 2);
 			s = (char *)bp;
 		}
 		code = csv_next(csv, &s[soff], slen - soff, &t);
