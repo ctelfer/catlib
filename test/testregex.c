@@ -15,7 +15,7 @@ void tmatch(char *pat, char *str)
 	int rv, e, i;
 
 	if ( rex_init(&rp, str_to_raw(&r, pat, 0), &estdmm, &e) < 0 ) {
-		printf("Error parsing pattern '%s' at position %d\n", e+1);
+		printf("Error parsing pattern '%s' at position %d\n", pat, e+1);
 		return;
 	}
 
@@ -23,11 +23,11 @@ void tmatch(char *pat, char *str)
 	rv = rex_match(&rp, str_to_raw(&r, str, 0), locs, 16);
 	if ( rv == REX_MATCH ) { 
 		printf("MATCH: /%s/ (@ %u:%u) -- \"%s\"\n", pat, 
-			locs[0].start, locs[0].len, str);
+			(uint)locs[0].start, (uint)locs[0].len, str);
 		for ( i = 1; i < 16; i++ )
 			if ( locs[i].valid )
 				printf("Sub-group %d match: @%u:%u\n", i,
-					locs[i].start, locs[i].len);
+				       (uint)locs[i].start, (uint)locs[i].len);
 	} else if ( rv == REX_NOMATCH ) { 
 		printf("NO MATCH: /%s/ -- \"%s\"\n", pat, str);
 	} else if ( rv == REX_ERROR ) {

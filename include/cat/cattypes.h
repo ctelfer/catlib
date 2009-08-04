@@ -51,7 +51,7 @@ typedef CAT_S16_T	int16_t;
 typedef CAT_U32_T	uint32_t;
 typedef CAT_S32_T	int32_t;
 #if CAT_64BIT
-typedef CAT_U64_S	uint64_t;
+typedef CAT_U64_T	uint64_t;
 typedef CAT_S64_T	int64_t;
 #endif /* CAT_64BIT */
 

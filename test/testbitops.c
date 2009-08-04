@@ -8,7 +8,7 @@
 void print_bits32(uint32_t x) {
 	int i;
 	for ( i = 31; i >= 0; i-- ) {
-		printf("%u", (x & ((uint32_t)1 << i)) >> i);
+		printf("%u", (uint)((x & ((uint32_t)1 << i)) >> i));
 		if ( i == 0 )
 			printf("\n");
 		else if ( i % 4 == 0 )
@@ -21,7 +21,7 @@ void print_bits32(uint32_t x) {
 void print_bits64(uint64_t x) {
 	int i;
 	for ( i = 63; i >= 0; i-- ) {
-		printf("%u", (x & ((uint64_t)1 << i)) >> i);
+		printf("%u", (uint)((x & ((uint64_t)1 << i)) >> i));
 		if ( i == 0 )
 			printf("\n");
 		else if ( i % 4 == 0 )
@@ -69,7 +69,7 @@ void test_compress()
 void print_perm32(uint32_t x, uint8_t p[32]) {
 	int i;
 	for ( i = 31; i >= 0; i-- ) {
-		printf("%u", (x & ((uint32_t)1 << p[i])) >> p[i]);
+		printf("%u", (uint)((x & ((uint32_t)1 << p[i])) >> p[i]));
 		if ( i == 0 )
 			printf("\n");
 		else if ( i % 4 == 0 )
@@ -82,7 +82,7 @@ void print_perm32(uint32_t x, uint8_t p[32]) {
 void print_perm64(uint32_t x, uint8_t p[64]) {
 	int i;
 	for ( i = 63; i >= 0; i-- ) {
-		printf("%u", (x & ((uint64_t)1 << p[i])) >> p[i]);
+		printf("%u", (uint)((x & ((uint64_t)1 << p[i])) >> p[i]));
 		if ( i == 0 )
 			printf("\n");
 		else if ( i % 4 == 0 )
@@ -107,7 +107,7 @@ void random_permutation(uint8_t arr[], size_t len)
 		arr[i] = t;
 	}
 
-	printf("perm%d: ", len);
+	printf("perm%d: ", (int)len);
 	for ( i = 0; i < len; i++ ) {
 		printf("%3u", arr[i]);
 		if (i != len -1) {
@@ -125,7 +125,7 @@ void reverse(uint8_t src[], uint8_t dst[], size_t len)
 	int i;
 	for ( i = 0; i < len; ++i )
 		dst[src[i]] = i;
-	printf("perm%dr:", len);
+	printf("perm%dr:", (int)len);
 	for ( i = 0; i < len; i++ ) {
 		printf("%3u", dst[i]);
 		if (i != len -1) {

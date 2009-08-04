@@ -28,25 +28,25 @@ void test_regular_str()
 
 	cp = "Hello World";
 	ret = str_copy(buf1, cp, sizeof(buf1));
-	printf("src:/%s/, dst:/%s/, rv = %u\n", buf1, cp, ret);
+	printf("src:/%s/, dst:/%s/, rv = %u\n", buf1, cp, (uint)ret);
 	
 	cp = " World";
 	str_copy(buf1, "Hello", sizeof(buf1));
 	ret = str_cat(buf1, cp, sizeof(buf1));
-	printf("src:/%s/, dst:/%s/, rv = %u\n", buf1, cp, ret);
+	printf("src:/%s/, dst:/%s/, rv = %u\n", buf1, cp, (uint)ret);
 	
-	irv = str_fmt(buf1, sizeof(buf1), "Hi! %d: %s\n", ret, cp);
+	irv = str_fmt(buf1, sizeof(buf1), "Hi! %d: %s\n", (int)ret, cp);
 	printf("formatted: /%s/ ret: /%d/\n", buf1, irv);
 
 	cp = "    Hello World";
-	printf("space span of /%s/ = %d\n", cp, str_span(cp, " "));
+	printf("space span of /%s/ = %d\n", cp, (int)str_span(cp, " "));
 
 	cp = "Hello World";
-	printf("non-space span of /%s/ = %d\n", cp, str_cspan(cp, " "));
+	printf("non-space span of /%s/ = %d\n", cp, (int)str_cspan(cp, " "));
 
 	cp = "Hello World";
 	printf("first instance of /%s/ in /%s/ is at offset /%u/\n", 
-		"o", cp, str_findc(cp, "o") - cp);
+		"o", cp, (uint)(str_findc(cp, "o") - cp));
 }
 
 
@@ -98,14 +98,15 @@ void test_utf8_codec()
 
 	printf("Validating encoded form ...");
 	if ( utf8_validate(buf, elen, &errp, 0) < 0 )
-		err("encoded utf8 string not valid at pos: %u!\n", errp - buf);
+		err("encoded utf8 string not valid at pos: %u!\n", 
+		    (uint)(errp - buf));
 	printf("valid!\n");
 
 	clen = utf8_nchars(buf, elen, &maxclen);
 	if ( clen != BLEN )
 		err("Encoded length doesn't seem to match original: %u vs %u\n",
-		    BLEN, clen);
-	printf("Character lengths match (%u).  Max char len = %d\n", clen,
+		    BLEN, (uint)clen);
+	printf("Character lengths match (%u).  Max char len = %d\n", (uint)clen,
 	       maxclen);
 
 	printf("re-decoding to utf32\n");
@@ -134,14 +135,15 @@ void test_utf8_codec()
 
 	printf("Validating encoded form ...");
 	if ( utf8_validate(buf, elen, &errp, 0) < 0 )
-		err("encoded utf8 string not valid at pos: %u\n", errp - buf);
+		err("encoded utf8 string not valid at pos: %u\n",
+		    (uint)(errp - buf));
 	printf("valid!\n");
 
 	clen = utf8_nchars(buf, elen, &maxclen);
 	if ( clen != BLEN )
 		err("Encoded length doesn't seem to match original: %u vs %u\n",
-		    BLEN, clen);
-	printf("Character lengths match (%u).  Max char len = %d\n", clen,
+		    BLEN, (uint)clen);
+	printf("Character lengths match (%u).  Max char len = %d\n", (uint)clen,
 	       maxclen);
 
 	printf("re-decoding to utf16\n");

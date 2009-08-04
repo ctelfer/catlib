@@ -464,9 +464,9 @@ static void tlsf_ins_blk(struct tlsf *tlsf, struct memblk *mb, int l1, int l2)
 {
 	struct tlsf_l2 *tl2;
 	ASSERT(tlsf);
-	tlsf->tlsf_l1bm |= (1 << l1);
+	tlsf->tlsf_l1bm |= ((tlsf_sz_t)1 << l1);
 	tl2 = &tlsf->tlsf_l1[l1];
-	tl2->tl2_bm |= (1 << l2);
+	tl2->tl2_bm |= ((tlsf_sz_t)1 << l2);
 	l_ins(&tl2->tl2_blists[l2], &mb->mb_entry);
 }
 
@@ -606,7 +606,7 @@ static struct list *tlsf_find_blk(struct tlsf *tlsf, int *idx)
 	tl2 = &tlsf->tlsf_l1[l1];
 	n = tl2->tl2_bm & ~(((tlsf_sz_t)1 << l2) - 1);
 	if ( n == 0 ) {
-		tlsf_sz_t tmp = 1 << l1;
+		tlsf_sz_t tmp = (tlsf_sz_t)1 << l1;
 		/* if there is no fit, search for the closest l1 */
 		/* rule out the current l1 */
 		n = tlsf->tlsf_l1bm & ~(tmp | (tmp - 1));

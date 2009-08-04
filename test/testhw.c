@@ -56,15 +56,15 @@ int main(int argc, char *argv[])
     nreps = atoi(argv[1]);
 
   printf("Type:          Size:\n");
-  printf("char           %3d\n", sizeof(char));
-  printf("short          %3d\n", sizeof(short));
-  printf("int            %3d\n", sizeof(int));
-  printf("long           %3d\n", sizeof(long));
-  printf("long long      %3d\n", sizeof(long long));
-  printf("char *         %3d\n", sizeof(char *));
-  printf("size_t         %3d\n", sizeof(size_t));
-  printf("ssize_t        %3d\n", sizeof(ssize_t));
-  printf("ptrdiff_t      %3d\n", sizeof(ptrdiff_t));
+  printf("char           %3lu\n", sizeof(char));
+  printf("short          %3lu\n", sizeof(short));
+  printf("int            %3lu\n", sizeof(int));
+  printf("long           %3lu\n", sizeof(long));
+  printf("long long      %3lu\n", sizeof(long long));
+  printf("char *         %3lu\n", sizeof(char *));
+  printf("size_t         %3lu\n", sizeof(size_t));
+  printf("ssize_t        %3lu\n", sizeof(ssize_t));
+  printf("ptrdiff_t      %3lu\n", sizeof(ptrdiff_t));
 
   printf("\nInteger operations\n");
   HEAD

@@ -44,8 +44,8 @@ int main(int argc, char *argv[])
 		logrec(0, "Should have found 3 in set1\n");
 
 	sbs_clr(set2, 3);
-	printf("Copied %u bits (should be %u)\n", sbs_copy(set1, set2),
-	       set1->nbits);
+	printf("Copied %u bits (should be %u)\n", (uint)sbs_copy(set1, set2),
+	       (uint)set1->nbits);
 	sbs_set_to(set1, 1, 0);
 	sbs_set_to(set1, 0, 1);
 	if ( bset_test(set1->set, 5) )

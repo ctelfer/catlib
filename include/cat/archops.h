@@ -135,7 +135,7 @@ static INLINE int ntz_32(uint32_t x) {
 
 /* ------ 64 Bit ------ */
 
-#if CAT_HAS_LONGLONG
+#if CAT_64BIT
 
 #if !CAT_HAS_NLZ_64
 #if CAT_HAS_NLZ_32

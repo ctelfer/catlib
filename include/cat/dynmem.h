@@ -6,7 +6,7 @@
 /* core alignment type */
 union align_u {
 	long		l;
-	size_t	sz;
+	size_t		sz;
 };
 #define UNITSIZE	sizeof(union align_u)
 
@@ -104,16 +104,16 @@ typedef uint32_t tlsf_sz_t;
 #define TLSF_NUMSMALL	(TLSF_NUML2 - TLSF_NUMFULL)
 
 /* 
-	 TLSF_L2_LEN list heads for each list with a # of UNITSIZE slots >= to min 
-	 size for the list head.  Then consider the smaller lists.  
-	 Number of slots there is MINSZ/UNITSIZE for slot MINSZ, 2*MINSZ/UNITSIZE for
-	 slot MINSZ*2, 4*MINSZ/UNITSIZE for slot MINSZ*4 ... 
-	 So there are (MINSZ/UNITSIZE) * 2^TLSF_NUMSMALL-1 blocks in all for small
-	 lists.
+  TLSF_L2_LEN list heads for each list with a # of UNITSIZE slots >= to min 
+  size for the list head.  Then consider the smaller lists.  
+  Number of slots there is MINSZ/UNITSIZE for slot MINSZ, 2*MINSZ/UNITSIZE for
+  slot MINSZ*2, 4*MINSZ/UNITSIZE for slot MINSZ*4 ... 
+  So there are (MINSZ/UNITSIZE) * 2^TLSF_NUMSMALL-1 blocks in all for small
+  lists.
 */
 #define TLSF_MINBINS  TLSF_MINNU
 #define TLSF_NUMHEADS ((TLSF_NUMFULL * TLSF_FULLBLLEN) + \
-					 (TLSF_MINBINS * ((1 << TLSF_NUMSMALL) - 1)))
+			 (TLSF_MINBINS * ((1 << TLSF_NUMSMALL) - 1)))
 
 struct tlsf_l2 {
 	tlsf_sz_t		tl2_bm;

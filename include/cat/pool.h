@@ -90,7 +90,7 @@ DECL void pl_init(struct pool *p, size_t siz, int align, void *mem, size_t mlen)
 	
 /*	XXX This is not the appropriate test:  what is? */
 /*	abort_unless((unsigned)cp % sizeof(cat_align_t) == 0); */
-	abort_unless((align < 0) || ((unsigned)cp % (1 << align) == 0));
+	abort_unless((align < 0) || ((uint)(ptrdiff_t)cp % (1 << align) == 0));
 	for ( i = 0 ; i < n ; ++i ) {
 		lp = (struct list *)cp;
 		l_ins(p->items.prev, lp);

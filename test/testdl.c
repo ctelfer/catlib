@@ -32,9 +32,10 @@ int main(int argc, char *argv[])
   }
 
   dl_first(&list, &ct);
-  printf("The first is at %u\n", ct.sec);
+  printf("The first is at %u\n", (uint)ct.sec);
   node = dl_deq(&list);
-  printf("The first was %u at %u\n\n", (unsigned)cdl_data(node), node->ttl.sec);
+  printf("The first was %u at %u\n\n", (uint)cdl_data(node), 
+         (uint)node->ttl.sec);
   cdl_free(node);
 
   printf("Nodes from advance 10:  ");
@@ -45,7 +46,7 @@ int main(int argc, char *argv[])
   while ( ! l_isempty(&list2) )
   {
     trav = container(l_head(&list2), struct dlist, entry);
-    printf("%u/%u ", (unsigned)cdl_data(trav), trav->ttl.sec);
+    printf("%u/%u ", (uint)cdl_data(trav), (uint)trav->ttl.sec);
     l_rem(&trav->entry);
     cdl_free(trav);
   }
@@ -61,8 +62,8 @@ int main(int argc, char *argv[])
   printf("After inserting arr2 array is :\n\t");
   while ( node = dl_deq(&list) )
   {
-    printf("%u/", (unsigned)cdl_data(node));
-    printf("%u ", node->ttl.sec);
+    printf("%u/", (uint)cdl_data(node));
+    printf("%u ", (uint)node->ttl.sec);
     cdl_free(node);
   }
   printf("\n");

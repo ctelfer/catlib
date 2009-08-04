@@ -7,6 +7,7 @@
 
 #define NUMSTR	4
 #define NA	200
+#define P2U(x)	((uint)(ptrdiff_t)x)
 
 /* in case strdup() doesn't exist */
 char *sdup(const char *s)
@@ -37,7 +38,7 @@ int vrfy(struct anode *an)
   if ( r-l != an->b ) 
   {
     printf("Error!  Node %s has balance of %d, but left = %d and right = %d\n",
-	   an->key, an->b, l, r);
+	   (char *)an->key, an->b, l, r);
     return -1;
   }
 
@@ -56,7 +57,7 @@ void printan(struct anode *an, int d)
   for ( i = 0 ; i < d ; ++i ) 
     printf("  ");
 
-  printf("[%s:%s->%d]\n", an->key, an->data, an->b);
+  printf("[%s:%s->%d]\n", (char *)an->key, (char *)an->data, an->b);
 
   if ( an->avl_left ) 
     printan(an->avl_left, d+1);
@@ -165,7 +166,7 @@ struct anode *anp;
     avl_put(avl, strs[i][0], strs[i][1]);
     anp = avl_lkup(avl, strs[i][0], 0);
     printf("Put (%s) at key (%s): %x\n", strs[i][1], strs[i][0],
-           (unsigned int)anp);
+           P2U(anp));
     fflush(stdout);
   }
 
@@ -175,17 +176,17 @@ struct anode *anp;
 
   s = avl_get(avl, strs[1][0]);
   printf("Under key %s is the string %s\n", strs[1][0], s);
-  printf("address is %x\n\n", (unsigned int)s); 
+  printf("address is %x\n\n", P2U(s)); 
   fflush(stdout);
 
   s = avl_get(avl, strs[2][0]);
   printf("Under key %s is the string %s\n", strs[2][0], s);
-  printf("address is %x\n\n", (unsigned int)s); 
+  printf("address is %x\n\n", P2U(s)); 
   fflush(stdout);
 
   s = avl_get(avl, strs[0][0]);
   printf("Under key %s is the string %s\n", strs[0][0], s); 
-  printf("address is %x\n\n", (unsigned int)s); 
+  printf("address is %x\n\n", P2U(s)); 
   fflush(stdout);
 
   printavl(avl);
@@ -194,7 +195,7 @@ struct anode *anp;
   s = avl_get(avl, strs[1][0]);
   avl_clr(avl, strs[1][0]);
   printf("Deleted %s\n", s); 
-  printf("address is %x\n\n", (unsigned int)s); 
+  printf("address is %x\n\n", P2U(s)); 
   fflush(stdout);
 
   anp = avl_lkup(avl, strs[2][0], NULL);
@@ -202,11 +203,12 @@ struct anode *anp;
   avl_rem(anp);
   avl_nfree(avl, anp);
   printf("Deleted %s\n", s); 
-  printf("address is %x\n\n", (unsigned int)s); 
+  printf("address is %x\n\n", P2U(s)); 
   fflush(stdout);
 
   if (avl_get(avl, strs[1][0]))
-    printf("Error!  Thing not deleted! : %s\n", avl_get(avl, strs[1][0]));
+    printf("Error!  Thing not deleted! : %s\n", 
+            (char*)avl_get(avl, strs[1][0]));
   fflush(stdout);
 
   printavl(avl);

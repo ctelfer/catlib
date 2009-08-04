@@ -20,7 +20,7 @@ void printblock(void *obj, void *ctx)
 	printf("\t%c%c: %u : %p\n", 
 		(block->allocated ? 'A' : '-'),
 		(block->prev_allocated ? 'P' : '-'),
-		block->size, block->ptr);
+		(uint)block->size, block->ptr);
 }
 
 
@@ -75,7 +75,8 @@ void printraw(struct raw *r, size_t ralen)
 	printf("Allocated slots\n");
 	for ( i = 0; i < ralen; i++ )
 		if (r[i].data != NULL)
-			printf("\tSlot %d: %p:%u\n", i, r[i].data, r[i].len);
+			printf("\tSlot %d: %p:%u\n", i, r[i].data, 
+                               (uint)r[i].len);
 }
 
 
