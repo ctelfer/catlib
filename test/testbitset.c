@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
 	gettimeofday(&tv2, 0);
 	usec = (tv2.tv_sec - tv.tv_sec) * 1000000 + tv2.tv_usec - tv.tv_usec;
 	usec /= NT;
-	printf("Roughly %lf nanoseconds for sbs_set()\n", usec * 1000);
+	printf("Roughly %f nanoseconds for sbs_set()\n", usec * 1000);
 
 	gettimeofday(&tv, 0);
 	for ( i = 0 ; i < NT ; ++i )
@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
 	gettimeofday(&tv2, 0);
 	usec = (tv2.tv_sec - tv.tv_sec) * 1000000 + tv2.tv_usec - tv.tv_usec;
 	usec /= NT;
-	printf("Roughly %lf nanoseconds for sbs_clr()\n", usec * 1000);
+	printf("Roughly %f nanoseconds for sbs_clr()\n", usec * 1000);
 
 	gettimeofday(&tv, 0);
 	for ( i = 0 ; i < NT ; ++i )
@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
 	gettimeofday(&tv2, 0);
 	usec = (tv2.tv_sec - tv.tv_sec) * 1000000 + tv2.tv_usec - tv.tv_usec;
 	usec /= NT;
-	printf("Roughly %lf nanoseconds for sbs_set_to()\n", usec * 1000);
+	printf("Roughly %f nanoseconds for sbs_set_to()\n", usec * 1000);
 
 	gettimeofday(&tv, 0);
 	for ( i = 0 ; i < NT ; ++i )
@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
 	gettimeofday(&tv2, 0);
 	usec = (tv2.tv_sec - tv.tv_sec) * 1000000 + tv2.tv_usec - tv.tv_usec;
 	usec /= NT;
-	printf("Roughly %lf nanoseconds for sbs_test()\n", usec * 1000);
+	printf("Roughly %f nanoseconds for sbs_test()\n", usec * 1000);
 
 
 	sbs_free(set2);

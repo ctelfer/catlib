@@ -33,7 +33,7 @@ void printall(struct htab *tab)
 		for ( l2 = l->next ; l2 != l ; l2 = l2->next ) {
 			n = (struct hnode *)l2;
 			l3 = n->data;
-			printf("*%s* : *%s* ", n->key, clist_data(l3, char*));
+			printf("*%s* : *%s* ", (char *)n->key, clist_data(l3, char*));
 			for ( t = l3->next ; t != l3 ; t = t->next )
 				printf(" *%s*", clist_data(t, char *));
 			printf("\n");
@@ -110,7 +110,7 @@ int main(int argc, char *argv)
 	Table = ht_new(HTSIZ, CAT_DT_STR);
 	ring_init(&Buffer, emalloc(BUFLEN), BUFLEN);
 
-	sprintf(fmt, "%%%ds", sizeof(word)-1);
+	sprintf(fmt, "%%%ds", (int)sizeof(word)-1);
 	while ( scanf(fmt, word) > 0 )
 		add(word);
 	add(END);

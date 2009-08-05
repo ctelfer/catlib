@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
   usec = (tv2.tv_sec - tv.tv_sec) * 1000000 + tv2.tv_usec - tv.tv_usec;
   usec /= NCONS * na;
 
-  printf("Roughly %lf nanoseconds for the two operations\n", usec * 1000);
+  printf("Roughly %f nanoseconds for the two operations\n", usec * 1000);
   fflush(stdout);
 
   return 0;

@@ -19,7 +19,7 @@ int nreps = NREPS;
 	  usec = (stop.tv_sec - start.tv_sec) * 1000000 + \
 		 (stop.tv_usec - start.tv_usec);\
 	  nspo = 1000 * usec / nreps;		\
-	  printf("%-40s\t%lf\n", #op, nspo);	\
+	  printf("%-40s\t%f\n", #op, nspo);	\
 	  fflush(stdout);			\
 	}
 

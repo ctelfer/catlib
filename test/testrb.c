@@ -8,6 +8,8 @@
 #define NUMSTR 4
 #define NA	200
 
+#define P2U(x)	((uint)(ptrdiff_t)x)
+
 
 char *sdup(const char *s)
 {
@@ -37,7 +39,7 @@ int vrfy(struct rbnode *n)
   if ( r != l ) 
   {
     printf("Error!  Node %s has black heights of %d (left) and %d (right)\n",
-	   n->key, l, r);
+	   (char *)n->key, l, r);
     return -1;
   }
 
@@ -56,7 +58,7 @@ void printrb(struct rbnode *n, int d)
   for ( i = 0 ; i < d ; ++i ) 
     printf("  ");
 
-  printf("[%s:%s->%s]\n", n->key, n->data, n->col == CRB_BLACK ? 
+  printf("[%s:%s->%s]\n", (char *)n->key, (char *)n->data, n->col == CRB_BLACK ? 
 	 "black" : "red");
 
   if ( n->rb_left ) 
@@ -115,7 +117,7 @@ void timeit()
   dbl *= 1000.0;
   dbl += (end.tv_sec - start.tv_sec) * 1e9;
 
-  printf("Roughly %lf nanoseconds per lkup-ins-rem w/ %d entries max\n",
+  printf("Roughly %f nanoseconds per lkup-ins-rem w/ %d entries max\n",
          dbl / (double)NITER, NOPS);
 
   gettimeofday(&start, NULL);
@@ -132,7 +134,7 @@ void timeit()
   dbl *= 1000.0;
   dbl += (end.tv_sec - start.tv_sec) * 1e9;
 
-  printf("Roughly %lf nanoseconds per lkup-ins-rem (1 item deep max)\n",
+  printf("Roughly %f nanoseconds per lkup-ins-rem (1 item deep max)\n",
          dbl / (double)NITER);
 
   for (i = 0; i < NOPS; i++)
@@ -165,7 +167,7 @@ struct rbnode *np;
     rb_put(t, strs[i][0], strs[i][1]);
     np = rb_lkup(t, strs[i][0], 0);
     printf("Put (%s) at key (%s): %x\n", strs[i][1], strs[i][0],
-           (unsigned int)np);
+           P2U(np));
     fflush(stdout);
   }
 
@@ -175,17 +177,17 @@ struct rbnode *np;
 
   s = rb_get(t, strs[1][0]);
   printf("Under key %s is the string %s\n", strs[1][0], s);
-  printf("address is %x\n\n", (unsigned int)s); 
+  printf("address is %x\n\n", P2U(s)); 
   fflush(stdout);
 
   s = rb_get(t, strs[2][0]);
   printf("Under key %s is the string %s\n", strs[2][0], s);
-  printf("address is %x\n\n", (unsigned int)s); 
+  printf("address is %x\n\n", P2U(s)); 
   fflush(stdout);
 
   s = rb_get(t, strs[0][0]);
   printf("Under key %s is the string %s\n", strs[0][0], s); 
-  printf("address is %x\n\n", (unsigned int)s); 
+  printf("address is %x\n\n", P2U(s)); 
   fflush(stdout);
 
   printrbt(t);
@@ -194,7 +196,7 @@ struct rbnode *np;
   s = rb_get(t, strs[1][0]);
   rb_clr(t, strs[1][0]);
   printf("Deleted %s\n", s); 
-  printf("address is %x\n\n", (unsigned int)s); 
+  printf("address is %x\n\n", P2U(s)); 
   fflush(stdout);
 
   np = rb_lkup(t, strs[2][0], NULL);
@@ -202,11 +204,11 @@ struct rbnode *np;
   rb_rem(np);
   rb_nfree(t, np);
   printf("Deleted %s\n", s); 
-  printf("address is %x\n\n", (unsigned int)s); 
+  printf("address is %x\n\n", P2U(s)); 
   fflush(stdout);
 
   if (rb_get(t, strs[1][0]))
-    printf("Error!  Thing not deleted! : %s\n", rb_get(t, strs[1][0]));
+    printf("Error!  Thing not deleted! : %s\n", (char *)rb_get(t, strs[1][0]));
   fflush(stdout);
 
   printrbt(t);

@@ -51,7 +51,7 @@ int func(struct shell_env *env, int nargs, char *args[], struct shell_value *rv)
 		double dval;
 		if ( shell_arg2dbl(env, args[1], &dval) < 0 )
 			goto err;
-		printf("Double val: %lf\n", dval);
+		printf("Double val: %f\n", dval);
 		rv->sval_type = SVT_DOUBLE;
 		rv->sval_dbl = dval;
 		rv->sval_free = NULL;

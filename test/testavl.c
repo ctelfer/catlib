@@ -117,7 +117,7 @@ void timeit()
   dbl *= 1000.0;
   dbl += (end.tv_sec - start.tv_sec) * 1e9;
 
-  printf("Roughly %lf nanoseconds per lkup-ins-rem w/ %d entries max\n",
+  printf("Roughly %f nanoseconds per lkup-ins-rem w/ %d entries max\n",
          dbl / (double)NITER, NOPS);
 
   gettimeofday(&start, NULL);
@@ -134,7 +134,7 @@ void timeit()
   dbl *= 1000.0;
   dbl += (end.tv_sec - start.tv_sec) * 1e9;
 
-  printf("Roughly %lf nanoseconds per lkup-ins-rem (1 item deep max)\n",
+  printf("Roughly %f nanoseconds per lkup-ins-rem (1 item deep max)\n",
          dbl / (double)NITER);
 
   for (i = 0; i < NOPS; i++)

@@ -40,7 +40,7 @@ void timeit()
   gettimeofday(&end, NULL);
   usec = (end.tv_sec - start.tv_sec) * 1000000 + end.tv_usec - start.tv_usec;
   usec /= NITER;
-  printf("Roughly %lf nsec for ht_ins(),ht_lkup(),ht_rem() w/%d elem\n",
+  printf("Roughly %f nsec for ht_ins(),ht_lkup(),ht_rem() w/%d elem\n",
 	  usec * 1000, NOPS);
   fflush(stdout);
 
@@ -55,7 +55,7 @@ void timeit()
   gettimeofday(&end, NULL);
   usec = (end.tv_sec - start.tv_sec) * 1000000 + end.tv_usec - start.tv_usec;
   usec /= NITER;
-  printf("Roughly %lf nsec for ht_ins(),ht_lkup(),ht_rem() with empty table\n",
+  printf("Roughly %f nsec for ht_ins(),ht_lkup(),ht_rem() with empty table\n",
 	  usec * 1000);
   fflush(stdout);
 

@@ -73,7 +73,7 @@ void speed_test(const char *fmt, ...)
 	delta = (end.tv_sec - start.tv_sec) * 1000000.0 + 
 		end.tv_usec - start.tv_usec;
 	delta *= 1000.0;
-	printf("vsnprintf(\"%s\",...); -> %lf nanoseconds\n", fmt, 
+	printf("vsnprintf(\"%s\",...); -> %f nanoseconds\n", fmt, 
 		delta / (double)NREPS);
 
 	gettimeofday(&start, NULL);
@@ -86,7 +86,7 @@ void speed_test(const char *fmt, ...)
 	delta = (end.tv_sec - start.tv_sec) * 1000000.0 + 
 		end.tv_usec - start.tv_usec;
 	delta *= 1000.0;
-	printf("str_vfmt(\"%s\",...); -> %lf nanoseconds\n", fmt, 
+	printf("str_vfmt(\"%s\",...); -> %f nanoseconds\n", fmt, 
 		delta / (double)NREPS);
 }
 

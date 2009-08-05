@@ -8,7 +8,7 @@
 
 int cmp_int(const void *a, const void *b)
 {
-  return (int)a - (int)b;
+  return (int)(ptrdiff_t)a - (int)(ptrdiff_t)b;
 }
 
 
@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
   hp = hp_new(0, cmp_int);
 
   for ( i = 0 ; i < num ; ++i ) {
-    if (hp_add(hp, (void *)arr[i], NULL) < 0) {
+    if (hp_add(hp, (void *)(ptrdiff_t)arr[i], NULL) < 0) {
       fprintf(stderr, "out of memory\n");
       exit(-1);
     }
@@ -58,29 +58,28 @@ int main(int argc, char *argv[])
 
   printf("current heap: ");
   for ( i = 0 ; i < num ; ++i ) 
-    printf("%d ", (int) hp->elem[i]);
+    printf("%d ", (int)(ptrdiff_t)hp->elem[i]);
   printf("\n");
 
 
 
   /* do some border test cases for find */
-  if ( (pos = hp_find(hp, (void *)1)) < 0 )
+  if ( (pos = hp_find(hp, (void *)(ptrdiff_t)1)) < 0 )
     err("Couldn't find 1\n");
   else
     printf("1 was at %u\n", pos);
 
-  if ( (pos = hp_find(hp, (void *)(num / 2))) < 0 )
+  if ( (pos = hp_find(hp, (void *)(ptrdiff_t)(num / 2))) < 0 )
     err("Couldn't find %d\n", num / 2);
   else
     printf("%d was at %u\n", num / 2, pos);
 
-  if ( (pos = hp_find(hp, (void*)(num+1))) >= 0 )
+  if ( (pos = hp_find(hp, (void*)(ptrdiff_t)(num+1))) >= 0 )
     err("Couldn't found %d at %u when I shouldn't have\n", num+1, pos);
-
 
   
   /* now print out all the numbers */
-  while ( (i = (int)hp_rem(hp, 0)) )
+  while ( (i = (int)(ptrdiff_t)hp_rem(hp, 0)) )
     printf("%d ", i);
   printf("\n");
 

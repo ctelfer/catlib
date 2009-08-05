@@ -210,7 +210,7 @@ void test_speed()
 		qsort_array(spd_arr2, SPEEDLEN, sizeof(void *), &ptr_cmp);
 	}
 	gettimeofday(&end, NULL);
-	printf("Time taken for %u sorts of %u elements for my sort: %lf\n",
+	printf("Time taken for %u sorts of %u elements for my sort: %f\n",
 	       NTRIES, SPEEDLEN, 
 	       (double)(end.tv_sec - start.tv_sec) + 
 	       (double)(end.tv_usec - start.tv_usec) / 1000000.0);
@@ -223,7 +223,7 @@ void test_speed()
 		qsort(spd_arr2, SPEEDLEN, sizeof(void *), &ptr_cmp);
 	}
 	gettimeofday(&end, NULL);
-	printf("Time taken for %u sorts of %u elements for std qsort: %lf\n",
+	printf("Time taken for %u sorts of %u elements for std qsort: %f\n",
 	       NTRIES, SPEEDLEN, 
 	       (double)(end.tv_sec - start.tv_sec) + 
 	       (double)(end.tv_usec - start.tv_usec) / 1000000.0);

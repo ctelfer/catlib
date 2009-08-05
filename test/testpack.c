@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
 
   len = packlen(fmt, str_to_raw(&r1, string1, 1));
 
-  printf("Packing will contain %d bytes (raw contains %d)\n", len, r1.len);
+  printf("Packing will contain %d bytes (raw contains %d)\n", len, (int)r1.len);
   assert(len > 0);
 
 #if CAT_HAS_LONGLONG
@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
   assert(len > 0);
   printf("Bytes are %d (%02x) and %u (%02x)\n", c, c & 0xff, uc, uc & 0xff);
   printf("Halves are %d (%04x) and %u (%04x)\n",s, s & 0xffff, us, us & 0xffff);
-  printf("Words are %ld (%08x) and %lu (%08x)\n", l, l, ul, ul);
+  printf("Words are %ld (%08lx) and %lu (%08lx)\n", l, l, ul, ul);
 #if CAT_HAS_LONGLONG
   printf("Jumbos are %lld (%016llx) and %llu (%016llx)\n", ll, ll, ull, ull);
 #endif /* CAT_HAS_LONGLONG */
@@ -98,8 +98,10 @@ int main(int argc, char *argv[])
   printf("hton32(0x44332211) = %x\n", hton32(0x44332211));
   printf("ntoh32(0x11223344) = %x\n", ntoh32(0x11223344));
 #if CAT_HAS_LONGLONG
-  printf("ntoh64(0x1122334455667788) = %llx\n", ntoh64(0x1122334455667788ll));
-  printf("hton64(0x8877665544332211) = %llx\n", ntoh64(0x8877665544332211ll));
+  printf("ntoh64(0x1122334455667788) = %llx\n", 
+         (ulonglong)ntoh64(0x1122334455667788ll));
+  printf("hton64(0x8877665544332211) = %llx\n", 
+	 (ulonglong)ntoh64(0x8877665544332211ll));
 #endif /* CAT_HAS_LONGLONG */
 
   return 0;

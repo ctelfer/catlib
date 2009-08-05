@@ -36,7 +36,7 @@ static void print_option(struct clopt *opt)
 		printf("Option %s is set to '%u'\n", optname,opt->val.uint_val);
 		break;
 	case CLOPT_DOUBLE:
-		printf("Option %s is set to '%lf'\n",optname,opt->val.dbl_val); 
+		printf("Option %s is set to '%f'\n",optname,opt->val.dbl_val); 
 		break;
 	default:
 		err("Corrupted option %s", optname);

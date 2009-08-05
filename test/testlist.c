@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
          tv2.tv_usec - tv.tv_usec;
   usec /= NT;
 
-  printf("Roughly %lf nanoseconds for l_ins(),l_rem()\n", usec * 1000);
+  printf("Roughly %f nanoseconds for l_ins(),l_rem()\n", usec * 1000);
 
 
   for ( i = 0 ; i < LLEN ; ++i ) 
@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
          tv2.tv_usec - tv.tv_usec;
   usec /= NT2;
   
-  printf("Roughly %lf nanoseconds for %d element traversal\n", 
+  printf("Roughly %f nanoseconds for %d element traversal\n", 
 	  usec * 1000, LLEN);
 
   return 0;
