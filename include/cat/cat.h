@@ -118,6 +118,10 @@ typedef unsigned long long ulonglong;
 	((type *)((char*)(ptr)-offsetof(type,field)))
 #define array_length(arr) (sizeof(arr) / sizeof(arr[0]))
 
+#define ptr2int(p)	((int)(ptrdiff_t)(p))
+#define ptr2uint(p)	((uint)(ptrdiff_t)(p))
+#define int2ptr(i)	((void *)(ptrdiff_t)(i))
+
 /* generic binary data container */
 struct raw {
 	size_t		len;
@@ -147,7 +151,6 @@ union scalar_u {
 };
 
 typedef union scalar_u scalar_t;
-#define p2scalar(p)  ((scalar_t)(void *)(p))
 
 /* Special function types */
 typedef int  (*cmp_f)(const void *v1, const void *v2);

@@ -7,7 +7,6 @@
 
 #define NUMSTR	4
 #define NA	200
-#define P2U(x)	((uint)(ptrdiff_t)x)
 
 char *sdup(const char *s)
 {
@@ -140,7 +139,7 @@ struct stnode *np;
     st_put(t, strs[i][0], strs[i][1]);
     np = st_lkup(t, strs[i][0]);
     printf("Put (%s) at key (%s): %x\n", strs[i][1], strs[i][0],
-           P2U(np->data));
+           ptr2uint(np->data));
     fflush(stdout);
   }
 
@@ -150,17 +149,17 @@ struct stnode *np;
 
   s = st_get(t, strs[1][0]);
   printf("Under key %s is the string %s\n", strs[1][0], s);
-  printf("address is %x\n\n", P2U(s)); 
+  printf("address is %x\n\n", ptr2uint(s)); 
   fflush(stdout);
 
   s = st_get(t, strs[2][0]);
   printf("Under key %s is the string %s\n", strs[2][0], s);
-  printf("address is %x\n\n", P2U(s)); 
+  printf("address is %x\n\n", ptr2uint(s)); 
   fflush(stdout);
 
   s = st_get(t, strs[0][0]);
   printf("Under key %s is the string %s\n", strs[0][0], s); 
-  printf("address is %x\n\n", P2U(s)); 
+  printf("address is %x\n\n", ptr2uint(s)); 
   fflush(stdout);
 
   print_splay(t);
@@ -169,7 +168,7 @@ struct stnode *np;
   s = st_get(t, strs[1][0]);
   st_clr(t, strs[1][0]);
   printf("Deleted %s\n", s); 
-  printf("address is %x\n\n", P2U(s)); 
+  printf("address is %x\n\n", ptr2uint(s)); 
   fflush(stdout);
 
   np = st_lkup(t, strs[2][0]);
@@ -177,7 +176,7 @@ struct stnode *np;
   st_rem(np);
   st_nfree(t, np);
   printf("Deleted %s\n", s); 
-  printf("address is %x\n\n", P2U(s)); 
+  printf("address is %x\n\n", ptr2uint(s)); 
   fflush(stdout);
 
   if (st_get(t, strs[1][0]))

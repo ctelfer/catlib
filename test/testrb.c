@@ -8,8 +8,6 @@
 #define NUMSTR 4
 #define NA	200
 
-#define P2U(x)	((uint)(ptrdiff_t)x)
-
 
 char *sdup(const char *s)
 {
@@ -167,7 +165,7 @@ struct rbnode *np;
     rb_put(t, strs[i][0], strs[i][1]);
     np = rb_lkup(t, strs[i][0], 0);
     printf("Put (%s) at key (%s): %x\n", strs[i][1], strs[i][0],
-           P2U(np));
+           ptr2uint(np));
     fflush(stdout);
   }
 
@@ -177,17 +175,17 @@ struct rbnode *np;
 
   s = rb_get(t, strs[1][0]);
   printf("Under key %s is the string %s\n", strs[1][0], s);
-  printf("address is %x\n\n", P2U(s)); 
+  printf("address is %x\n\n", ptr2uint(s)); 
   fflush(stdout);
 
   s = rb_get(t, strs[2][0]);
   printf("Under key %s is the string %s\n", strs[2][0], s);
-  printf("address is %x\n\n", P2U(s)); 
+  printf("address is %x\n\n", ptr2uint(s)); 
   fflush(stdout);
 
   s = rb_get(t, strs[0][0]);
   printf("Under key %s is the string %s\n", strs[0][0], s); 
-  printf("address is %x\n\n", P2U(s)); 
+  printf("address is %x\n\n", ptr2uint(s)); 
   fflush(stdout);
 
   printrbt(t);
@@ -196,7 +194,7 @@ struct rbnode *np;
   s = rb_get(t, strs[1][0]);
   rb_clr(t, strs[1][0]);
   printf("Deleted %s\n", s); 
-  printf("address is %x\n\n", P2U(s)); 
+  printf("address is %x\n\n", ptr2uint(s)); 
   fflush(stdout);
 
   np = rb_lkup(t, strs[2][0], NULL);
@@ -204,7 +202,7 @@ struct rbnode *np;
   rb_rem(np);
   rb_nfree(t, np);
   printf("Deleted %s\n", s); 
-  printf("address is %x\n\n", P2U(s)); 
+  printf("address is %x\n\n", ptr2uint(s)); 
   fflush(stdout);
 
   if (rb_get(t, strs[1][0]))

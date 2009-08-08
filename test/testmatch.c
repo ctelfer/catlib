@@ -8,8 +8,6 @@
 #include <cat/raw.h>
 #include <cat/stduse.h>
 
-#define I2P(x)	((void *)(ptrdiff_t)x)
-
 void usage(void)
 {
 	err("usage: testmatch (-k|-b|-s) <string> <pattern>\n");
@@ -62,10 +60,10 @@ void gather(void *edgep, void *gatherp)
 	struct gatherctx *gctx = gatherp;
 	++nedges;
 	if ( !ht_get(gctx->edges, edge) )
-		ht_put(gctx->edges, edge, I2P(nedges));
+		ht_put(gctx->edges, edge, int2ptr(nedges));
 	if ( !ht_get(gctx->nodes, edge->hentry.data) ) {
 		++nnodes;
-		ht_put(gctx->nodes, edge->hentry.data, I2P(nnodes));
+		ht_put(gctx->nodes, edge->hentry.data, int2ptr(nnodes));
 	}
 }
 
@@ -79,9 +77,9 @@ void printedges(void *edgep, void *gatherp)
 	char ch;
 	char str[50];
 
-	src = (int)(ptrdiff_t)ht_get(gctx->nodes, ek->node);
-	dst = (int)(ptrdiff_t)ht_get(gctx->nodes, edge->hentry.data);
-	edgenum = (int)(ptrdiff_t)ht_get(gctx->edges, edge);
+	src = ptr2int(ht_get(gctx->nodes, ek->node));
+	dst = ptr2int(ht_get(gctx->nodes, edge->hentry.data));
+	edgenum = ptr2int(ht_get(gctx->edges, edge));
 	ch = ek->character;
 	if ( ch == '\0' )
 		ch = '@';
@@ -108,7 +106,7 @@ void printsfx(struct sfxtree *sfx)
 	gctx.sfx = sfx;
 	gctx.edges = ht_new(100, CAT_DT_PTR);
 	gctx.nodes = ht_new(100, CAT_DT_PTR);
-	ht_put(gctx.nodes, &sfx->root, I2P(1));
+	ht_put(gctx.nodes, &sfx->root, int2ptr(1));
 	nnodes = 1;
 	ht_apply(&sfx->edges, gather, &gctx);
 	for ( i = 0 ; i < sfx->str.len ; ++i )

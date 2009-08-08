@@ -8,7 +8,6 @@
 #define NUMSTR 4
 #define NOPS	65536
 #define NITER   (128 * NOPS)
-#define P2U(x)	((uint)(ptrdiff_t)x)
 
 void timeit()
 {
@@ -87,7 +86,7 @@ int main()
     ht_put(table, strs[i][0], strs[i][1]);
     hnp = ht_lkup(table, strs[i][0], 0);
     printf("Put (%s) at key (%s): %x\n", strs[i][1], strs[i][0],
-           P2U(hnp));
+           ptr2uint(hnp));
   }
 
   if (ht_get(table, "bye")) 
@@ -95,20 +94,20 @@ int main()
 
   s = ht_get(table, strs[1][0]);
   printf("Under key %s is the string %s\n", strs[1][0], s);
-  printf("address is %x\n\n", P2U(s)); 
+  printf("address is %x\n\n", ptr2uint(s)); 
 
   s = ht_get(table, strs[2][0]);
   printf("Under key %s is the string %s\n", strs[2][0], s);
-  printf("address is %x\n\n", P2U(s)); 
+  printf("address is %x\n\n", ptr2uint(s)); 
 
   s = ht_get(table, strs[0][0]);
   printf("Under key %s is the string %s\n", strs[0][0], s); 
-  printf("address is %x\n\n", P2U(s)); 
+  printf("address is %x\n\n", ptr2uint(s)); 
 
   s = ht_get(table, strs[1][0]);
   ht_clr(table, strs[1][0]);
   printf("Deleted %s\n", s); 
-  printf("address is %x\n\n", P2U(s)); 
+  printf("address is %x\n\n", ptr2uint(s)); 
 
 
   hnp = ht_lkup(table, strs[2][0], NULL);
@@ -116,7 +115,7 @@ int main()
   ht_rem(hnp);
   ht_nfree(&table->sys, hnp);
   printf("Deleted %s\n", s); 
-  printf("address is %x\n\n", P2U(s)); 
+  printf("address is %x\n\n", ptr2uint(s)); 
 
   if (ht_get(table, strs[1][0]))
     printf("Error!  Thing not deleted! : %s\n",

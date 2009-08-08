@@ -27,14 +27,14 @@ int main(int argc, char *argv[])
   for ( i = 0 ; i < s1 ; ++i )
   {
     ++j;
-    node = cdl_new(arr1[i], 0, (void *)(ptrdiff_t)j);
+    node = cdl_new(arr1[i], 0, int2ptr(j));
     dl_ins(&list, node);
   }
 
   dl_first(&list, &ct);
   printf("The first is at %u\n", (uint)ct.sec);
   node = dl_deq(&list);
-  printf("The first was %u at %u\n\n", (uint)(ptrdiff_t)cdl_data(node), 
+  printf("The first was %u at %u\n\n", ptr2uint(cdl_data(node)), 
          (uint)node->ttl.sec);
   cdl_free(node);
 
@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
   while ( ! l_isempty(&list2) )
   {
     trav = container(l_head(&list2), struct dlist, entry);
-    printf("%u/%u ", (uint)(ptrdiff_t)cdl_data(trav), (uint)trav->ttl.sec);
+    printf("%u/%u ", ptr2uint(cdl_data(trav)), (uint)trav->ttl.sec);
     l_rem(&trav->entry);
     cdl_free(trav);
   }
@@ -55,14 +55,14 @@ int main(int argc, char *argv[])
   for ( i = 0 ; i < s2 ; ++i ) 
   {
     ++j;
-    node = cdl_new(arr2[i], 0, (void *)(ptrdiff_t)j);
+    node = cdl_new(arr2[i], 0, int2ptr(j));
     dl_ins(&list, node);
   }
 
   printf("After inserting arr2 array is :\n\t");
   while ( node = dl_deq(&list) )
   {
-    printf("%u/", (uint)(ptrdiff_t)cdl_data(node));
+    printf("%u/", ptr2uint(cdl_data(node)));
     printf("%u ", (uint)node->ttl.sec);
     cdl_free(node);
   }
