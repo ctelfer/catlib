@@ -72,6 +72,11 @@ DECL void ht_init(struct htab *t, struct list *l, uint size,
 {
 	uint i;
 
+	/* XXX useless code to silence the compiler about unused funcs */
+	(void)ht_shash;
+	(void)ht_phash;
+	(void)ht_rhash;
+
 	abort_unless(t != NULL);
 	abort_unless(l != NULL);
 	abort_unless(hsys != NULL);
@@ -238,10 +243,6 @@ PTRDECL uint ht_rhash(void *k, void *unused)
 
 PTRDECL uint ht_phash(void *k, void *unused)  
 {
-	/* XXX useless code to silence the compiler about unused funcs */
-	(void)ht_shash;
-	(void)ht_phash;
-	(void)ht_rhash;
 	return (uint)((ulong)k >> 2);
 }
 

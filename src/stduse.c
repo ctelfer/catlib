@@ -371,7 +371,7 @@ struct htab *ht_new(size_t size, int type)
 	}
 	/* XXX shouldn't go here, but ok since the hash functions don't */
 	/* require any context */
-	sys.hctx  = (void *)type;
+	sys.hctx  = int2ptr(type);
 
 	if ( (((size_t)~0) - sizeof(*t)) / sizeof(struct list) < size )
 		err("size overflows integer size max");
@@ -413,7 +413,7 @@ struct hnode *ht_snalloc(void *k, void *d, unsigned h, void *c)
 	struct raw *r1, *r2;
 	void free(void *);
 
-	type = (int)c;
+	type = ptr2int(c);
 	switch(type) {
 
 	case CAT_DT_STR:
@@ -611,7 +611,7 @@ struct avl *avl_new(int type)
 	}
 
 	xa = emalloc(sizeof(*xa));
-	xa->ctx = (void *)type;
+	xa->ctx = int2ptr(type);
 	avl_init(&xa->avl, cmp);
 	return &xa->avl;
 }
@@ -648,7 +648,7 @@ struct anode *avl_snalloc(void *k, void *d, void *c)
 	struct anode *node = NULL;
 	void *nk = NULL;
 	size_t l, l2;
-	int type = (int)c;
+	int type = ptr2int(c);
 	struct raw *r1, *r2;
 
 	switch (type) {
@@ -827,7 +827,7 @@ struct rbtree *rb_new(int type)
 
 	}
 	xrbt = emalloc(sizeof(struct xrbtree));
-	xrbt->ctx = (void *)type;
+	xrbt->ctx = int2ptr(type);
 	rb_init(&xrbt->rbt, cmp);
 	return &xrbt->rbt;
 }
@@ -864,7 +864,7 @@ struct rbnode *rb_snalloc(void *k, void *d, void *c)
 	struct rbnode *node = NULL;
 	void *nk = NULL;
 	size_t l, l2;
-	int type = (int)c;
+	int type = ptr2int(c);
 	struct raw *r1, *r2;
 
 	switch (type) {
@@ -1041,7 +1041,7 @@ struct splay *st_new(int type)
 	}
 
 	xs = emalloc(sizeof(*xs));
-	xs->ctx = (void *)type;
+	xs->ctx = int2ptr(type);
 	st_init(&xs->tree, cmp);
 	return &xs->tree;
 }
@@ -1077,7 +1077,7 @@ struct stnode *st_snalloc(void *k, void *d, void *c)
 	struct stnode *node = NULL;
 	void *nk = NULL;
 	size_t l, l2, tlen;
-	int type = (int)c;
+	int type = ptr2int(c);
 	struct raw *r1, *r2;
 
 	switch (type) {
