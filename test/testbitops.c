@@ -35,8 +35,10 @@ void test_compress()
 	uint32_t word32 = (uint32_t)rand();
 	uint32_t cl32, cr32;
 	uint32_t sag32;
+#if CAT_64BIT
 	uint64_t word64 = (uint64_t)rand() | ((uint64_t)rand() << 32);
 	uint64_t cl64, cr64;
+#endif /* CAT_64BIT */
 
 	printf("Testing compress\n");
 	cl32 = compress_l32(word32, word32);
@@ -54,6 +56,7 @@ void test_compress()
 	print_bits32(sag32);
 	printf("\n");
 
+#if CAT_64BIT
 	cl64 = compress_l64(word64, word64);
 	cr64 = compress_r64(word64, word64);
 	printf("Word 64 (%d bits):\n", pop_64(word64));
@@ -63,6 +66,7 @@ void test_compress()
 	printf("compress right:\n");
 	print_bits64(cr64);
 	printf("\n");
+#endif /* CAT_64BIT */
 }
 
 
@@ -79,6 +83,7 @@ void print_perm32(uint32_t x, uint8_t p[32]) {
 }
 
 
+#if CAT_64BIT
 void print_perm64(uint32_t x, uint8_t p[64]) {
 	int i;
 	for ( i = 63; i >= 0; i-- ) {
@@ -90,6 +95,7 @@ void print_perm64(uint32_t x, uint8_t p[64]) {
 	}
 
 }
+#endif /* CAT_64BIT */
 
 
 void random_permutation(uint8_t arr[], size_t len)
@@ -142,36 +148,41 @@ int main(int argc, char *argv[])
 {
 	int i;
 	uint32_t word32, p32_sag, p32_bg;
-	uint64_t word64, p64_sag, p64_bg;
 	uint8_t perm32[32];
 	uint8_t perm64[64];
 	uint8_t perm32_SAG[32]; /* goes-to rather than comes-from */
-	uint8_t perm64_SAG[64]; /* goes-to rather than comes-from */
 	uint32_t sagpv32[5];
+#if CAT_64BIT
 	uint64_t sagpv64[6];
+	uint64_t word64, p64_sag, p64_bg;
+	uint8_t perm64_SAG[64]; /* goes-to rather than comes-from */
+#endif /* CAT_64BIT */
 
 	srand(time(NULL));
 	test_compress();
 	word32 = (uint32_t)rand();
-	word64 = (uint64_t)rand() | ((uint64_t)rand() << 32);
 	random_permutation(perm32, 32);
 	reverse(perm32, perm32_SAG, 32);
-	random_permutation(perm64, 64);
-	reverse(perm64, perm64_SAG, 64);
 
 
 	if (arr_to_SAG_permvec32(perm32_SAG, sagpv32) < 0) {
 		printf("Error in SAG32 permutation vector\n");
 		return -1;
 	}
+	p32_sag = permute32_SAG(word32, sagpv32);
+	p32_bg  = bitgather32(word32, perm32);
+
+#if CAT_64BIT
+	word64 = (uint64_t)rand() | ((uint64_t)rand() << 32);
+	random_permutation(perm64, 64);
+	reverse(perm64, perm64_SAG, 64);
 	if (arr_to_SAG_permvec64(perm64_SAG, sagpv64) < 0) {
 		printf("Error in SAG64 permutation vector\n");
 		return -1;
 	}
-	p32_sag = permute32_SAG(word32, sagpv32);
-	p32_bg  = bitgather32(word32, perm32);
 	p64_sag = permute64_SAG(word64, sagpv64);
 	p64_bg  = bitgather64(word64, perm64);
+#endif /* CAT_64BIT */
 
 
 	printf("Original 32 bits:\n");
@@ -210,6 +221,7 @@ int main(int argc, char *argv[])
 	printf("\n");
 
 
+#if CAT_64BIT
 	printf("Original 64 bits:\n");
 	print_bits64(word64);
 	printf("Local Perm 64 bits:\n");
@@ -244,6 +256,7 @@ int main(int argc, char *argv[])
 		}
 	}
 	printf("\n");
+#endif /* CAT_64BIT */
 
 	return 0;
 }
