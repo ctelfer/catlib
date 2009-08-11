@@ -85,7 +85,7 @@ LCATAOF=$(LCATAODIR)/cat.o \
 	$(LCATAODIR)/lex.o \
 	$(LCATAODIR)/sort.o \
 	$(LCATAODIR)/optparse.o \
-	$(LCATODIR)/inport.o 
+	$(LCATAODIR)/inport.o 
 
 
 LCAT_DBG_ODIR= ../obj/libcat_dbg
@@ -132,7 +132,7 @@ LCAT_DBG_OF=$(LCAT_DBG_ODIR)/cat.o \
 	$(LCAT_DBG_ODIR)/lex.o \
 	$(LCAT_DBG_ODIR)/sort.o \
 	$(LCAT_DBG_ODIR)/optparse.o \
-	$(LCATODIR)/inport.o 
+	$(LCAT_DBG_ODIR)/inport.o 
 	
 
 LCAT_NO_LIBC_ODIR=  ../obj/libcat_nolibc
@@ -175,7 +175,7 @@ LCAT_NO_LIBC_OF= \
 	$(LCAT_NO_LIBC_ODIR)/lex.o \
 	$(LCAT_NO_LIBC_ODIR)/sort.o \
 	$(LCAT_NO_LIBC_ODIR)/optparse.o \
-	$(LCATODIR)/inport.o 
+	$(LCAT_NO_LIBC_ODIR)/inport.o 
 
 ICOMMON=$(ISYSTEM) -I../include
 
@@ -243,7 +243,7 @@ veryclean:
 	rm -f $(LCATODIR)/*.o $(LCATAODIR)/*.o $(LCAT_NO_LIBC_ODIR)/*.o \
 		$(LCAT_DBG_OF) \
 		../lib/libcat.a ../lib/libcata.a ../lib/libcat_nolibc.a \
-		../lib/libcat_dbg.a .depend
+		../lib/libcat_dbg.a .depend ../include/config.h
 	rm -f Makefile
 	@echo "**** Makefile Destroyed ****"
 	@echo "**** Run buildmake.sh to regenerate it ****"
@@ -251,7 +251,7 @@ veryclean:
 depend: .depend
 
 .depend: Makefile.tmpl
-	cp build_system.conf .tmp.makefile
+	cp ../conf/build_system.conf .tmp.makefile
 	sed -e '/^#---- DO NOT DELETE ----/,$$ d' Makefile.tmpl >> .tmp.makefile
 	echo '#---- DO NOT DELETE ----' >> .tmp.makefile
 	for i in $(CFILES) ; do \
