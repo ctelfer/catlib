@@ -345,6 +345,8 @@ static int spec_ok(struct ps_spec *spec)
 	struct ps_fd_entry *psfde;
 	DECLARE_BITSET(mapped, CAT_PS_MAXFDS);
 
+	bset_zero(mapped, CAT_PS_MAXFDS);
+
 	l_for_each(t, &spec->fdelist) {
 		psfde = ln_to_fde(t);
 		if ( !ps_fds_type_ok(psfde->type) ) 
@@ -556,6 +558,7 @@ static int set_up_fds(struct pspawn *ps, int *retfd)
 	struct ps_fd_entry *psfde;
 	DECLARE_BITSET(pipefds, CAT_PS_MAXFDS);
 
+	bset_zero(pipefds, CAT_PS_MAXFDS);
 	bset_set(pipefds, *retfd);
 
 	/* populate the set of file descriptors we need to map */
