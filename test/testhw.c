@@ -56,15 +56,18 @@ int main(int argc, char *argv[])
     nreps = atoi(argv[1]);
 
   printf("Type:          Size:\n");
-  printf("char           %3lu\n", sizeof(char));
-  printf("short          %3lu\n", sizeof(short));
-  printf("int            %3lu\n", sizeof(int));
-  printf("long           %3lu\n", sizeof(long));
-  printf("long long      %3lu\n", sizeof(long long));
-  printf("char *         %3lu\n", sizeof(char *));
-  printf("size_t         %3lu\n", sizeof(size_t));
-  printf("ssize_t        %3lu\n", sizeof(ssize_t));
-  printf("ptrdiff_t      %3lu\n", sizeof(ptrdiff_t));
+  printf("char           %3u\n", (uint)sizeof(char));
+  printf("short          %3u\n", (uint)sizeof(short));
+  printf("int            %3u\n", (uint)sizeof(int));
+  printf("long           %3u\n", (uint)sizeof(long));
+  printf("long long      %3u\n", (uint)sizeof(long long));
+  printf("char *         %3u\n", (uint)sizeof(char *));
+  printf("size_t         %3u\n", (uint)sizeof(size_t));
+  printf("ssize_t        %3u\n", (uint)sizeof(ssize_t));
+  printf("ptrdiff_t      %3u\n", (uint)sizeof(ptrdiff_t));
+  printf("float          %3u\n", (uint)sizeof(float));
+  printf("double         %3u\n", (uint)sizeof(double));
+  printf("long double    %3u\n", (uint)sizeof(long double));
 
   printf("\nInteger operations\n");
   HEAD
