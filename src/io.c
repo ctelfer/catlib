@@ -61,7 +61,7 @@ ssize_t io_write(int fd, void *buf, ssize_t nb)
 	if ( fd < 0 || !buf || nb < 0 )
 		return -2;
 
-	while (nw < nb) { 
+	while ( nw < nb ) { 
 		if ( (n = write(fd, p, nb - nw)) < 0) {
 			if ( (errno == EINTR) || (errno == EAGAIN) )
 				continue; 
