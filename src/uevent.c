@@ -43,7 +43,7 @@ static int fdmax(struct avl *a)
 
 	for ( ; n->avl_right ; n = n->avl_right );
 
-	return (int)n->key;
+	return ptr2int(n->key);
 }
 
 
@@ -168,11 +168,11 @@ void ue_io_reg(struct uemux *mux, struct ue_ioevent *io)
 		     io->type == UE_EX);
 	abort_unless(io->fd >= 0);
 
-	an = avl_lkup(mux->fdtab, (void *)io->fd, &dir);
+	an = avl_lkup(mux->fdtab, int2ptr(io->fd), &dir);
 	if ( dir != CA_N ) {
 		wasempty = 1;
 		par = an;
-		an = avl_nnew(mux->fdtab, (void *)io->fd, io);
+		an = avl_nnew(mux->fdtab, int2ptr(io->fd), io);
 		avl_ins(mux->fdtab, an, par, dir);
 	} else {
 		io2 = an->data;
@@ -227,7 +227,7 @@ void ue_io_cancel(struct ue_ioevent *io)
 		}
 	}
 
-	an = avl_lkup(mux->fdtab, (void *)io->fd, NULL);
+	an = avl_lkup(mux->fdtab, int2ptr(io->fd), NULL);
 	abort_unless(an);
 	if ( l_isempty(&io->fdlist) ) {
 		avl_rem(an);
@@ -270,7 +270,7 @@ void ue_sig_reg(struct uemux *mux, struct ue_sigevent *se)
 
 	se->mux = mux;
 	l_init(&se->cb.entry);
-	an = avl_lkup(mux->sigtab, (void *)se->signum, &dir);
+	an = avl_lkup(mux->sigtab, int2ptr(se->signum), &dir);
 	if ( dir != CA_N ) {
 		/* ADD the signal to the list to watch */
 		sigfillset(&block);
@@ -283,7 +283,7 @@ void ue_sig_reg(struct uemux *mux, struct ue_sigevent *se)
 		sigprocmask(SIG_BLOCK, &oset, NULL);
 		wasempty = 1;
 		par = an;
-		an = avl_nnew(mux->sigtab, (void *)se->signum, &se->cb.entry);
+		an = avl_nnew(mux->sigtab, int2ptr(se->signum), &se->cb.entry);
 		avl_ins(mux->sigtab, an, par, dir);
 	} else {
 		se2 = an->data;
@@ -303,7 +303,7 @@ void ue_sig_cancel(struct ue_sigevent *se)
 		return;
 	se->mux = NULL;
 
-	an = avl_lkup(mux->sigtab, (void *)se->signum, &dir);
+	an = avl_lkup(mux->sigtab, int2ptr(se->signum), &dir);
 	abort_unless(dir == CA_N);
 	if ( l_isempty(&se->cb.entry) ) {
 		avl_rem(an);
@@ -341,7 +341,7 @@ static void run_sig_handlers(struct uemux *mux, sigset_t *ss, int maxsig)
 			return;
 		if ( !sigismember(ss, i) )
 			continue;
-		an = avl_lkup(mux->sigtab, (void *)i, &dir);
+		an = avl_lkup(mux->sigtab, int2ptr(i), &dir);
 		if ( dir != CA_N )
 			continue;
 		first = an->data;
@@ -349,7 +349,7 @@ static void run_sig_handlers(struct uemux *mux, sigset_t *ss, int maxsig)
 		do { 
 			cur = first;
 			cb = container(cur, struct callback, entry);
-			cb_call(cb, (void *)i);
+			cb_call(cb, int2ptr(i));
 			cur = cur->next;
 		} while ( cur != first );
 	}
@@ -382,7 +382,7 @@ static void iorun(void *ioep, void *param)
 	}
 
 	if ( FD_ISSET(io->fd, set) )
-		cb_call(&io->cb, (void *)io->fd);
+		cb_call(&io->cb, int2ptr(io->fd));
 }
 
 
