@@ -34,13 +34,35 @@
 #define CAT_S32_T long
 #endif /* CAT_S32_T */
 
+
+/* 
+ * Define 64-bit types --
+ *  If CAT_64BIT is true, that means our compiler supports some 64-bit type.
+ *  It _could_ be "long" or even "char".  If CAT_HAS_LONGLONG is set, then
+ *  it is safe to set the 64-bit type to 'long long'.  But if this isn't
+ *  set then set it to 'long'.  The problem being that ANSI 89 compilers
+ *  don't need to support 'long long', but do need to support 'long'.
+ */ 
 #if CAT_64BIT
+#if CAT_HAS_LONGLONG
+
 #ifndef CAT_U64_T
 #define CAT_U64_T unsigned long long
 #endif /* CAT_U64_T */
 #ifndef CAT_S64_T
 #define CAT_S64_T long long
 #endif /* CAT_S64_T */
+
+#else /* CAT_HAS_LONGLONG */
+
+#ifndef CAT_U64_T
+#define CAT_U64_T unsigned long
+#endif /* CAT_U64_T */
+#ifndef CAT_S64_T
+#define CAT_S64_T long
+#endif /* CAT_S64_T */
+
+#endif /* CAT_HAS_LONGLONG */
 #endif /* CAT_64BIT */
 
 

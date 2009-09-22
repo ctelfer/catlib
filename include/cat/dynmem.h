@@ -56,9 +56,15 @@ void dynmem_each_block(struct dynmempool *pool, apply_f f, void *ctx);
 #ifndef TLSF_LG2_ALIM
 #define TLSF_LG2_ALIM 63
 #endif /* TLSF_LG2_ALIM */
-#define TLSF_ALIM (1LL << TLSF_LG2_ALIM)
 
+#if CAT_HAS_LONGLONG
+#define TLSF_ALIM (1LL << TLSF_LG2_ALIM)
 typedef uint64_t tlsf_sz_t;
+#else /* CAT_HAS_LONGLONG */
+#define TLSF_ALIM (1L << TLSF_LG2_ALIM)
+typedef ulong tlsf_sz_t;
+#endif /* CAT_HAS_LONGLONG */
+
 #define TLSF_SZ_BITS 64
 #define TLSF_LG2_UNITSIZE 3 /* guess: verify by assert */
 

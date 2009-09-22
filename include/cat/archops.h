@@ -177,11 +177,19 @@ static INLINE int nlz_64(uint64_t x) {
 #else /* CAT_HAS_POP_32 */
 static int INLINE pop_64(uint64_t x)
 {
+#if CAT_HAS_LONGLONG
 	x = (x & 0x5555555555555555LL) + ((x >> 1) & 0x5555555555555555LL);
 	x = (x & 0x3333333333333333LL) + ((x >> 2) & 0x3333333333333333LL);
 	x = (x & 0x0F0F0F0F0F0F0F0FLL) + ((x >> 4) & 0x0F0F0F0F0F0F0F0FLL);
 	x = (x & 0x00FF00FF00FF00FFLL) + ((x >> 8) & 0x00FF00FF00FF00FFLL);
 	x = (x & 0x0000FFFF0000FFFFLL) + ((x >> 16) & 0x0000FFFF0000FFFFLL);
+#else /* CAT_HAS_LONGLONG */
+	x = (x & 0x5555555555555555L) + ((x >> 1) & 0x5555555555555555L);
+	x = (x & 0x3333333333333333L) + ((x >> 2) & 0x3333333333333333L);
+	x = (x & 0x0F0F0F0F0F0F0F0FL) + ((x >> 4) & 0x0F0F0F0F0F0F0F0FL);
+	x = (x & 0x00FF00FF00FF00FFL) + ((x >> 8) & 0x00FF00FF00FF00FFL);
+	x = (x & 0x0000FFFF0000FFFFL) + ((x >> 16) & 0x0000FFFF0000FFFFL);
+#endif /* CAT_HAS_LONGLONG */
 	x = x + (x >> 32);
 	return x & 0x7F;
 }
