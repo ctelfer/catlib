@@ -27,11 +27,27 @@
 int net_resolv(const char *host, const char *serv, const char *proto,
 	       struct sockaddr_storage *sas)
 {
-	struct addrinfo *res;
+	struct addrinfo *res, *hintsp = NULL, hints;
 
 	abort_unless(sas);
 
-	if ( getaddrinfo(host, serv, NULL, &res) < 0 )
+	if ( proto != NULL ) {
+		hintsp = &hints;
+		memcpy(hintsp, 0, sizeof(struct addrinfo));
+		hintsp->ai_family = AF_UNSPEC;
+		hintsp->ai_flags = (AI_V4MAPPED | AI_ADDRCONFIG);
+		if ( strcmp(proto, "tcp") == 0 ) {
+			hintsp->ai_socktype = SOCK_STREAM;
+			hintsp->ai_protocol = IPPROTO_TCP;
+		} else if ( strcmp(proto, "udp") == 0 ) {
+			hintsp->ai_socktype = SOCK_DGRAM;
+			hintsp->ai_protocol = IPPROTO_UDP;
+		} else {
+			return -1;
+		}
+	}
+
+	if ( getaddrinfo(host, serv, hintsp, &res) < 0 )
 		return -1;
 	memcpy(sas, res->ai_addr, res->ai_addrlen);
 	freeaddrinfo(res);
@@ -60,7 +76,7 @@ int tcp_srv(const char *host, const char *serv)
 
 	do {
 		sock = socket(trav->ai_family, trav->ai_socktype,
-						trav->ai_protocol);
+			      trav->ai_protocol);
 		if ( sock < 0 )
 			goto nextsock;
 		if ( setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &set,
@@ -103,7 +119,7 @@ int tcp_cli(const char *host, const char *serv)
 	trav = res;
 	do {
 		sock=socket(trav->ai_family, trav->ai_socktype,
-					trav->ai_protocol);
+			    trav->ai_protocol);
 		if ( sock < 0 )
 			continue;
 		if ( connect(sock, trav->ai_addr, trav->ai_addrlen) == 0 )
@@ -140,7 +156,7 @@ int udp_sock(char *host, char *serv)
 	trav = res;
 	do {
 		sock = socket(trav->ai_family, trav->ai_socktype,
-						trav->ai_protocol);
+			      trav->ai_protocol);
 		if ( sock < 0 )
 			goto nextsock;
 		if ( setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &set,
