@@ -23,7 +23,7 @@ char recvbuf[256], strbuf[256];
 
   do 
   { 
-    ERRCK(n = io_try_read(fd, recvbuf, 255));
+    ERRCK(n = io_read_upto(fd, recvbuf, 255));
     recvbuf[n] = '\0';
     fprintf(stderr, "received %s", recvbuf); 
     if ( n > 0 )

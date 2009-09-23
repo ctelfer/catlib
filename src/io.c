@@ -32,8 +32,9 @@ ssize_t io_read(int fd, void *buf, ssize_t nb)
 	ssize_t nr = 0;
 	ssize_t n;
 
-	if ( fd < 0 || !buf || nb < 0 )
-		return -2;
+	abort_unless(fd >= 0);
+	abort_unless(buf != NULL);
+	abort_unless(nb >= 0);
 
 	while (nr < nb) { 
 		if ( (n = read(fd, p, nb - nr)) < 0) {
@@ -58,8 +59,9 @@ ssize_t io_write(int fd, void *buf, ssize_t nb)
 	ssize_t nw = 0;
 	ssize_t n;
 
-	if ( fd < 0 || !buf || nb < 0 )
-		return -2;
+	abort_unless(fd >= 0);
+	abort_unless(buf != NULL);
+	abort_unless(nb >= 0);
 
 	while ( nw < nb ) { 
 		if ( (n = write(fd, p, nb - nw)) < 0) {
@@ -78,13 +80,14 @@ ssize_t io_write(int fd, void *buf, ssize_t nb)
 }
 
 
-ssize_t io_try_read(int fd, void *buf, ssize_t nb) 
+ssize_t io_read_upto(int fd, void *buf, ssize_t nb) 
 { 
 	byte_t *p = buf; 
 	ssize_t n;
 
-	if ( fd < 0 || !buf || nb < 0 )
-		return -2;
+	abort_unless(fd >= 0);
+	abort_unless(buf != NULL);
+	abort_unless(nb >= 0);
 
 	while ( ((n = read(fd, p, nb)) == -1) && (errno == EINTR) )
 		;
@@ -93,13 +96,15 @@ ssize_t io_try_read(int fd, void *buf, ssize_t nb)
 }
 
 
-ssize_t io_try_write(int fd, void *buf, ssize_t nb) 
+ssize_t io_write_upto(int fd, void *buf, ssize_t nb) 
 { 
 	byte_t *p = buf; 
 	ssize_t n;
 
-	if ( fd < 0 || !buf || nb < 0 )
-		return -2;
+	abort_unless(fd >= 0);
+	abort_unless(buf != NULL);
+	abort_unless(nb >= 0);
+
 
 	while ( ((n = write(fd, p, nb)) == -1) && (errno == EINTR) )
 		;
@@ -113,10 +118,7 @@ int io_check_ready(int fd, int type, double timeout)
 	fd_set set, *rp = NULL, *wp = NULL, *ep = NULL;
 	struct timeval tv, tvcopy = { 0 }, *tvp = NULL;
 
-	if ( fd < 0 ) {
-		errno = EINVAL;
-		return -1;
-	}
+	abort_unless(fd >= 0);
 
 	FD_ZERO(&set);
 	FD_SET(fd, &set);

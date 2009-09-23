@@ -21,7 +21,7 @@
 #include <errno.h>
 
 
-#ifdef HAS_ADDRINFO
+#ifdef CAT_HAS_ADDRINFO
 
 
 int net_resolv(const char *host, const char *serv, const char *proto,
@@ -178,7 +178,7 @@ nextsock:
 }
 
 
-#else /* HAS_ADDRINFO */
+#else /* CAT_HAS_ADDRINFO */
 
 
 int net_resolv(const char *host, const char *serv, const char *proto,
@@ -311,7 +311,7 @@ int udp_sock(char *host, char *serv)
 }
 
 
-#endif /* HAS_ADDRINFO */
+#endif /* CAT_HAS_ADDRINFO */
 
 
 char * net_tostr(struct sockaddr *sa, char *buf, size_t len)

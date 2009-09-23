@@ -27,7 +27,7 @@ int incb(void *arg, struct callback *cb)
 
 	x = cb->ctx;
 	m = x->in->mux;
-	n = io_try_read(x->infd, x->buf, sizeof(x->buf));
+	n = io_read_upto(x->infd, x->buf, sizeof(x->buf));
 	if ( n == 0 ) { 
 		ue_io_del(x->in);
 		ue_io_del(x->out);
@@ -55,7 +55,7 @@ int outcb(void *arg, struct callback *cb)
 
 	x = cb->ctx;
 	m = x->out->mux;
-	n = io_try_write(x->outfd, x->buf, x->len);
+	n = io_write_upto(x->outfd, x->buf, x->len);
 	if ( n == 0 ) { 
 		ue_io_del(x->in);
 		ue_io_del(x->out);

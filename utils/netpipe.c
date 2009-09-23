@@ -8,6 +8,7 @@
 #include <limits.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 int lfd, sfd, cfd, crdone = 0, srdone = 0, cwdone = 0, swdone = 0;
 unsigned bsiz = 4096;
@@ -35,7 +36,7 @@ int reader(void *arg, struct callback *cb)
 	if ( toend > SSIZE_MAX )
 		toend = SSIZE_MAX;
 
-	rv = io_try_read(fd, r->data + last, toend);
+	rv = io_read_upto(fd, r->data + last, toend);
 	if ( rv < 0 ) {
 		if ( rv == -2 )
 			return 0;
@@ -77,7 +78,7 @@ int writer(void *arg, struct callback *cb)
 	if ( toend > SSIZE_MAX )
 		toend = SSIZE_MAX;
 
-	rv = io_try_write(fd, r->data + r->start, toend);
+	rv = io_write_upto(fd, r->data + r->start, toend);
 	if ( rv < 0 ) {
 		if ( rv == -2 )
 			return 0;
