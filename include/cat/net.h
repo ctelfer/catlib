@@ -71,6 +71,26 @@ int net_resolv(const char *addr, const char *port, const char *proto,
  */
 char * net_tostr(struct sockaddr *sa, char *buffer, size_t len);
 
+
+/*
+ * Opens a client connection to address 'host' and port 'serv' on a new socket.
+ * This API will attempt to connection on the first address found for a given
+ * 'host', 'serv' pair.  It opens the connection in non-blocking mode.  The
+ * caller should wait for the file descriptor to become writeable.  Then the
+ * caller should invoke tcp_cli_nb_complete() to determine if the connection
+ * completed successfully.  This function returns the socket file descriptor
+ * on success and -1 on failure.  aborts on a NULL host or serv.
+ */
+int tcp_cli_nb(const char *host, const char *serv);
+
+
+/*
+ * Test whether a TCP client connection attempted with a non-blocking socket
+ * completed.  Aborts on a negative file descriptor.  Returns the error flag
+ * on the socket.  Returns -1 on an error.
+ */
+int tcp_cli_nb_completion(int fd);
+
 #ifndef CAT_LISTENQ
 #define CAT_LISTENQ 50
 #endif 

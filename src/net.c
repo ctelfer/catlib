@@ -19,6 +19,7 @@
 #include <netdb.h>
 #include <sys/un.h>
 #include <errno.h>
+#include <fcntl.h>
 
 
 #ifdef CAT_HAS_ADDRINFO
@@ -118,8 +119,8 @@ int tcp_cli(const char *host, const char *serv)
 
 	trav = res;
 	do {
-		sock=socket(trav->ai_family, trav->ai_socktype,
-			    trav->ai_protocol);
+		sock = socket(trav->ai_family, trav->ai_socktype,
+			      trav->ai_protocol);
 		if ( sock < 0 )
 			continue;
 		if ( connect(sock, trav->ai_addr, trav->ai_addrlen) == 0 )
@@ -176,6 +177,47 @@ nextsock:
 
 	return sock;
 }
+
+
+int tcp_cli_nb(const char *host, const char *serv)
+{
+	int r, sock;
+	struct addrinfo hints, *res, *trav;
+
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+	if ( (r = getaddrinfo(host, serv, &hints, &res)) < 0 )
+		return -1;
+
+	sock = socket(res->ai_family, res->ai_socktype,
+		      res->ai_protocol);
+	if ( sock < 0 ) {
+		r = -2;
+		goto end;
+	}
+
+        flags = fcntl(sock, F_GETFL);
+        if ( flags < 0 ) {
+                r = -3;
+		goto end;
+	}
+
+        flags |= O_NONBLOCK;
+
+        if ( fcntl(sock, F_SETFL, flags) < 0 ) {
+		goto end;
+	}
+
+	r = connect(sock, trav->ai_addr, trav->ai_addrlen);
+	if ( (r == -1) && (errno == EINPROGRESS) )
+		r = 0;
+
+err:
+	freeaddrinfo(res);
+	return r;
+}
+
 
 
 #else /* CAT_HAS_ADDRINFO */
@@ -311,6 +353,38 @@ int udp_sock(char *host, char *serv)
 }
 
 
+int tcp_cli_nb(const char *host, const char *serv)
+{
+	int sock;
+	struct sockaddr_storage sas;
+        int flags;
+	struct sockaddr_in *sin = (struct sockaddr_in *)&sas;
+
+	if ( net_resolv(host, serv, "tcp", &sas) < 0 )
+		return -1;
+
+	if ( (sock = socket(AF_INET, SOCK_STREAM, 0)) < 0 )
+		return -2;
+
+        flags = fcntl(sock, F_GETFL);
+        if ( flags < 0 )
+                return -3;
+
+        flags |= O_NONBLOCK;
+
+        if ( fcntl(sock, F_SETFL, flags) < 0 )
+                return -4;
+
+	if ( connect(sock, (SA *)sin, sizeof(*sin)) < 0 ) {
+		close(sock);
+		return -5;
+	}
+
+	return sock;
+}
+
+
+
 #endif /* CAT_HAS_ADDRINFO */
 
 
@@ -366,5 +440,18 @@ char * net_tostr(struct sockaddr *sa, char *buf, size_t len)
 		return NULL;
 	}
 }
+
+
+
+int tcp_cli_nb_completion(int fd)
+{
+	int err;
+	socklen_t size = sizeof(err);
+	abort_unless(fd < 0);
+	if ( getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &size) < 0 )
+		return -1;
+	return err;
+}
+
 
 #endif /* CAT_HAS_POSIX */
