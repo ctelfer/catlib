@@ -26,6 +26,7 @@ struct lexer {
 
 
 enum {
+	LEX_OK = 0,
 	LEX_END = -1,
 	LEX_NOMATCH = -2,
 	LEX_ERROR = -3

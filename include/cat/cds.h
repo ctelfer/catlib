@@ -19,10 +19,10 @@
 #endif
 
 #define CDS_NEWSTRUCT(_ds, _dt, _name)			\
-struct _name {						\
+typedef struct {					\
 	_ds	node;					\
 	_dt	data;					\
-}
+} _name
 
 
 #define CDS_NEW0(_pvar)					\
@@ -43,11 +43,8 @@ struct _name {						\
 	} while (0)
 
 
-#define CDS_DATA(_np, _name)	\
-	(container((_np), struct _name, node)->data)
+#define CDS_DATA(_np, _name)	(((_name *)(_np))->data)
 
-#define CDS_DPTR(_np)		\
-	(&container((_np), struct _name, node)->data)
-
+#define CDS_DPTR(_np, _name)	(&((_name *)(_np))->data)
 
 #endif /* __cat_cds_h */

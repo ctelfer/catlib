@@ -27,8 +27,8 @@
 #include <stdlib.h>
 
 /* data structures */
-CDS_NEWSTRUCT(struct list, int, fdnode_s);
-#define ln_to_fd(node)	CDS_DATA(node, fdnode_s)
+CDS_NEWSTRUCT(struct list, int, fdnode_t);
+#define ln_to_fd(node)	CDS_DATA(node, fdnode_t)
 #define ln_to_fde(node)	container(node, struct ps_fd_entry, entry)
 
 
@@ -96,7 +96,7 @@ int ps_spec_copy(struct ps_spec *dst, const struct ps_spec *src)
 {
 	struct list *t, *t2;
 	struct ps_fd_entry *old, *new;
-	struct fdnode_s *fdn;
+	fdnode_t *fdn;
 	abort_unless(dst != NULL);
 	abort_unless(src != NULL);
 
@@ -246,7 +246,7 @@ void ps_spec_del_fde(struct ps_spec *spec, struct ps_fd_entry *psfde)
 
 int ps_fde_addfd(struct ps_fd_entry *psfde, int fd)
 {
-	struct fdnode_s *fdn;
+	fdnode_t *fdn;
 	CDS_NEW(fdn, fd);
 	if ( fdn == NULL )
 		return -1;

@@ -117,7 +117,7 @@ void pc_addpg(struct pcache *pc, void *page, size_t pgsiz)
 
 	pcp = page;
 	pl_init(&pcp->pool, pc->asiz, -1, (char *)pcp + sizeof(union pc_pool_u),
-					pgsiz - sizeof(union pc_pool_u));
+		pgsiz - sizeof(union pc_pool_u));
 	pcp->cache = pc;
 	l_ins(&pc->avail, &pcp->entry);
 	pc->npools += 1;
