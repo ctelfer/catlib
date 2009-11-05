@@ -51,6 +51,11 @@ void test_compress()
 	print_bits32(cr32);
 	printf("\n");
 
+	cl32 = compress_l32(0x0000FF00, 0x00FFFF00);
+	printf("compress left of 0xff00ff00/00ffff00: ");
+	print_bits32(cl32);
+	printf("\n");
+
 	sag32 = SAG32(0xff00ff00, 0x00ffff00);
 	printf("SAG32 of 0xff00ff00 mask = 0x00ffff00:\n");
 	print_bits32(sag32);

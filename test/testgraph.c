@@ -49,7 +49,7 @@ int gnew(struct shell_env *env, int na, char *args[], struct shell_value *rv)
 	}
 
 	g = emalloc(sizeof(*g));
-	g->graph = gr_new(&estdmm, isbi);
+	g->graph = gr_new(&estdmm, isbi, 0, 0);
 	g->node_tab = ht_new(32, CAT_DT_NUM);
 
 	rv->sval_type = SVT_PTR;
@@ -93,7 +93,6 @@ int add_node(struct shell_env *env, int na, char *args[],
 	struct gr_node *n;
 	void *p;
 	struct tgraph *g;
-	scalar_t sid;
 
 	if ( na != 3 || 
 	     (shell_arg2ptr(env, args[1], &p) < 0) ||
@@ -108,8 +107,8 @@ int add_node(struct shell_env *env, int na, char *args[],
 		return -1;
 	}
 
-	sid.int_val = id;
-	n = gr_add_node(g->graph, sid);
+	n = gr_add_node(g->graph);
+	n->gr_node_val = id;
 	ht_put(g->node_tab, int2ptr(id), n);
 	printf("Created node %d\n", id);
 
@@ -159,7 +158,6 @@ int del_node(struct shell_env *env, int na, char *args[],
 int edge(struct shell_env *env, int na, char *args[], struct shell_value *rv)
 {
 	int id1, id2;
-	scalar_t id = { 0 };
 	struct gr_node *n1, *n2;
 	struct gr_edge *e;
 	struct tgraph *g;
@@ -201,7 +199,8 @@ int edge(struct shell_env *env, int na, char *args[], struct shell_value *rv)
 				id1, id2);
 			return -1;
 		} else {
-			gr_add_edge(n1, n2, id);
+			e = gr_add_edge(n1, n2);
+			e->gr_edge_val = 0;
 		}
 	}
 
@@ -233,7 +232,7 @@ int print(struct shell_env *env, int na, char *args[], struct shell_value *rv)
 	      le != l_end(&g->graph->nodes); 
 	      le = le->next ) {
 		n = container(le, struct gr_node, entry);
-		printf("Node %d: ", n->decor.int_val);
+		printf("Node %d: ", n->gr_node_val);
 		e = n->out.arr;
 		eend = e + n->out.fill;
 		first = 1;
@@ -243,7 +242,7 @@ int print(struct shell_env *env, int na, char *args[], struct shell_value *rv)
 			} else {
 				printf(", ");
 			}
-			printf("%d", gr_edge_dst(n, *e)->decor.int_val);
+			printf("%d", gr_edge_dst(n, *e)->gr_node_val);
 		}
 		printf("\n");
 	}

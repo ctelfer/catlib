@@ -7,10 +7,24 @@ static void del_edge_help(struct gr_edge *edge, struct gr_node *node,
 static int add_edge_help(struct gr_edge *edge, struct gr_edge_arr *ea,
 		         struct gr_edge_arr *ea2);
 
-struct graph *gr_new(struct memmgr *mm, int isbi)
+
+struct graph *gr_new(struct memmgr *mm, int isbi, uint nxsize, uint exsize)
 {
 	struct graph *g;
 	if ( !mm )
+		return NULL;
+
+	if ( nxsize < sizeof(union decor_u) )
+		nxsize = sizeof(union decor_u);
+	if ( exsize < sizeof(union decor_u) )
+		exsize = sizeof(union decor_u);
+
+	if ( sizeof(struct gr_node) - sizeof(union decor_u) + nxsize < 
+	     sizeof(struct gr_node) )
+		return NULL;
+
+	if ( sizeof(struct gr_edge) - sizeof(union decor_u) + exsize < 
+	     sizeof(struct gr_edge) )
 		return NULL;
 
 	g = mem_get(mm, sizeof(*g));
@@ -21,26 +35,27 @@ struct graph *gr_new(struct memmgr *mm, int isbi)
 	l_init(&g->edges);
 	g->isbi = isbi;
 	g->mm = mm;
+	g->nodex = nxsize - sizeof(union decor_u);
+	g->edgex = nxsize - sizeof(union decor_u);
 
 	return g;
 }
 
 
-struct gr_node * gr_add_node(struct graph *g, union scalar_u decor)
+struct gr_node * gr_add_node(struct graph *g)
 {
 	struct gr_node *n;
 
 	abort_unless(g && g->mm);
 
-	n = mem_get(g->mm, sizeof(*n));
+	n = mem_get(g->mm, sizeof(*n) + g->nodex);
 	if ( !n )
 		return NULL;
 	n->graph = g;
 	n->out.fill = n->in.fill = 0;
 	n->out.len = n->in.len = CAT_GRAPH_INIT_EDGE_LEN;
-	n->decor = decor;
 	n->out.arr = mem_get(g->mm, sizeof(struct gr_edge*) * 
-						 CAT_GRAPH_INIT_EDGE_LEN);
+			     CAT_GRAPH_INIT_EDGE_LEN);
 	if ( !n->out.arr ) {
 		mem_free(g->mm, n);
 		return NULL;
@@ -48,15 +63,16 @@ struct gr_node * gr_add_node(struct graph *g, union scalar_u decor)
 
 	if ( !g->isbi ) {
 		n->in.arr = mem_get(g->mm, sizeof(struct gr_edge*) * 
-					   CAT_GRAPH_INIT_EDGE_LEN);
+				    CAT_GRAPH_INIT_EDGE_LEN);
 		if ( !n->in.arr ) {
 			mem_free(g->mm, n->out.arr);
 			mem_free(g->mm, n);
 			return NULL;
 		}
 
-	} else
+	} else {
 		n->in.arr = n->out.arr;
+	}
 	l_ins(&g->nodes, &n->entry);
 	return n;
 }
@@ -70,11 +86,12 @@ static int add_edge_help(struct gr_edge *edge, struct gr_edge_arr *ea,
 
 	g = edge->n1->graph;
 
-	for ( i = 0 ; i < ea->fill ; ++i )
+	for ( i = 0 ; i < ea->fill ; ++i ) {
 		if ( !ea->arr[i] ) {
 			ea->arr[i] = edge;
 			return 0;
 		}
+	}
 	
 	if ( ea->fill == ea->len ) {
 		struct gr_edge **newarr;
@@ -100,8 +117,7 @@ static int add_edge_help(struct gr_edge *edge, struct gr_edge_arr *ea,
 }
 
 
-struct gr_edge * gr_add_edge(struct gr_node *from, struct gr_node *to,
-		             union scalar_u decor)
+struct gr_edge * gr_add_edge(struct gr_node *from, struct gr_node *to)
 {
 	struct graph *g;
 	struct gr_edge *edge;
@@ -110,12 +126,11 @@ struct gr_edge * gr_add_edge(struct gr_node *from, struct gr_node *to,
 	g = from->graph;
 	abort_unless(g && g == to->graph && g->mm);
 
-	edge = mem_get(g->mm, sizeof(*edge));
+	edge = mem_get(g->mm, sizeof(*edge) + g->edgex);
 	if ( !edge )
 		return NULL;
 
 	l_ins(&g->edges, &edge->entry);
-	edge->decor = decor;
 	edge->n1 = from;
 	edge->n2 = to;
 
@@ -126,7 +141,7 @@ struct gr_edge * gr_add_edge(struct gr_node *from, struct gr_node *to,
 	}
 	if ( from != to || !g->isbi ) {
 		if ( add_edge_help(edge, &to->in, 
-					 g->isbi ? &to->out : NULL ) < 0 ) {
+				   g->isbi ? &to->out : NULL ) < 0 ) {
 			/* XXX double check that this is ok */
 			del_edge_help(edge, edge->n1, 1);
 			mem_free(g->mm, edge);
@@ -207,11 +222,12 @@ static void del_edge_help(struct gr_edge *edge, struct gr_node *node,
 		fill = node->in.fill;
 	}
 
-	for ( i = 0 ; i < fill ; ++i, ++epp )
+	for ( i = 0 ; i < fill ; ++i, ++epp ) {
 		if ( *epp == edge ) {
 			*epp = NULL;
 			break;
 		}
+	}
 	abort_unless(i < fill);
 
 	if ( i == fill - 1 ) {

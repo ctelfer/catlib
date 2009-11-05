@@ -19,30 +19,37 @@ struct gr_node {
 	struct graph *		graph;
 	struct gr_edge_arr	out;
 	struct gr_edge_arr	in;
-	union scalar_u		decor;
+	union decor_u		grn_u;
 };
+#define gr_node_val		grn_u.value
+#define gr_node_ptr		grn_u.pointer
+#define gr_node_data		grn_u.data
 
 
 struct gr_edge {
 	struct list		entry;
 	struct gr_node *	n1;
 	struct gr_node *	n2;
-	union scalar_u		decor;
+	union decor_u		gre_u;
 };
+#define gr_edge_val		gre_u.value
+#define gr_edge_ptr		gre_u.pointer
+#define gr_edge_data		gre_u.data
 
 
 struct graph {
 	struct list 	        nodes;
 	struct list	        edges;
 	int		        isbi;
+	uint			nodex;
+	uint			edgex;
 	struct memmgr *		mm;
 };
 
 
-struct graph *   gr_new(struct memmgr *mm, int isbi);
-struct gr_node * gr_add_node(struct graph *g, union scalar_u decor);
-struct gr_edge * gr_add_edge(struct gr_node *src, struct gr_node *dst, 
-		             union scalar_u decor);
+struct graph *   gr_new(struct memmgr *mm, int isbi, uint nxsize, uint exsize);
+struct gr_node * gr_add_node(struct graph *g);
+struct gr_edge * gr_add_edge(struct gr_node *src, struct gr_node *dst);
 struct gr_edge * gr_find_edge(struct gr_node *from, struct gr_node *to);
 void gr_del_node(struct gr_node *node);
 void gr_del_edge(struct gr_edge *edge);

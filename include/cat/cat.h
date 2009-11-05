@@ -152,6 +152,14 @@ union scalar_u {
 
 typedef union scalar_u scalar_t;
 
+
+union decor_u {
+	uchar		data[1];
+	int		value;
+	void *		pointer;
+	cat_align_t	align;
+};
+
 /* Special function types */
 typedef int  (*cmp_f)(const void *v1, const void *v2);
 typedef void (*apply_f)(void * data, void * ctx); 
