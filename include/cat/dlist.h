@@ -25,12 +25,6 @@ struct dlist {
 	struct cat_time		ttl;
 };
 
-struct cdlist { 
-	struct dlist		entry;
-	void *			data;
-};
-
-
 DECL void           dl_init(struct dlist *node, long sec, long nsec);
 DECL void           dl_ins(struct dlist *list, struct dlist *node);
 DECL void	    dl_first(struct dlist *list, struct cat_time *next);
@@ -43,9 +37,6 @@ DECL void           dl_rem(struct dlist *elem);
 #define dl_end(list)	(&(list)->entry)
 #define dl_next(node)	((struct dlist *)(list)->entry.next)
 #define dl_isempty(node) l_isempty(&(node)->entry)
-
-DECL void *         cdl_data(struct dlist *node);
-DECL void           cdl_set(struct dlist *node, void *data);
 
 #if defined(CAT_DLIST_DO_DECL) && CAT_DLIST_DO_DECL
 
@@ -173,20 +164,6 @@ DECL void dl_rem(struct dlist *elem)
 	}
 }
 
-
-DECL void * cdl_data(struct dlist *nodep)
-{
-
-	abort_unless(nodep);
-	return container(nodep, struct cdlist, entry)->data;
-}
-
-
-DECL void cdl_set(struct dlist *nodep, void *data)
-{
-	abort_unless(nodep);
-	container(nodep, struct cdlist, entry)->data = data;
-}
 
 #endif /* CAT_DLIST_DO_DECL */
 

@@ -311,6 +311,21 @@ char * str_tok_a(char **start, const char *wschars)
 /* Delta list functions */
 
 
+void * cdl_data(struct dlist *nodep)
+{
+
+	abort_unless(nodep);
+	return container(nodep, struct cdlist, entry)->data;
+}
+
+
+void cdl_set(struct dlist *nodep, void *data)
+{
+	abort_unless(nodep);
+	container(nodep, struct cdlist, entry)->data = data;
+}
+
+
 struct dlist * cdl_new(long sec, long nsec, void *data)
 {
 	struct cdlist *node;

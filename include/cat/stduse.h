@@ -79,8 +79,15 @@ char * str_tok_a(char **start, const char *wschars);
 
 #include <cat/dlist.h>
 
-struct dlist * cdl_new(long sec, long nsec, void *data);
-void *	       cdl_free(struct dlist *node);
+struct cdlist { 
+	struct dlist		entry;
+	void *			data;
+};
+
+void *    	cdl_data(struct dlist *node);
+void      	cdl_set(struct dlist *node, void *data);
+struct dlist * 	cdl_new(long sec, long nsec, void *data);
+void *	       	cdl_free(struct dlist *node);
 
 
 
