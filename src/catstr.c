@@ -481,7 +481,7 @@ int cs_grow(struct catstr *cs, size_t minlen)
 
 	csp = (byte_t *)&cs->cs_data;
 	tlen = olen = cs_alloc_size(cs->cs_size);
-	if ( mem_grow(cs_mmp, &csp, &tlen, cs_alloc_size(minlen)) < 0 )
+	if ( mm_grow(cs_mmp, &csp, &tlen, cs_alloc_size(minlen)) < 0 )
 		return -1;
 	abort_unless(tlen >= olen);
 

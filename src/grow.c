@@ -24,7 +24,7 @@
 
 int grow(byte_t **ptr, size_t *lenp, size_t min)
 {
-	void *p2 = ptr;
+	void *p2 = *ptr;
 	int rv;
 	rv = agrow(&p2, 1, lenp, min);
 	*ptr = p2;
@@ -84,18 +84,18 @@ int agrow(void **ptr, size_t ilen, size_t *lenp, size_t min)
 }
 
 
-int mem_grow(struct memmgr *mm, byte_t **ptr, size_t *lenp, size_t min)
+int mm_grow(struct memmgr *mm, byte_t **ptr, size_t *lenp, size_t min)
 {
 	void *p2 = ptr;
 	int rv;
-	rv = mem_agrow(mm, &p2, 1, lenp, min);
+	rv = mm_agrow(mm, &p2, 1, lenp, min);
 	*ptr = p2;
 	return rv;
 }
 
 
-int mem_agrow(struct memmgr *mm, void **ptr, size_t ilen, size_t *lenp, 
-	      size_t min)
+int mm_agrow(struct memmgr *mm, void **ptr, size_t ilen, size_t *lenp, 
+	     size_t min)
 {
 	size_t len, n, newlen;
 	byte_t *p;

@@ -29,7 +29,7 @@ struct clist_node {
 	struct list	cln_entry;
 	struct memmgr * cln_mm;
 	struct clist *	cln_list;
-	union attrib_u	cln_data;
+	union attrib_u	cln_data_u;
 };
 
 struct clist {
@@ -40,13 +40,13 @@ struct clist {
 	size_t			cl_data_size;
 };
 
-#define cln_int_val	cln_data.au_value
-#define cln_ptr_val	cln_data.au_pointer
-#define cln_bytes	cln_data.au_data
+#define cln_int_val	cln_data_u.au_value
+#define cln_ptr_val	cln_data_u.au_pointer
+#define cln_data_ptr	cln_data_u.au_data
 #define l_to_cln(ln) 	container(ln, struct clist_node, cln_entry)
 #define cln_next(clnp)	l_to_cln((clnp)->cln_entry.next)
 #define cln_prev(clnp)	l_to_cln((clnp)->cln_entry.prev)
-#define cln_value(clnp, type)	(*((type *)(clnp)->cln_data.au_data))
+#define cln_data(clnp, type)	(*((type *)&(clnp)->cln_data_u))
 #define cl_head(clp)	(&(clp)->cl_base)
 #define cl_end(clp)	(&(clp)->cl_base)
 #define cl_first(clp)	l_to_cln((clp)->cl_base.cln_entry.next)

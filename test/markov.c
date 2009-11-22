@@ -61,6 +61,7 @@ void add(char *word)
 	s = estrdup(word);
 	abort_unless(s != NULL);
 	CDS_NEW(w, s);
+	l_init(CDS_NPTR(w, strent_s));
 	ol = ht_get(Table, Buffer.data);
 	if ( ! ol )
 		ht_put(Table, Buffer.data, CDS_NPTR(w, strent_s));
@@ -101,7 +102,7 @@ void generate(void)
 
 
 
-int main(int argc, char *argv)
+int main(int argc, char **argv)
 {
 	int i;
 	char word[WORDLEN+1], fmt[10], *cur = NULL;

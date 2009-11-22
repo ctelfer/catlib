@@ -182,9 +182,9 @@ struct clist_node *clist_new_node(struct clist *list, void *val)
 	node->cln_mm = list->cl_mm;
 
 	if ( val != NULL ) {
-		memcpy(node->cln_bytes, val, list->cl_data_size);
+		memcpy(node->cln_data_ptr, val, list->cl_data_size);
 	} else { 
-		memset(node->cln_bytes, 0, list->cl_data_size);
+		memset(node->cln_data_ptr, 0, list->cl_data_size);
 	}
 
 	return node;
@@ -279,7 +279,7 @@ int clist_dequeue(struct clist *list, void *val)
 	clist_remove(node);
 
 	if ( val != NULL )
-		memcpy(val, node->cln_bytes, list->cl_data_size);
+		memcpy(val, node->cln_data_ptr, list->cl_data_size);
 
 	clist_delete_removed(node);
 	return 1;
@@ -314,7 +314,7 @@ int clist_top(struct clist *list, void *val)
 		return 0;
 	node = cl_first(list);
 	if ( val != NULL )
-		memcpy(val, node->cln_bytes, list->cl_data_size);
+		memcpy(val, node->cln_data_ptr, list->cl_data_size);
 	return 1;
 }
 

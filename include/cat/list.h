@@ -198,7 +198,7 @@ DECL void l_cut(struct list *lsrc, struct list *prev, struct list *last,
 {
 	struct list *start, *after;
 	abort_unless(prev);
-	abort_unless(after && last != lsrc);
+	abort_unless(last && last != lsrc);
 	abort_unless(ldst && l_isempty(ldst));
 
 	if ( prev == last )

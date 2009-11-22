@@ -19,6 +19,7 @@
 
 #define STR(x) ((char *)&Strings.data[x])
 struct htab *Prefix_tbl;
+struct htab *Word_tbl;
 struct raw Strings = { 0, NULL };
 
 
@@ -65,7 +66,7 @@ void generate(void)
 		      t = cln_next(t), ++n )
 			if ( (random() % n) == 0 )
 				h = t;
-		word = cln_value(h, int);
+		word = cln_data(h, int);
 		if ( word == END )
 			return;
 		memmove(prefixes, prefixes + 1, (NPREF-1) * sizeof(int));
@@ -78,7 +79,7 @@ void generate(void)
 
 int main(int argc, char **argv)
 {
-	int i, l;
+	int i, l, idx;
 	unsigned long cur;
 	char fmt[32];
 	struct timeval tv;
@@ -87,6 +88,7 @@ int main(int argc, char **argv)
 	gettimeofday(&tv, NULL);
 	srandom(tv.tv_usec);
 	Prefix_tbl = ht_new(HTSIZ, CAT_DT_RAW);
+	Word_tbl = ht_new(HTSIZ, CAT_DT_STR);
 	if (grow(&Strings.data, &Strings.len, 
 		 NPREF * sizeof(NONWORD) + MAXWORD) < 0)
 		errsys("Out of memory\n");
@@ -98,13 +100,18 @@ int main(int argc, char **argv)
 	sprintf(fmt, "%%%ds", MAXWORD - 1);
 
 	while ( scanf(fmt, STR(cur)) > 0 ) { 
-		l = strlen(STR(cur)) + 1;
-		if (grow(&Strings.data,&Strings.len,cur+l+MAXWORD) < 0)
-			errsys("Out of memory\n");
-		add(prefixes, cur);
-		cur += l;
+		if ( (idx = ptr2int(ht_get(Word_tbl, STR(cur)))) == 0 ) {
+			ht_put(Word_tbl, STR(cur), int2ptr(cur));
+			l = strlen(STR(cur)) + 1;
+			if (grow(&Strings.data,&Strings.len,cur+l+MAXWORD) < 0)
+				errsys("Out of memory\n");
+			idx = cur;
+			cur += l;
+		}
+		add(prefixes, idx);
 	}
 	add(prefixes, END);
+	ht_free(Word_tbl);
 
 	printf("Generating...\n");
 	generate();

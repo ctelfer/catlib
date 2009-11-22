@@ -57,7 +57,7 @@ int csv_read_field(struct csv_state *csv, char **res)
 		abort_unless(slen + 2 > slen);
 		if ( soff > slen - 2 ) {
 			byte_t *bp = (byte_t*)s;
-			if ( mem_grow(&stdmm, &bp, &slen, slen + 2) < 0) {
+			if ( mm_grow(&stdmm, &bp, &slen, slen + 2) < 0) {
 				code = CSV_ERR;
 				break;
 			}
@@ -122,7 +122,7 @@ int csv_read_rec(struct csv_state *csv, struct csv_record *cr)
 err:
 	for ( trav = cl_first(list); trav != cl_end(list); 
 	      trav = cln_next(trav) )
-		mem_free(&stdmm, cln_value(trav, char *));
+		mem_free(&stdmm, cln_data(trav, char *));
 	clist_free_list(list);
 	return CSV_ERR;
 }
