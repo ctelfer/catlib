@@ -109,89 +109,213 @@ struct raw *erawdup(struct raw const * const r)
 /* List operations */
 
 
-struct list *clist_newlist()
+struct clist *clist_new_list(struct memmgr *mm, size_t dlen)
 {
-	struct list *list = clist_new(size_t);
-	clist_data(list, size_t) = 0;
+	struct clist *list;
+	if ( (list = mem_get(mm, sizeof(struct clist))) == NULL )
+		return NULL;
+	clist_init_list(list, mm, dlen);
 	return list;
 }
 
 
-void clist_freelist(struct list *list)
+void clist_free_list(struct clist *list)
 {
-	clist_clearlist(list);
-	free(list);
+	struct memmgr *mm;
+	abort_unless(list);
+	mm = list->cl_mm;
+	clist_clear_list(list);
+	mem_free(mm, list);
+}
+
+void clist_init_list(struct clist *list, struct memmgr *mm, size_t dlen)
+{
+	size_t nsize;
+
+	abort_unless(mm != NULL);
+	abort_unless(dlen >= 1);
+
+	nsize = sizeof(struct clist_node) - sizeof(union attrib_u);
+	abort_unless(nsize + dlen > nsize);
+
+	l_init(&list->cl_base.cln_entry);
+	list->cl_base.cln_list = NULL;
+	list->cl_base.cln_mm = NULL;
+	list->cl_mm = mm;
+	list->cl_fill = 0;
+	list->cl_node_size = nsize + dlen;
+	list->cl_data_size = dlen;
 }
 
 
-void clist_clearlist(struct list *list)
+void clist_clear_list(struct clist *list)
 {
-	while (!l_isempty(list))
-		clist_delete_head(list);
+	abort_unless(list != NULL);
+	while ( !clist_isempty(list) )
+		clist_delete(cl_first(list));
+}
+
+int clist_isempty(struct clist *list)
+{
+	abort_unless(list != NULL);
+	return l_isempty(&list->cl_base.cln_entry);
 }
 
 
-int clist_isempty(struct list *list)
+size_t clist_fill(struct clist *list)
 {
-	return clist_data(list, size_t) == 0;
+	abort_unless(list != NULL);
+	return list->cl_fill;
 }
 
 
-struct list *clist_new_sz(size_t len)
+struct clist_node *clist_new_node(struct clist *list, void *val)
 {
-	struct list *list = emalloc(len + sizeof(union clist_node_u));
-	l_init(list);
-	return list;
-}
+	struct clist_node *node;
+	abort_unless(list != NULL && list->cl_mm != NULL);
 
+	if ( (node = mem_get(list->cl_mm, list->cl_node_size)) == NULL )
+		return NULL;
 
-struct list *clist_insert(struct list *list, struct list *prev, 
-				struct list *node)
-{
-	l_ins(prev, node);
-	clist_data(list, size_t) += 1;
+	l_init(&node->cln_entry);
+	node->cln_list = NULL;
+	node->cln_mm = list->cl_mm;
+
+	if ( val != NULL ) {
+		memcpy(node->cln_bytes, val, list->cl_data_size);
+	} else { 
+		memset(node->cln_bytes, 0, list->cl_data_size);
+	}
+
 	return node;
 }
 
 
-struct list *clist_insert_head(struct list *list, struct list *node)
+int clist_is_head(struct clist_node *node)
 {
-	return clist_insert(list, l_head(list), node);
+	abort_unless(node);
+	return node->cln_mm != NULL;
 }
 
 
-struct list *clist_insert_tail(struct list *list, struct list *node)
+int clist_insert(struct clist *list, struct clist_node *prev,
+		 struct clist_node *node)
 {
-	return clist_insert(list, l_tail(list), node);
+	abort_unless(list != NULL);
+
+	if ( node == NULL || node->cln_list != NULL )
+		return 0;
+
+	if ( prev == NULL ) {
+		abort_unless(prev->cln_list == list);
+		l_ins(&cl_head(list)->cln_entry, &node->cln_entry);
+	} else {
+		l_ins(&prev->cln_entry, &node->cln_entry);
+	}
+
+	list->cl_fill += 1;
+
+	return 1;
 }
 
 
-void clist_delete(struct list *list, struct list *node)
+int clist_remove(struct clist_node *node)
 {
-	l_rem(node);
-	clist_data(list, size_t) -= 1;
-	free(node);
+	abort_unless(node != NULL);
+	if ( node->cln_list != NULL ) {
+		l_rem(&node->cln_entry);
+		node->cln_list->cl_fill -= 1;
+		node->cln_list = NULL;
+		return 1;
+	} else {
+		return 0;
+	}
 }
 
 
-size_t clist_length(struct list *list)
+static void clist_delete_removed(struct clist_node *node)
 {
-	return clist_data(list, size_t);
+	struct memmgr *mm;
+	mm = node->cln_mm;
+	mem_free(mm, node);
 }
 
 
-void clist_delete_head(struct list *list)
+void clist_delete(struct clist_node *node)
 {
-	if (!l_isempty(list))
-		clist_delete(list, l_head(list));
+	abort_unless(node != NULL && node->cln_mm != NULL);
+	if ( node->cln_list != NULL ) {
+		l_rem(&node->cln_entry);
+		node->cln_list->cl_fill -= 1;
+		node->cln_list = NULL;
+	}
+	clist_delete_removed(node);
 }
 
 
-struct list *clist_head_node(struct list *list)
+int clist_enqueue(struct clist *list, void *val)
 {
-	if (l_isempty(list))
-		return NULL;
-	return l_head(list);
+	struct clist_node *node;
+	abort_unless(list != NULL);
+
+	if ( (node = clist_new_node(list, val)) == NULL )
+		return 0;
+
+	l_ins(&cl_last(list)->cln_entry, &node->cln_entry);
+	list->cl_fill += 1;
+	node->cln_list = list;
+	return 1;
+}
+
+
+int clist_dequeue(struct clist *list, void *val)
+{
+	struct clist_node *node;
+	abort_unless(list != NULL);
+
+	if ( l_isempty(&cl_head(list)->cln_entry) )
+		return 0;
+	node = cl_first(list);
+	clist_remove(node);
+
+	if ( val != NULL )
+		memcpy(val, node->cln_bytes, list->cl_data_size);
+
+	clist_delete_removed(node);
+	return 1;
+}
+
+
+int clist_push(struct clist *list, void *val)
+{
+	struct clist_node *node;
+	abort_unless(list != NULL);
+
+	if ( (node = clist_new_node(list, val)) == NULL )
+		return 0;
+
+	l_ins(&cl_head(list)->cln_entry, &node->cln_entry);
+	list->cl_fill += 1;
+	node->cln_list = list;
+	return 1;
+}
+
+
+int clist_pop(struct clist *list, void *val)
+{
+	return clist_dequeue(list, val);
+}
+
+
+int clist_top(struct clist *list, void *val)
+{
+	struct clist_node *node;
+	if ( l_isempty(&cl_head(list)->cln_entry) )
+		return 0;
+	node = cl_first(list);
+	if ( val != NULL )
+		memcpy(val, node->cln_bytes, list->cl_data_size);
+	return 1;
 }
 
 

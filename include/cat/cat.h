@@ -153,11 +153,11 @@ union scalar_u {
 typedef union scalar_u scalar_t;
 
 
-union decor_u {
-	uchar		data[1];
-	int		value;
-	void *		pointer;
-	cat_align_t	align;
+union attrib_u {
+	uchar		au_data[1];
+	int		au_value;
+	void *		au_pointer;
+	cat_align_t	au_align;
 };
 
 /* Special function types */

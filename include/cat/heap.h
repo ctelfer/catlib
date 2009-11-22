@@ -28,9 +28,9 @@
 struct heap {
 	int			size;
 	int			fill;
-	void **		elem;
+	void **			elem;
 	cmp_f			cmp;
-	struct memmgr *	mm;
+	struct memmgr *		mm;
 };
 
 

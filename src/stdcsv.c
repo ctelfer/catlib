@@ -51,12 +51,17 @@ int csv_read_field(struct csv_state *csv, char **res)
 	size_t slen = 32, soff = 0, t;
 	int code;
 
-	s = emalloc(slen);
+	if ( (s = mem_get(&stdmm, slen)) == NULL )
+		return CSV_ERR;
 	do {
 		abort_unless(slen + 2 > slen);
 		if ( soff > slen - 2 ) {
 			byte_t *bp = (byte_t*)s;
-			mem_grow(&estdmm, &bp, &slen, slen + 2);
+			if ( mem_grow(&stdmm, &bp, &slen, slen + 2) < 0) {
+				code = CSV_ERR;
+				break;
+			}
+
 			s = (char *)bp;
 		}
 		code = csv_next(csv, &s[soff], slen - soff, &t);
@@ -67,6 +72,7 @@ int csv_read_field(struct csv_state *csv, char **res)
 		*res = s;
 	else
 		free(s);
+
 	return code;
 }
 
@@ -75,13 +81,14 @@ int csv_read_rec(struct csv_state *csv, struct csv_record *cr)
 {
 	ulong nf, i;
 	int code = CSV_OK;
-	struct list *list, *trav;
+	struct clist *list;
+	struct clist_node *trav;
 	char *field, **record;
 
 	abort_unless(csv != NULL);
 	abort_unless(cr != NULL);
 
-	list = clist_newlist();
+	list = clist_new_list(&stdmm, sizeof(char *));
 
 	for ( nf = 0 ; (code != CSV_REC) && (code != CSV_EOF) ; ++nf ) {
 		abort_unless(nf <= (ulong)~0);
@@ -90,31 +97,33 @@ int csv_read_rec(struct csv_state *csv, struct csv_record *cr)
 			goto err;
 		else if ( code != CSV_EOF )
 			break;
-		clist_enq(list, char *, field);
+		if ( !clist_enqueue(list, &field) )
+			goto err;
 	}
 
 	if ( code == CSV_EOF ) {
 		abort_unless(nf == 0);
-		clist_freelist(list);
+		clist_free_list(list);
 		return CSV_EOF;
 	}
 
-	record = emalloc(sizeof(char **) * nf);
-	for ( i = 0 ; i < nf ; ++i ) {
-		record[i] = clist_qnext(list, char *);
-		clist_deq(list);
-	}
+	record = malloc(sizeof(char **) * nf);
+	if ( record == NULL )
+		goto err;
+	for ( i = 0 ; i < nf ; ++i )
+		clist_dequeue(list, &record[i]);
 
 	cr->cr_nfields = nf;
 	cr->cr_fields = record;
 
-	clist_freelist(list);
+	clist_free_list(list);
 	return CSV_REC;
 
 err:
-	for ( trav = l_head(list); trav != l_end(list); trav = trav->next )
-		free(clist_data(trav, char *));
-	clist_freelist(list);
+	for ( trav = cl_first(list); trav != cl_end(list); 
+	      trav = cln_next(trav) )
+		mem_free(&stdmm, cln_value(trav, char *));
+	clist_free_list(list);
 	return CSV_ERR;
 }
 

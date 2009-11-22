@@ -5,10 +5,14 @@
 #include <cat/list.h>
 #include <cat/err.h>
 #include <cat/stduse.h>
+#include <cat/cds.h>
 #include <sys/time.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+
+CDS_NEWSTRUCT(struct list, char *, strent_s);
 
 #define NPREF	2
 #define NONWORD "\n"
@@ -33,9 +37,9 @@ void printall(struct htab *tab)
 		for ( l2 = l->next ; l2 != l ; l2 = l2->next ) {
 			n = (struct hnode *)l2;
 			l3 = n->data;
-			printf("*%s* : *%s* ", (char *)n->key, clist_data(l3, char*));
+			printf("*%s* : *%s* ", (char *)n->key, CDS_DATA(l3, strent_s));
 			for ( t = l3->next ; t != l3 ; t = t->next )
-				printf(" *%s*", clist_data(t, char *));
+				printf(" *%s*", CDS_DATA(t, strent_s));
 			printf("\n");
 		}
 	}
@@ -45,7 +49,8 @@ void printall(struct htab *tab)
 void add(char *word)
 {
 	struct hnode *node;
-	struct list *l, *ol;
+	struct list *ol;
+	strent_s *w;
 	char *s;
 	int i;
 
@@ -55,13 +60,12 @@ void add(char *word)
 		ring_fmt(&Buffer, " %s", Prefixes[i]);
 	s = estrdup(word);
 	abort_unless(s != NULL);
-	l = clist_new(char *);
-	clist_data(l, char *) = s;
+	CDS_NEW(w, s);
 	ol = ht_get(Table, Buffer.data);
 	if ( ! ol )
-		ht_put(Table, Buffer.data, l);
+		ht_put(Table, Buffer.data, CDS_NPTR(w, strent_s));
 	else
-		l_ins(ol->prev, l);
+		l_ins(ol->prev, CDS_NPTR(w, strent_s));
 	memmove(Prefixes, Prefixes + 1, (NPREF-1) * sizeof(char *));
 	Prefixes[NPREF-1] = s;
 }
@@ -86,7 +90,7 @@ void generate(void)
 			if ( (random() % ++n) == 0 )
 				h = t;
 
-		word = clist_data(h, char *);
+		word = CDS_DATA(h, strent_s);
 		if ( strcmp(word, END) == 0 ) 
 			return;
 		memmove(Prefixes, Prefixes + 1, (NPREF-1) * sizeof(char *));

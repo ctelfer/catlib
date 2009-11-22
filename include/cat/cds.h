@@ -47,4 +47,8 @@ typedef struct {					\
 
 #define CDS_DPTR(_np, _name)	(&((_name *)(_np))->data)
 
+#define CDS_NODE(_np, _name)	(((_name *)(_np))->node)
+
+#define CDS_NPTR(_np, _name)	(&((_name *)(_np))->node)
+
 #endif /* __cat_cds_h */

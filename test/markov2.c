@@ -6,6 +6,7 @@
 #include <cat/err.h>
 #include <sys/time.h>
 #include <cat/stduse.h>
+#include <cat/cds.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -24,7 +25,7 @@ struct raw Strings = { 0, NULL };
 void add(int prefixes[NPREF], int word)
 {
 	struct hnode *node;
-	struct list *l, *l2;
+	struct clist *list;
 	unsigned hash;
 	struct raw key;
 
@@ -32,10 +33,11 @@ void add(int prefixes[NPREF], int word)
 	key.len  = sizeof(int) * NPREF;
 	node = ht_lkup(Prefix_tbl, &key, &hash);
 	if ( ! node ) { 
-		clist_enq(l = clist_newlist(), int, word);
-		ht_ins(Prefix_tbl, ht_nnew(&Prefix_tbl->sys, &key, l, hash));
+		list = clist_new_list(&estdmm, sizeof(int));
+		clist_enqueue(list, &word);
+		ht_ins(Prefix_tbl, ht_nnew(&Prefix_tbl->sys, &key, list, hash));
 	} else {
-		clist_enq((struct list *)node->data, int, word);
+		clist_enqueue(node->data, &word);
 	}
 	memmove(prefixes, prefixes + 1, (NPREF-1) * sizeof(int));
 	prefixes[NPREF-1] = word;
@@ -47,7 +49,8 @@ void generate(void)
 {
 	int i, j, n, word;
 	struct hnode *node;
-	struct list *s, *t, *h;
+	struct clist *list;
+	struct clist_node *t, *h;
 	int prefixes[NPREF];
 	struct raw key;
 
@@ -56,12 +59,13 @@ void generate(void)
 	for ( i = 0 ; i < NPREF ; ++i )
 		prefixes[i] = i * sizeof(NONWORD);
 	for ( i = 0 ; i < MAXGEN ; ++i ) {
-		s = ht_get(Prefix_tbl, &key);
-		h = l_head(s);
-		for ( n = 2, t = h->next ; t != l_end(s) ; t = t->next, ++n )
+		list = ht_get(Prefix_tbl, &key);
+		h = cl_first(list);
+		for ( n = 2, t = cln_next(h) ; t != cl_end(list) ; 
+		      t = cln_next(t), ++n )
 			if ( (random() % n) == 0 )
 				h = t;
-		word = clist_data(h, int);
+		word = cln_value(h, int);
 		if ( word == END )
 			return;
 		memmove(prefixes, prefixes + 1, (NPREF-1) * sizeof(int));
@@ -72,7 +76,7 @@ void generate(void)
 
 
 
-int main(int argc, char *argv)
+int main(int argc, char **argv)
 {
 	int i, l;
 	unsigned long cur;

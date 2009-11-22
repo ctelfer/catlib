@@ -22,50 +22,56 @@ char *estrdup(const char *s);
 struct raw *erawdup(struct raw const * const r);
 
 
-/* external container list */
+/* Application level list data structure */
 #include <cat/list.h>
 
-union clist_node_u { 
-	struct list	entry;
-	cat_align_t	align;
+struct clist_node { 
+	struct list	cln_entry;
+	struct memmgr * cln_mm;
+	struct clist *	cln_list;
+	union attrib_u	cln_data;
 };
 
-/* basic data access */
-#define clist_data(node, type) (*clist_dptr(node, type))
-#define clist_dptr(node, type) ((type *)((union clist_node_u *)node + 1))
-#define clist_ptr2node(dptr) ((struct list *)((union clist_node_u *)dptr - 1))
-#define clist_new(type) clist_new_sz(sizeof(type))
+struct clist {
+	struct clist_node	cl_base;
+	struct memmgr *		cl_mm;
+	size_t			cl_fill;
+	size_t			cl_node_size;
+	size_t			cl_data_size;
+};
 
-/* basic manipulation */
-struct list *clist_new_sz(size_t len); /* create a new node */
-struct list *clist_newlist();
-void clist_freelist(struct list *list);
-void clist_clearlist(struct list *list);
-int clist_isempty(struct list *list);
-struct list *clist_insert(struct list *l, struct list *p, struct list *n);
-struct list *clist_insert_head(struct list *list, struct list *node);
-struct list *clist_insert_tail(struct list *list, struct list *node);
-void clist_delete(struct list *l, struct list *n);
-void clist_delete_head(struct list *l);
-struct list *clist_head_node(struct list *list);
+#define cln_int_val	cln_data.au_value
+#define cln_ptr_val	cln_data.au_pointer
+#define cln_bytes	cln_data.au_data
+#define l_to_cln(ln) 	container(ln, struct clist_node, cln_entry)
+#define cln_next(clnp)	l_to_cln((clnp)->cln_entry.next)
+#define cln_prev(clnp)	l_to_cln((clnp)->cln_entry.prev)
+#define cln_value(clnp, type)	(*((type *)(clnp)->cln_data.au_data))
+#define cl_head(clp)	(&(clp)->cl_base)
+#define cl_end(clp)	(&(clp)->cl_base)
+#define cl_first(clp)	l_to_cln((clp)->cl_base.cln_entry.next)
+#define cl_last(clp)	l_to_cln((clp)->cl_base.cln_entry.prev)
 
-/* queue operations */
-#define clist_enq(list, type, val)                                             \
-	do { 								       \
-	(clist_data(clist_insert_tail((list),clist_new(type)),type) = (val));  \
-	} while (0)
-#define clist_deq(list) clist_delete_head(list)
-#define clist_qnext_node(list) clist_head_node(list)
-#define clist_qnext(list, type) clist_data(clist_qnext_node(list), type)
+struct clist *clist_new_list(struct memmgr *mm, size_t len);
+void clist_free_list(struct clist *list);
 
-/* stack operations */
-#define clist_push(list, type, val)                                            \
-	do { 								       \
-	(clist_data(clist_insert_head((list), clist_new(type)),type) = (val)); \
-	} while (0)
-#define clist_pop(list) clist_delete_head(list)
-#define clist_top_node(list) clist_head_node(list)
-#define clist_top(list, type) clist_data(clist_top_node(list), type)
+void clist_init_list(struct clist *list, struct memmgr *mm, size_t dlen);
+void clist_clear_list(struct clist *list);
+
+int clist_isempty(struct clist *list);
+size_t clist_fill(struct clist *list);
+
+struct clist_node *clist_new_node(struct clist *list, void *val);
+int clist_insert(struct clist *list, struct clist_node *prev, 
+		 struct clist_node *node);
+int clist_remove(struct clist_node *node);
+void clist_delete(struct clist_node *node);
+
+int clist_enqueue(struct clist *list, void *val);
+int clist_dequeue(struct clist *list, void *val);
+int clist_push(struct clist *list, void *val);
+int clist_pop(struct clist *list, void *val);
+int clist_top(struct clist *list, void *val);
 
 
 #include <cat/str.h>

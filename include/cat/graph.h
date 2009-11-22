@@ -19,22 +19,22 @@ struct gr_node {
 	struct graph *		graph;
 	struct gr_edge_arr	out;
 	struct gr_edge_arr	in;
-	union decor_u		grn_u;
+	union attrib_u		grn_u;
 };
-#define gr_node_val		grn_u.value
-#define gr_node_ptr		grn_u.pointer
-#define gr_node_data		grn_u.data
+#define gr_node_val		grn_u.au_value
+#define gr_node_ptr		grn_u.au_pointer
+#define gr_node_data		grn_u.au_data
 
 
 struct gr_edge {
 	struct list		entry;
 	struct gr_node *	n1;
 	struct gr_node *	n2;
-	union decor_u		gre_u;
+	union attrib_u		gre_u;
 };
-#define gr_edge_val		gre_u.value
-#define gr_edge_ptr		gre_u.pointer
-#define gr_edge_data		gre_u.data
+#define gr_edge_val		gre_u.au_value
+#define gr_edge_ptr		gre_u.au_pointer
+#define gr_edge_data		gre_u.au_data
 
 
 struct graph {

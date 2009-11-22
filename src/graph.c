@@ -14,16 +14,16 @@ struct graph *gr_new(struct memmgr *mm, int isbi, uint nxsize, uint exsize)
 	if ( !mm )
 		return NULL;
 
-	if ( nxsize < sizeof(union decor_u) )
-		nxsize = sizeof(union decor_u);
-	if ( exsize < sizeof(union decor_u) )
-		exsize = sizeof(union decor_u);
+	if ( nxsize < sizeof(union attrib_u) )
+		nxsize = sizeof(union attrib_u);
+	if ( exsize < sizeof(union attrib_u) )
+		exsize = sizeof(union attrib_u);
 
-	if ( sizeof(struct gr_node) - sizeof(union decor_u) + nxsize < 
+	if ( sizeof(struct gr_node) - sizeof(union attrib_u) + nxsize < 
 	     sizeof(struct gr_node) )
 		return NULL;
 
-	if ( sizeof(struct gr_edge) - sizeof(union decor_u) + exsize < 
+	if ( sizeof(struct gr_edge) - sizeof(union attrib_u) + exsize < 
 	     sizeof(struct gr_edge) )
 		return NULL;
 
@@ -35,8 +35,8 @@ struct graph *gr_new(struct memmgr *mm, int isbi, uint nxsize, uint exsize)
 	l_init(&g->edges);
 	g->isbi = isbi;
 	g->mm = mm;
-	g->nodex = nxsize - sizeof(union decor_u);
-	g->edgex = nxsize - sizeof(union decor_u);
+	g->nodex = nxsize - sizeof(union attrib_u);
+	g->edgex = nxsize - sizeof(union attrib_u);
 
 	return g;
 }
