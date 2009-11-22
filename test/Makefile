@@ -98,11 +98,8 @@ testhw: testhw.c
 markov: markov.c $(CATA_LIBDEP)
 	$(CC) $(CATA_CF) -o markov markov.c $(INC) $(CATA_LIB)
 
-#markov2: markov2.c $(CATA_LIBDEP)
-#	$(CC) $(CATA_CF) -o markov2 markov2.c $(INC) $(CATA_LIB)
-
-markov2: markov2.c $(CAT_DBG_LIBDEP)
-	$(CC) $(CAT_DBG_CF) -o markov2 markov2.c $(INC) $(CAT_DBG_LIB)
+markov2: markov2.c $(CATA_LIBDEP)
+	$(CC) $(CATA_CF) -o markov2 markov2.c $(INC) $(CATA_LIB)
 
 testmatch: testmatch.c $(CATA_LIBDEP)
 	$(CC) $(CATA_CF) -o testmatch testmatch.c $(INC) $(CATA_LIB)
