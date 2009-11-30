@@ -12,6 +12,6 @@ const char *foo()
 
 int main(int argc, char *argv[])
 {
-	printf(foo());
+	puts(foo());
 	return 0;
 }
