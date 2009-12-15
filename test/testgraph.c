@@ -50,7 +50,7 @@ int gnew(struct shell_env *env, int na, char *args[], struct shell_value *rv)
 
 	g = emalloc(sizeof(*g));
 	g->graph = gr_new(&estdmm, isbi, 0, 0);
-	g->node_tab = ht_new(32, CAT_DT_NUM);
+	g->node_tab = ht_new(&estdmm, 32, CAT_KT_NUM, 0, 0);
 
 	rv->sval_type = SVT_PTR;
 	rv->sval_ptr = g;
@@ -102,14 +102,14 @@ int add_node(struct shell_env *env, int na, char *args[],
 	}
 	g = p;
 
-	if ( ht_get(g->node_tab, int2ptr(id)) ) {
+	if ( ht_get_dptr(g->node_tab, &id) ) {
 		fprintf(stderr, "Node %d already exists in the graph\n", id);
 		return -1;
 	}
 
 	n = gr_add_node(g->graph);
 	n->gr_node_val = id;
-	ht_put(g->node_tab, int2ptr(id), n);
+	ht_put(g->node_tab, &id, n);
 	printf("Created node %d\n", id);
 
 	rv->sval_type = SVT_PTR;
@@ -137,14 +137,14 @@ int del_node(struct shell_env *env, int na, char *args[],
 	}
 	g = p;
 
-	n = ht_get(g->node_tab, int2ptr(id));
+	n = ht_get_dptr(g->node_tab, &id);
 	if ( !n ) {
 		fprintf(stderr, "couldn't find node %d\n", id);
 		return -1;
 	}
 
 	gr_del_node(n);
-	ht_clr(g->node_tab, int2ptr(id));
+	ht_clr(g->node_tab, &id);
 
 	rv->sval_type = SVT_NIL;
 	rv->sval_ptr = NULL;
@@ -173,13 +173,13 @@ int edge(struct shell_env *env, int na, char *args[], struct shell_value *rv)
 	}
 	g = p;
 
-	n1 = ht_get(g->node_tab, int2ptr(id1));
+	n1 = ht_get_dptr(g->node_tab, &id1);
 	if ( !n1 ) {
 		fprintf(stderr, "couldn't find node %d\n", id1);
 		return -1;
 	}
 
-	n2 = ht_get(g->node_tab, int2ptr(id2));
+	n2 = ht_get_dptr(g->node_tab, &id2);
 	if ( !n2 ) {
 		fprintf(stderr, "couldn't find node %d\n", id2);
 		return -1;

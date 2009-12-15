@@ -52,7 +52,7 @@ typedef union {
 	char *			cp;
 	double 			d;
 #if CAT_HAS_LONGLONG
-	unsigned long long	ull;
+	long long		ll;
 #endif /* CAT_HAS_LONGLONG */
 } cat_align_t;
 #define CAT_ALIGN	cat_align_t
@@ -60,19 +60,20 @@ typedef union {
 typedef CAT_ALIGN	cat_align_t;
 #endif /* CAT_ALIGN */
 
-/* ASSUMPTION: alignment restrictions are powers of 2 */
+
 /* ASSUMPTION: 
- * all types in cat_align_t are worst case alignments: (e.g. ull is on 8-byte
+ * all types in cat_align_t are worst case alignments: (e.g. ll is on 8-byte
  * boundaries).  This does not generally hold but is safer than guessing
  * incorrectly.  If a programmer knows * specifically otherwise the coder can 
  * #define CAT_ALIGN.
  */
-#define ALIGN_ROUNDUP(x) (((x) + sizeof(CAT_ALIGN) - 1) & (sizeof(CAT_ALIGN)-1))
+#define CAT_ALIGN_SIZE(x) \
+	(((x)+(sizeof(cat_align_t)-1))/sizeof(cat_align_t)*sizeof(cat_align_t))
 #define CAT_DECLARE_ALIGNED_DATA(name, len) \
 	CAT_DECLARE_ALIGNED_DATA_Q(,name,len)
 /* qual - (e.g. static volatile), name - variable name, len - in bytes */
 #define CAT_DECLARE_ALIGNED_DATA_Q(qual, name, len) \
-	qual CAT_ALIGN name[ALIGN_ROUNDUP(len) / sizeof(CAT_ALIGN)]
+	qual CAT_ALIGN name[CAT_ALIGN_SIZE(len) / sizeof(CAT_ALIGN)]
 
 typedef unsigned char byte_t;
 typedef signed char schar;
@@ -128,6 +129,15 @@ struct raw {
 	byte_t *	data;
 } ;
 
+union attrib_u {
+	void *		au_pointer;
+	long double	au_dblval;
+	int		au_intval;
+	uint		au_uintval;
+	uchar		au_data[1];
+	cat_align_t	au_align;
+};
+
 /* Generic scalar value union */
 union scalar_u {
 	int		int_val;
@@ -152,18 +162,10 @@ union scalar_u {
 
 typedef union scalar_u scalar_t;
 
-
-union attrib_u {
-	uchar		au_data[1];
-	int		au_value;
-	void *		au_pointer;
-	cat_align_t	au_align;
-};
-
 /* Special function types */
 typedef int  (*cmp_f)(const void *v1, const void *v2);
 typedef void (*apply_f)(void * data, void * ctx); 
-typedef void (*copy_f)(void *src, void **dst);
+typedef int (*copy_f)(void *dst, void *src, void *ctx);
 
 extern void cat_abort(const char *fn, unsigned ln, const char *expr);
 #define abort_unless(x) \

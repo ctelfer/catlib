@@ -39,7 +39,7 @@ CAT_DBG_LIB= -L../lib -lcat_dbg
 all: $(TESTS)
 
 clean:
-	rm -f $(TESTS) *.core
+	rm -f $(TESTS) core.*
 
 $(CATA_LIBDEP):
 	( cd ../src ; make $(CATA_LIBDEP))
@@ -86,8 +86,8 @@ testpack: testpack.c $(CAT_LIBDEP)
 testdl: testdl.c $(CATA_LIBDEP)
 	$(CC) $(CATA_CF) -o testdl testdl.c $(INC) $(CATA_LIB)
 
-testuemux: testuemux.c $(CATA_LIBDEP)
-	$(CC) $(CATA_CF) -o testuemux testuemux.c $(INC) $(CATA_LIB)
+testuemux: testuemux.c $(CAT_DBG_LIBDEP)
+	$(CC) $(CAT_DBG_CF) -o testuemux testuemux.c $(INC) $(CAT_DBG_LIB)
 
 testrb: testrb.c $(CAT_LIBDEP)
 	$(CC) $(CAT_CF) -o testrb testrb.c $(INC) $(CAT_LIB)
@@ -119,8 +119,8 @@ testbitset: testbitset.c $(CATA_LIBDEP)
 testshell: testshell.c $(CATA_LIBDEP)
 	$(CC) $(CATA_CF) -o testshell testshell.c $(INC) $(CATA_LIB)
 
-testgraph: testgraph.c $(CATA_LIBDEP)
-	$(CC) $(CATA_CF) -o testgraph testgraph.c $(INC) $(CATA_LIB)
+testgraph: testgraph.c $(CAT_DBG_LIBDEP)
+	$(CC) $(CAT_DBG_CF) -o testgraph testgraph.c $(INC) $(CAT_DBG_LIB)
 
 testprintf: testprintf.c $(CAT_LIBDEP)
 	$(CC) $(CAT_CF) -o testprintf testprintf.c $(INC) $(CAT_LIB)

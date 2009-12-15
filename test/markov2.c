@@ -36,7 +36,7 @@ void add(int prefixes[NPREF], int word)
 	if ( ! node ) { 
 		list = clist_new_list(&estdmm, sizeof(int));
 		clist_enqueue(list, &word);
-		ht_ins(Prefix_tbl, ht_nnew(&Prefix_tbl->sys, &key, list, hash));
+		ht_put(Prefix_tbl, &key, list);
 	} else {
 		clist_enqueue(node->data, &word);
 	}
@@ -60,7 +60,7 @@ void generate(void)
 	for ( i = 0 ; i < NPREF ; ++i )
 		prefixes[i] = i * sizeof(NONWORD);
 	for ( i = 0 ; i < MAXGEN ; ++i ) {
-		list = ht_get(Prefix_tbl, &key);
+		list = ht_get_dptr(Prefix_tbl, &key);
 		h = cl_first(list);
 		for ( n = 2, t = cln_next(h) ; t != cl_end(list) ; 
 		      t = cln_next(t), ++n )
@@ -87,8 +87,8 @@ int main(int argc, char **argv)
 
 	gettimeofday(&tv, NULL);
 	srandom(tv.tv_usec);
-	Prefix_tbl = ht_new(HTSIZ, CAT_DT_RAW);
-	Word_tbl = ht_new(HTSIZ, CAT_DT_STR);
+	Prefix_tbl = ht_new(&estdmm, HTSIZ, CAT_KT_RAW, 0, 0);
+	Word_tbl = ht_new(&estdmm, HTSIZ, CAT_KT_STR, 0, 0);
 	if (grow(&Strings.data, &Strings.len, 
 		 NPREF * sizeof(NONWORD) + MAXWORD) < 0)
 		errsys("Out of memory\n");
@@ -100,7 +100,7 @@ int main(int argc, char **argv)
 	sprintf(fmt, "%%%ds", MAXWORD - 1);
 
 	while ( scanf(fmt, STR(cur)) > 0 ) { 
-		if ( (idx = ptr2int(ht_get(Word_tbl, STR(cur)))) == 0 ) {
+		if ( (idx = ptr2int(ht_get_dptr(Word_tbl, STR(cur)))) == 0 ) {
 			ht_put(Word_tbl, STR(cur), int2ptr(cur));
 			l = strlen(STR(cur)) + 1;
 			if (grow(&Strings.data,&Strings.len,cur+l+MAXWORD) < 0)

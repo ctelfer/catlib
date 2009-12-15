@@ -21,7 +21,7 @@ struct gr_node {
 	struct gr_edge_arr	in;
 	union attrib_u		grn_u;
 };
-#define gr_node_val		grn_u.au_value
+#define gr_node_val		grn_u.au_intval
 #define gr_node_ptr		grn_u.au_pointer
 #define gr_node_data		grn_u.au_data
 
@@ -32,7 +32,7 @@ struct gr_edge {
 	struct gr_node *	n2;
 	union attrib_u		gre_u;
 };
-#define gr_edge_val		gre_u.au_value
+#define gr_edge_val		gre_u.au_intval
 #define gr_edge_ptr		gre_u.au_pointer
 #define gr_edge_data		gre_u.au_data
 

@@ -18,7 +18,7 @@ void timeit()
   struct timeval start, end;
   double usec;
 
-  t = ht_new(128 * 1024, CAT_DT_STR);
+  t = ht_new(&estdmm, 128 * 1024, CAT_KT_STR, 0, 0);
 
   for (i = 0; i < NOPS; i++) {
     key = str_fmt_a("node%d", i);
@@ -80,7 +80,7 @@ int main()
   struct hnode n, *hnp;
   struct raw r;
 
-  table = ht_new(128, CAT_DT_STR);
+  table = ht_new(&estdmm, 128, CAT_KT_STR, 0, 0);
 
   for (i = 0; i < NUMSTR; i++) {
     ht_put(table, strs[i][0], strs[i][1]);
@@ -89,22 +89,22 @@ int main()
            ptr2uint(hnp));
   }
 
-  if (ht_get(table, "bye")) 
+  if (ht_get_dptr(table, "bye")) 
     printf("found something I shouldn't have!\n"); 
 
-  s = ht_get(table, strs[1][0]);
+  s = ht_get_dptr(table, strs[1][0]);
   printf("Under key %s is the string %s\n", strs[1][0], s);
   printf("address is %x\n\n", ptr2uint(s)); 
 
-  s = ht_get(table, strs[2][0]);
+  s = ht_get_dptr(table, strs[2][0]);
   printf("Under key %s is the string %s\n", strs[2][0], s);
   printf("address is %x\n\n", ptr2uint(s)); 
 
-  s = ht_get(table, strs[0][0]);
+  s = ht_get_dptr(table, strs[0][0]);
   printf("Under key %s is the string %s\n", strs[0][0], s); 
   printf("address is %x\n\n", ptr2uint(s)); 
 
-  s = ht_get(table, strs[1][0]);
+  s = ht_get_dptr(table, strs[1][0]);
   ht_clr(table, strs[1][0]);
   printf("Deleted %s\n", s); 
   printf("address is %x\n\n", ptr2uint(s)); 
@@ -113,13 +113,13 @@ int main()
   hnp = ht_lkup(table, strs[2][0], NULL);
   s = hnp->data;
   ht_rem(hnp);
-  ht_nfree(&table->sys, hnp);
+  free(hnp);
   printf("Deleted %s\n", s); 
   printf("address is %x\n\n", ptr2uint(s)); 
 
-  if (ht_get(table, strs[1][0]))
+  if (ht_get_dptr(table, strs[1][0]))
     printf("Error!  Thing not deleted! : %s\n",
-           (char *)ht_get(table, strs[1][0]));
+           (char *)ht_get_dptr(table, strs[1][0]));
 
   ht_free(table); 
 

@@ -18,6 +18,7 @@ struct ue_ioevent {
 	int			fd;
 	int			type;
 	struct uemux *		mux;
+	struct memmgr *		mm;
 };
 
 #define UE_RD		1
@@ -30,6 +31,7 @@ struct ue_timer {
 	int 			flags;
 	ulong			orig;
 	struct callback		cb;
+	struct memmgr *		mm;
 };
 
 #define UE_TIMEOUT	0
@@ -41,10 +43,12 @@ struct ue_sigevent {
 	struct callback		cb;
 	int			signum;
 	struct uemux *		mux;
+	struct memmgr *		mm;
 };
 
 
 struct uemux {
+	struct memmgr *		mm;
 	struct dlist		timers;
 	int 			maxfd;
 	struct avl *		fdtab;
@@ -58,8 +62,8 @@ struct uemux {
 
 
 /* mux initialization, finalization and execution */
-void ue_init(struct uemux *mux);
-void ue_fini(struct uemux *mux, struct memmgr *mm);
+void ue_init(struct uemux *mux, struct memmgr *mm);
+void ue_fini(struct uemux *mux);
 void ue_stop(struct uemux *mux);
 void ue_next(struct uemux *mux);
 void ue_run(struct uemux *mux);
@@ -89,9 +93,9 @@ struct ue_timer * ue_tm_new(struct uemux *m, int type, ulong ttl,
 		            callback_f f, void *ctx);
 struct ue_sigevent * ue_sig_new(struct uemux *m, int signum, callback_f f, 
 		                void *ctx);
-void ue_tm_del(void *);
-void ue_io_del(void *);
-void ue_sig_del(void *);
+void ue_tm_del(struct ue_timer *);
+void ue_io_del(struct ue_ioevent *);
+void ue_sig_del(struct ue_sigevent *);
 
 #endif /* CAT_HAS_POSIX */
 

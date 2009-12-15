@@ -33,9 +33,10 @@ DECL void           dl_adv(struct dlist *list, struct cat_time *amt,
 		           struct list *out);
 DECL void           dl_rem(struct dlist *elem);
 
-#define dl_head(list)	((list)->entry.next)
-#define dl_end(list)	(&(list)->entry)
-#define dl_next(node)	((struct dlist *)(list)->entry.next)
+#define l_to_dl(le)	container(le, struct dlist, entry)
+#define dl_head(list)	l_to_dl(((list)->entry.next))
+#define dl_end(list)	l_to_dl((&(list)->entry))
+#define dl_next(node)	l_to_dl(((struct dlist *)(list)->entry.next))
 #define dl_isempty(node) l_isempty(&(node)->entry)
 
 #if defined(CAT_DLIST_DO_DECL) && CAT_DLIST_DO_DECL

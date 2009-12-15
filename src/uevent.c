@@ -35,19 +35,16 @@ static int uemux_initialized = 0;
 
 static int fdmax(struct avl *a)
 {
-	struct anode *n;
-
-	n = a->avl_root;
+	struct anode *n = avl_getmax(a);
+	struct ue_ioevent *io;
 	if ( !n ) 
 		return -1;
-
-	for ( ; n->avl_right ; n = n->avl_right );
-
-	return ptr2int(n->key);
+	io = n->data;
+	return io->fd;
 }
 
 
-void ue_init(struct uemux *mux)
+void ue_init(struct uemux *mux, struct memmgr *mm)
 {
 	abort_unless(mux);
 
@@ -57,34 +54,47 @@ void ue_init(struct uemux *mux)
 		uemux_maxsig = -1;
 	}
 
+	mux->mm = mm;
 	mux->done = 0;
 	mux->maxfd = -1;
-	mux->fdtab = avl_new(CAT_DT_NUM);
+	mux->fdtab = avl_new(mm, CAT_KT_NUM, 0, 0);
 	dl_init(&mux->timers, -1, -1);
 	l_init(&mux->iolist);
 	FD_ZERO(&mux->rset);
 	FD_ZERO(&mux->wset);
 	FD_ZERO(&mux->eset);
-	mux->sigtab = avl_new(CAT_DT_NUM);
+	mux->sigtab = avl_new(mm, CAT_KT_NUM, 0, 0);
 }
 
 
-void ue_fini(struct uemux *mux, struct memmgr *mm)
+static void free_io(void *iop, void *mmp)
+{
+	ue_io_del(iop);
+}
+
+
+static void free_sigevent(void *sep, void *mmp)
+{
+	ue_sig_del(sep);
+}
+
+
+void ue_fini(struct uemux *mux)
 {
 	struct ue_timer *t;
 
 	abort_unless(mux);
 
-	if ( mm )
-		l_apply(&mux->iolist, applyfree, mm);
+	if ( mux->mm )
+		l_apply(&mux->iolist, free_io, NULL);
 	avl_free(mux->fdtab);
-	if ( mm )
-		avl_apply(mux->sigtab, applyfree, mm);
+	if ( mux->mm )
+		avl_apply(mux->sigtab, free_sigevent, NULL);
 	avl_free(mux->sigtab);
 
-	while ( (t = container(dl_deq(&mux->timers), struct ue_timer, entry)) ){
-		if ( mm ) 
-			mem_free(mm, t);
+	while ( !dl_isempty(&mux->timers) ) {
+		t = container(dl_head(&mux->timers), struct ue_timer, entry);
+		ue_tm_del(t);
 	}
 }
 
@@ -122,6 +132,7 @@ void ue_tm_init(struct ue_timer *t, int flags, ulong ttl, callback_f func,
 	t->orig  = ttl;
 	cb_init(&t->cb, func, ctx);
 	dl_init(&t->entry, t->orig / 1000, (t->orig % 1000) * 1000000);
+	t->mm = NULL;
 }
 
 
@@ -152,15 +163,14 @@ void ue_io_init(struct ue_ioevent *io, int type, int fd, callback_f f, void *a)
 	io->fd = fd;
 	io->type = type;
 	io->mux = NULL;
+	io->mm = NULL;
 }
 
 
 void ue_io_reg(struct uemux *mux, struct ue_ioevent *io)
 {
-	struct anode *an, *par;
 	struct ue_ioevent *io2;
 	int wasempty = 0;
-	int dir;
 
 	abort_unless(mux);
 	abort_unless(io);
@@ -168,15 +178,12 @@ void ue_io_reg(struct uemux *mux, struct ue_ioevent *io)
 		     io->type == UE_EX);
 	abort_unless(io->fd >= 0);
 
-	an = avl_lkup(mux->fdtab, int2ptr(io->fd), &dir);
-	if ( dir != CA_N ) {
-		wasempty = 1;
-		par = an;
-		an = avl_nnew(mux->fdtab, int2ptr(io->fd), io);
-		avl_ins(mux->fdtab, an, par, dir);
-	} else {
-		io2 = an->data;
+	if ( (io2 = avl_get_dptr(mux->fdtab, &io->fd)) != NULL ) {
 		l_ins(&io2->fdlist, &io->fdlist);
+	} else {
+		wasempty = 1;
+		/* TODO: check for failure here */
+		avl_put(mux->fdtab, &io->fd, io);
 	}
 
 	cb_reg(&mux->iolist, &io->cb);
@@ -203,7 +210,6 @@ void ue_io_reg(struct uemux *mux, struct ue_ioevent *io)
 void ue_io_cancel(struct ue_ioevent *io)
 {
 	struct uemux *mux;
-	struct anode *an;
 	struct list *l;
 	struct ue_ioevent *io2;
 
@@ -227,16 +233,18 @@ void ue_io_cancel(struct ue_ioevent *io)
 		}
 	}
 
-	an = avl_lkup(mux->fdtab, int2ptr(io->fd), NULL);
-	abort_unless(an);
-	if ( l_isempty(&io->fdlist) ) {
-		avl_rem(an);
-		avl_nfree(mux->fdtab, an);
+	io2 = avl_get_dptr(mux->fdtab, &io->fd);
+	abort_unless(io2);
+	if ( l_isempty(&io2->fdlist) ) {
+		avl_clr(mux->fdtab, &io->fd);
 		if ( io->fd == mux->maxfd )
 			mux->maxfd = fdmax(mux->fdtab);
 	} else {
-		if ( an->data == &io->fdlist )
-			an->data = io->fdlist.next;
+		if ( io2 == io ) {
+			/* TODO: check the return code for this */
+			avl_put(mux->fdtab, &io->fd, 
+				container(io->fdlist.next, struct ue_ioevent, fdlist));
+		}
 		l_rem(&io->fdlist);
 	}
 }
@@ -245,6 +253,7 @@ void ue_io_cancel(struct ue_ioevent *io)
 void ue_sig_init(struct ue_sigevent *se, int signum, callback_f f, void *x)
 {
 	l_init(&se->cb.entry);
+	se->mm = NULL;
 	se->cb.func = f;
 	se->cb.ctx = x;
 	se->signum = signum;
@@ -262,31 +271,28 @@ static void ue_handler(int signum)
 
 void ue_sig_reg(struct uemux *mux, struct ue_sigevent *se)
 {
-	int wasempty = 0, dir;
-	struct anode *an, *par;
+	int wasempty = 0;
 	struct ue_sigevent *se2;
 	sigset_t block, oset;
 	struct sigaction sa;
 
 	se->mux = mux;
 	l_init(&se->cb.entry);
-	an = avl_lkup(mux->sigtab, int2ptr(se->signum), &dir);
-	if ( dir != CA_N ) {
+	if ( (se2 = avl_get_dptr(mux->sigtab, &se->signum)) == NULL ) {
 		/* ADD the signal to the list to watch */
 		sigfillset(&block);
 		sigprocmask(SIG_BLOCK, &block, &oset);
 		sa.sa_handler = ue_handler;
 		sigfillset(&sa.sa_mask);
 		sa.sa_flags = SA_RESTART;
+		/* TODO: check if this fails */
 		if ( sigaction(se->signum, &sa, NULL) < 0 )
 			errsys("sigaction: ");
 		sigprocmask(SIG_BLOCK, &oset, NULL);
 		wasempty = 1;
-		par = an;
-		an = avl_nnew(mux->sigtab, int2ptr(se->signum), &se->cb.entry);
-		avl_ins(mux->sigtab, an, par, dir);
+		/* TODO: check if this fails */
+		avl_put(mux->sigtab, &se->signum, se);
 	} else {
-		se2 = an->data;
 		l_ins(&se2->cb.entry, &se2->cb.entry);
 	}
 }
@@ -294,25 +300,27 @@ void ue_sig_reg(struct uemux *mux, struct ue_sigevent *se)
 
 void ue_sig_cancel(struct ue_sigevent *se)
 {
+	struct ue_sigevent *se2;
 	struct uemux *mux;
-	struct anode *an;
-	int dir;
 
 	abort_unless(se);
 	if ( !(mux = se->mux) )
 		return;
 	se->mux = NULL;
 
-	an = avl_lkup(mux->sigtab, int2ptr(se->signum), &dir);
-	abort_unless(dir == CA_N);
-	if ( l_isempty(&se->cb.entry) ) {
-		avl_rem(an);
-		avl_nfree(mux->sigtab, an);
+	se2 = avl_get_dptr(mux->sigtab, &se->signum);
+	abort_unless(se2);
+	if ( l_isempty(&se2->cb.entry) ) {
+		avl_clr(mux->sigtab, &se->signum);
 		/* TODO could add code to remove handler */
 		/* would need to save the old sigaction entry */
 	} else {
-		if ( an->data == &se->cb.entry )
-			an->data = se->cb.entry.next;
+		if ( se2 == se ) {
+			struct callback *cb = container(se->cb.entry.next, 
+							struct callback, entry);
+			avl_put(mux->sigtab, &se->signum,
+				container(cb, struct ue_sigevent, cb));
+		}
 		l_rem(&se->cb.entry);
 	}
 }
@@ -331,24 +339,25 @@ void ue_sig_clear(void)
 
 static void run_sig_handlers(struct uemux *mux, sigset_t *ss, int maxsig)
 {
-	int i, dir;
-	struct anode *an;
+	int i;
 	struct list *first, *cur;
 	struct callback *cb;
+	struct ue_sigevent *se;
 
 	for ( i = 0; i < maxsig ; ++i ) {
 		if ( mux->done )
 			return;
 		if ( !sigismember(ss, i) )
 			continue;
-		an = avl_lkup(mux->sigtab, int2ptr(i), &dir);
-		if ( dir != CA_N )
+
+		if ( (se = avl_get_dptr(mux->sigtab, &i)) == NULL )
 			continue;
-		first = an->data;
-		abort_unless(first);
+		abort_unless(se);
+		first = &se->cb.entry;
 		do { 
 			cur = first;
 			cb = container(cur, struct callback, entry);
+			/* TODO, fix this int2ptr */
 			cb_call(cb, int2ptr(i));
 			cur = cur->next;
 		} while ( cur != first );
@@ -486,20 +495,24 @@ struct ue_ioevent * ue_io_new(struct uemux *m, int type, int fd, callback_f f,
 {
 	struct ue_ioevent *io;
 	abort_unless(m);
+	abort_unless(m->mm);
 
-	io = emalloc(sizeof(*io));
+	if ( (io = mem_get(m->mm, (sizeof(*io)))) == NULL )
+		return NULL;
 	ue_io_init(io, type, fd, f, ctx);
+	io->mm = m->mm;
 	ue_io_reg(m, io);
 
 	return io;
 }
 
 
-void ue_io_del(void *io)
+void ue_io_del(struct ue_ioevent *io)
 {
 	abort_unless(io);
 	ue_io_cancel(io);
-	free(io);
+	if ( io->mm )
+		mem_free(io->mm, io);
 }
 
 
@@ -507,20 +520,24 @@ struct ue_timer * ue_tm_new(struct uemux *m, int flags, ulong ttl, callback_f f,
 			    void *ctx)
 {
 	struct ue_timer *t;
+	abort_unless(m && m->mm);
 
-	t = emalloc(sizeof(*t));
+	if ( (t = mem_get(m->mm, sizeof(*t))) == NULL )
+		return NULL;
 	ue_tm_init(t, flags, ttl, f, ctx);
+	t->mm = m->mm;
 	ue_tm_reg(m, t);
 
 	return t;
 }
 
 
-void ue_tm_del(void *t)
+void ue_tm_del(struct ue_timer *t)
 {
 	abort_unless(t);
 	ue_tm_cancel(t);
-	free(t);
+	if ( t->mm )
+		mem_free(t->mm, t);
 }
 
 
@@ -528,20 +545,24 @@ struct ue_sigevent * ue_sig_new(struct uemux *m, int signum, callback_f f,
 				void *ctx)
 {
 	struct ue_sigevent *se;
+	abort_unless(m && m->mm);
 
-	se = emalloc(sizeof(*se));
+	if ( (se = mem_get(m->mm, sizeof(*se))) == NULL )
+		return NULL;
 	ue_sig_init(se, signum, f, ctx);
+	se->mm = m->mm;
 	ue_sig_reg(m, se);
 
 	return se;
 }
 
 
-void ue_sig_del(void *s)
+void ue_sig_del(struct ue_sigevent *se)
 {
-	abort_unless(s);
-	ue_sig_cancel(s);
-	free(s);
+	abort_unless(se);
+	ue_sig_cancel(se);
+	if ( se->mm )
+		mem_free(se->mm, se);
 }
 
 #endif /* CAT_HAS_POSIX */

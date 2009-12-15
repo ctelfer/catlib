@@ -132,7 +132,7 @@ struct splay *t;
 char *s;
 struct stnode *np;
 
-  t = st_new(CAT_DT_STR);
+  t = st_new(&estdmm, CAT_KT_STR, 0, 0);
 
   for (i = 0; i < NUMSTR; i++)
   {
@@ -143,21 +143,21 @@ struct stnode *np;
     fflush(stdout);
   }
 
-  if (st_get(t, "bye")) 
+  if (st_get_dptr(t, "bye")) 
     printf("found something I shouldn't have!\n"); 
   fflush(stdout);
 
-  s = st_get(t, strs[1][0]);
+  s = st_get_dptr(t, strs[1][0]);
   printf("Under key %s is the string %s\n", strs[1][0], s);
   printf("address is %x\n\n", ptr2uint(s)); 
   fflush(stdout);
 
-  s = st_get(t, strs[2][0]);
+  s = st_get_dptr(t, strs[2][0]);
   printf("Under key %s is the string %s\n", strs[2][0], s);
   printf("address is %x\n\n", ptr2uint(s)); 
   fflush(stdout);
 
-  s = st_get(t, strs[0][0]);
+  s = st_get_dptr(t, strs[0][0]);
   printf("Under key %s is the string %s\n", strs[0][0], s); 
   printf("address is %x\n\n", ptr2uint(s)); 
   fflush(stdout);
@@ -165,7 +165,7 @@ struct stnode *np;
   print_splay(t);
   fflush(stdout);
 
-  s = st_get(t, strs[1][0]);
+  s = st_get_dptr(t, strs[1][0]);
   st_clr(t, strs[1][0]);
   printf("Deleted %s\n", s); 
   printf("address is %x\n\n", ptr2uint(s)); 
@@ -174,20 +174,20 @@ struct stnode *np;
   np = st_lkup(t, strs[2][0]);
   s = np->data;
   st_rem(np);
-  st_nfree(t, np);
+  free(np);
   printf("Deleted %s\n", s); 
   printf("address is %x\n\n", ptr2uint(s)); 
   fflush(stdout);
 
-  if (st_get(t, strs[1][0]))
+  if (st_get_dptr(t, strs[1][0]))
     printf("Error!  Thing not deleted! : %s\n", 
-           (char *)st_get(t, strs[1][0]));
+           (char *)st_get_dptr(t, strs[1][0]));
   fflush(stdout);
 
   print_splay(t);
   printf("\n");
   st_free(t); 	/* get rid of "Overwrite!" */
-  t = st_new(CAT_DT_STR);
+  t = st_new(&estdmm, CAT_KT_STR, 0, 0);
 
   for ( i = 0 ; i < NA ; ++i ) 
     arr[i] = i;
@@ -239,7 +239,7 @@ struct stnode *np;
 */
 
     sprintf(nstr, "k%03d", arr[i]);
-    s = st_get(t, nstr);
+    s = st_get_dptr(t, nstr);
     st_clr(t, nstr);
     free(s);
   }

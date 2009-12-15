@@ -6,7 +6,7 @@
 #include <cat/stduse.h>
 
 
-int cmp_int(const void *a, const void *b)
+int my_cmp_int(const void *a, const void *b)
 {
   return ptr2int(a) - ptr2int(b);
 }
@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
   printf("\n");
 
   /* generate the heap */
-  hp = hp_new(0, cmp_int);
+  hp = hp_new(&estdmm, 0, &my_cmp_int);
 
   for ( i = 0 ; i < num ; ++i ) {
     if (hp_add(hp, int2ptr(arr[i]), NULL) < 0) {

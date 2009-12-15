@@ -158,7 +158,7 @@ struct rbtree *t;
 char *s;
 struct rbnode *np;
 
-  t = rb_new(CAT_DT_STR);
+  t = rb_new(&estdmm, CAT_KT_STR, 0, 0);
 
   for (i = 0; i < NUMSTR; i++)
   {
@@ -169,21 +169,21 @@ struct rbnode *np;
     fflush(stdout);
   }
 
-  if (rb_get(t, "bye")) 
+  if (rb_get_dptr(t, "bye")) 
     printf("found something I shouldn't have!\n"); 
   fflush(stdout);
 
-  s = rb_get(t, strs[1][0]);
+  s = rb_get_dptr(t, strs[1][0]);
   printf("Under key %s is the string %s\n", strs[1][0], s);
   printf("address is %x\n\n", ptr2uint(s)); 
   fflush(stdout);
 
-  s = rb_get(t, strs[2][0]);
+  s = rb_get_dptr(t, strs[2][0]);
   printf("Under key %s is the string %s\n", strs[2][0], s);
   printf("address is %x\n\n", ptr2uint(s)); 
   fflush(stdout);
 
-  s = rb_get(t, strs[0][0]);
+  s = rb_get_dptr(t, strs[0][0]);
   printf("Under key %s is the string %s\n", strs[0][0], s); 
   printf("address is %x\n\n", ptr2uint(s)); 
   fflush(stdout);
@@ -191,7 +191,7 @@ struct rbnode *np;
   printrbt(t);
   fflush(stdout);
 
-  s = rb_get(t, strs[1][0]);
+  s = rb_get_dptr(t, strs[1][0]);
   rb_clr(t, strs[1][0]);
   printf("Deleted %s\n", s); 
   printf("address is %x\n\n", ptr2uint(s)); 
@@ -200,19 +200,19 @@ struct rbnode *np;
   np = rb_lkup(t, strs[2][0], NULL);
   s = np->data;
   rb_rem(np);
-  rb_nfree(t, np);
+  free(np);
   printf("Deleted %s\n", s); 
   printf("address is %x\n\n", ptr2uint(s)); 
   fflush(stdout);
 
-  if (rb_get(t, strs[1][0]))
-    printf("Error!  Thing not deleted! : %s\n", (char *)rb_get(t, strs[1][0]));
+  if (rb_get_dptr(t, strs[1][0]))
+    printf("Error!  Thing not deleted! : %s\n", (char *)rb_get_dptr(t, strs[1][0]));
   fflush(stdout);
 
   printrbt(t);
   printf("\n");
   rb_free(t); 	/* get rid of "Overwrite!" */
-  t = rb_new(CAT_DT_STR);
+  t = rb_new(&estdmm, CAT_KT_STR, 0, 0);
 
   for ( i = 0 ; i < NA ; ++i ) 
     arr[i] = i;
@@ -269,7 +269,7 @@ struct rbnode *np;
 */
 
     sprintf(nstr, "k%03d", arr[i]);
-    s = rb_get(t, nstr);
+    s = rb_get_dptr(t, nstr);
     rb_clr(t, nstr);
     free(s);
     if ( vrfy(t->rb_root) < 0 )

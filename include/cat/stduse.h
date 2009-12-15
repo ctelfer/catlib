@@ -40,9 +40,11 @@ struct clist {
 	size_t			cl_data_size;
 };
 
-#define cln_int_val	cln_data_u.au_value
-#define cln_ptr_val	cln_data_u.au_pointer
-#define cln_data_ptr	cln_data_u.au_data
+#define cln_intval	cln_data_u.au_intval
+#define cln_uintval	cln_data_u.au_uintval
+#define cln_pointer	cln_data_u.au_pointer
+#define cln_raw		cln_data_u.au_raw
+#define cln_attr_ptr	cln_data_u.au_data
 #define l_to_cln(ln) 	container(ln, struct clist_node, cln_entry)
 #define cln_next(clnp)	l_to_cln((clnp)->cln_entry.next)
 #define cln_prev(clnp)	l_to_cln((clnp)->cln_entry.prev)
@@ -96,89 +98,61 @@ struct dlist * 	cdl_new(long sec, long nsec, void *data);
 void *	       	cdl_free(struct dlist *node);
 
 
-
-/* Generic data types for container adaptors */
-#define CAT_DT_STR	0
-#define CAT_DT_RAW	1
-#define CAT_DT_PTR	2
-#define CAT_DT_NUM	3
-#define CAT_DT_RAWCPY	4
+/* Enumeration used for the various dictionary data types that follow */
+enum {
+	CAT_KT_STR = 0,
+	CAT_KT_BIN = 1,
+	CAT_KT_RAW = 2,
+	CAT_KT_PTR = 3,
+	CAT_KT_NUM = 4
+};
 
 
 #include <cat/hash.h>
 
-/* Default hash table implementation functions */
-/*  String comparison string hashing, key duplication, malloc: die on fail */
-/*  Plus, dynamically allocated and freed table */
-struct htab *	ht_new(size_t size, int type);
+/* Application layer hash table functions */
+struct htab *	ht_new(struct memmgr *mm, size_t nbkts, int ktype, size_t ksize,
+		       size_t dsize);
 void		ht_free(struct htab *t);
-struct hnode *	ht_snalloc(void *k, void *d, uint h, void *c);
-void		ht_snfree(struct hnode *n, void *ctx);
-void *		ht_get(struct htab *t, void *key);
-void		ht_put(struct htab *t, void *key, void *data);
-void		ht_clr(struct htab *t, void *key);
-struct hnode *	ht_nnew(struct hashsys *sys, void *key, void *data, 
-		        uint hash);
-void		ht_nfree(struct hashsys *sys, struct hnode *node);
+int		ht_get(struct htab *t, void *key, void *res);
+void *		ht_get_dptr(struct htab *t, void *key);
+int		ht_put(struct htab *t, void *key, void *data);
+int		ht_clr(struct htab *t, void *key);
 
 
 #include <cat/avl.h>
 
-struct avl *	avl_new(int type);
+struct avl *	avl_new(struct memmgr *mm, int ktype, size_t ksiz, size_t dsiz);
 void		avl_free(struct avl *t);
-struct anode *	avl_snalloc(void *key, void *data, void *ctx);
-void		avl_snfree(struct anode *n, void *ctx);
-void *		avl_get(struct avl *t, void *key);
-void		avl_put(struct avl *t, void *key, void *data);
-void		avl_clr(struct avl *t, void *key);
-struct anode *	avl_nnew(struct avl *t, void *key, void *data);
-void		avl_nfree(struct avl *t, struct anode *node);
-
-struct xavl {
-	struct avl	avl;
-	void *		ctx;
-};
+int		avl_get(struct avl *t, void *key, void *res);
+void *		avl_get_dptr(struct avl *t, void *key);
+int		avl_put(struct avl *t, void *key, void *data);
+int		avl_clr(struct avl *t, void *key);
 
 
 #include <cat/rbtree.h>
 
-struct rbtree *	rb_new(int type);
+struct rbtree *	rb_new(struct memmgr *mm, int ktype, size_t ksiz, size_t dsiz);
 void		rb_free(struct rbtree *t);
-struct rbnode *	rb_snalloc(void *key, void *data, void *ctx);
-void		rb_snfree(struct rbnode *n, void *ctx);
-void *		rb_get(struct rbtree *t, void *key);
-void		rb_put(struct rbtree *t, void *key, void *data);
-void		rb_clr(struct rbtree *t, void *key);
-struct rbnode *	rb_nnew(struct rbtree *t, void *key, void *data);
-void		rb_nfree(struct rbtree *t, struct rbnode *node);
-
-struct xrbtree {
-	struct rbtree	rbt;
-	void *		ctx;
-};
+int		rb_get(struct rbtree *t, void *key, void *res);
+void *		rb_get_dptr(struct rbtree *t, void *key);
+int		rb_put(struct rbtree *t, void *key, void *data);
+int		rb_clr(struct rbtree *t, void *key);
 
 
 #include <cat/splay.h>
 
-struct splay *	st_new(int type);
+struct splay *	st_new(struct memmgr *mm, int ktype, size_t ksiz, size_t dsiz);
 void		st_free(struct splay *t);
-struct stnode *	st_snalloc(void *key, void *data, void *ctx);
-void		st_snfree(struct stnode *n, void *ctx);
-void *		st_get(struct splay *t, void *key);
-void		st_put(struct splay *t, void *key, void *data);
-void		st_clr(struct splay *t, void *key);
-struct stnode *	st_nnew(struct splay *t, void *key, void *data);
-void		st_nfree(struct splay *t, struct stnode *node);
-
-struct xsplay {
-	struct splay	tree;
-	void *		ctx;
-};
+int		st_get(struct splay *t, void *key, void *res);
+void *		st_get_dptr(struct splay *t, void *key);
+int		st_put(struct splay *t, void *key, void *data);
+int		st_clr(struct splay *t, void *key);
 
 
 #include <cat/heap.h>
 
-struct heap * hp_new(int size, cmp_f cmp);
+struct heap * hp_new(struct memmgr *mm, int size, cmp_f cmp);
 void	      hp_free(struct heap *hp);
 
 
@@ -188,29 +162,38 @@ char * ring_alloc(struct ring *r, size_t len);
 int    ring_fmt(struct ring *r, const char *fmt, ...);
 
 
-#include <cat/cb.h>
-
-struct callback * cb_new(struct list *event, callback_f f, void *closure);
-void              cb_clr(struct callback *cb);
-
-
 #include <cat/match.h>
 
-struct kmppat *	 kmp_pnew(struct raw *pat);
-struct bmpat *	 bm_pnew(struct raw *pat);
-struct sfxtree * sfx_new(struct raw *pat);
+struct std_kmppat {
+	struct kmppat	pattern;
+	struct memmgr *	mm;
+};
+
+struct kmppat *	 kmp_pnew(struct memmgr *mm, struct raw *pat);
+void 		 kmp_free(struct kmppat *kmp);
+
+struct std_bmpat {
+	struct bmpat	pattern;
+	struct memmgr * mm;
+};
+
+struct bmpat *	 bm_pnew(struct memmgr *mm, struct raw *pat);
+void		 bm_free(struct bmpat *bmp);
+
+struct sfxtree * sfx_new(struct memmgr *mm, struct raw *pat);
 void		 sfx_free(struct sfxtree *sfx);
 
 
 #include <cat/bitset.h>
 
 struct safebitset {
-	uint	nbits;
-	uint	len;
+	uint		nbits;
+	uint		len;
 	bitset_t *	set;
+	struct memmgr *	mm;
 };
 
-struct safebitset *sbs_new(uint nbits);
+struct safebitset *sbs_new(struct memmgr *mm, uint nbits);
 void sbs_free(struct safebitset *set);
 void sbs_zero(struct safebitset *set);
 void sbs_fill(struct safebitset *set);

@@ -158,7 +158,7 @@ struct avl *avl;
 char *s;
 struct anode *anp;
 
-  avl = avl_new(CAT_DT_STR);
+  avl = avl_new(&estdmm, CAT_KT_STR, 0, 0);
 
   for (i = 0; i < NUMSTR; i++)
   {
@@ -169,21 +169,21 @@ struct anode *anp;
     fflush(stdout);
   }
 
-  if (avl_get(avl, "bye")) 
+  if (avl_get_dptr(avl, "bye")) 
     printf("found something I shouldn't have!\n"); 
   fflush(stdout);
 
-  s = avl_get(avl, strs[1][0]);
+  s = avl_get_dptr(avl, strs[1][0]);
   printf("Under key %s is the string %s\n", strs[1][0], s);
   printf("address is %x\n\n", ptr2uint(s)); 
   fflush(stdout);
 
-  s = avl_get(avl, strs[2][0]);
+  s = avl_get_dptr(avl, strs[2][0]);
   printf("Under key %s is the string %s\n", strs[2][0], s);
   printf("address is %x\n\n", ptr2uint(s)); 
   fflush(stdout);
 
-  s = avl_get(avl, strs[0][0]);
+  s = avl_get_dptr(avl, strs[0][0]);
   printf("Under key %s is the string %s\n", strs[0][0], s); 
   printf("address is %x\n\n", ptr2uint(s)); 
   fflush(stdout);
@@ -191,7 +191,7 @@ struct anode *anp;
   printavl(avl);
   fflush(stdout);
 
-  s = avl_get(avl, strs[1][0]);
+  s = avl_get_dptr(avl, strs[1][0]);
   avl_clr(avl, strs[1][0]);
   printf("Deleted %s\n", s); 
   printf("address is %x\n\n", ptr2uint(s)); 
@@ -200,20 +200,20 @@ struct anode *anp;
   anp = avl_lkup(avl, strs[2][0], NULL);
   s = anp->data;
   avl_rem(anp);
-  avl_nfree(avl, anp);
+  free(anp);
   printf("Deleted %s\n", s); 
   printf("address is %x\n\n", ptr2uint(s)); 
   fflush(stdout);
 
-  if (avl_get(avl, strs[1][0]))
+  if (avl_get_dptr(avl, strs[1][0]))
     printf("Error!  Thing not deleted! : %s\n", 
-            (char*)avl_get(avl, strs[1][0]));
+            (char*)avl_get_dptr(avl, strs[1][0]));
   fflush(stdout);
 
   printavl(avl);
   printf("\n");
   avl_free(avl); 	/* get rid of "Overwrite!" */
-  avl = avl_new(CAT_DT_STR);
+  avl = avl_new(&estdmm, CAT_KT_STR, 0, 0);
 
   for ( i = 0 ; i < NA ; ++i ) 
     arr[i] = i;
@@ -258,7 +258,7 @@ struct anode *anp;
 */
 
     sprintf(nstr, "k%03d", arr[i]);
-    s = avl_get(avl, nstr);
+    s = avl_get_dptr(avl, nstr);
     avl_clr(avl, nstr);
     free(s);
     if ( vrfy(avl->avl_root) < 0 )

@@ -31,8 +31,8 @@ int main(int argc, char *argv[])
 	if ( !bset_test(set0, 100) )
 		logrec(0, "Should have found 100 in set0\n");
 
-	set1 = sbs_new(5);
-	set2 = sbs_new(378);
+	set1 = sbs_new(&estdmm, 5);
+	set2 = sbs_new(&estdmm, 378);
 
 	sbs_fill(set2);
 	sbs_set(set1, 3);

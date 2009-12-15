@@ -1,6 +1,7 @@
 #include <sys/time.h>
 #include <cat/io.h>
 #include <cat/uevent.h>
+#include <cat/stduse.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -104,7 +105,7 @@ int main(int argc, char *argv[])
 	unsigned long n;
 	struct ioctx x;
 
-	ue_init(&m);
+	ue_init(&m, &estdmm);
 	ue_tm_new(&m, UE_PERIODIC, 2000, percb, 0);
 	ue_tm_new(&m, UE_TIMEOUT, 7000, attimecb, 0);
 

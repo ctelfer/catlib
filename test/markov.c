@@ -62,7 +62,7 @@ void add(char *word)
 	abort_unless(s != NULL);
 	CDS_NEW(w, s);
 	l_init(CDS_NPTR(w, strent_s));
-	ol = ht_get(Table, Buffer.data);
+	ol = ht_get_dptr(Table, Buffer.data);
 	if ( ! ol )
 		ht_put(Table, Buffer.data, CDS_NPTR(w, strent_s));
 	else
@@ -85,7 +85,7 @@ void generate(void)
 		ring_fmt(&Buffer, "%s", Prefixes[0]);
 		for ( j = 1 ; j < NPREF ; ++j )
 			ring_fmt(&Buffer, " %s", Prefixes[j]);
-		h = s = ht_get(Table, Buffer.data);
+		h = s = ht_get_dptr(Table, Buffer.data);
 		n = 1;
 		for ( t = s->next ; t != s ; t = t->next )
 			if ( (random() % ++n) == 0 )
@@ -112,7 +112,7 @@ int main(int argc, char **argv)
 	srandom(tv.tv_usec);
 
 	for ( i = 0 ; i < NPREF ; ++i ) Prefixes[i] = NONWORD;
-	Table = ht_new(HTSIZ, CAT_DT_STR);
+	Table = ht_new(&estdmm, HTSIZ, CAT_KT_STR, 0, 0);
 	ring_init(&Buffer, emalloc(BUFLEN), BUFLEN);
 
 	sprintf(fmt, "%%%ds", (int)sizeof(word)-1);

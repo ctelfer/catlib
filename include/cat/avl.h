@@ -51,15 +51,19 @@ struct avl {
 
 
 /* main functions */
-DECL void avl_init(struct avl *a, cmp_f cmp);
-DECL void avl_ninit(struct anode *a, void *k, void *d);
+DECL void avl_init(struct avl *t, cmp_f cmp);
+DECL void avl_ninit(struct anode *n, void *k, void *d);
 
 DECL struct anode * avl_lkup(struct avl *t, void *key, int *dir);
 DECL struct anode * avl_ins(struct avl *t, struct anode *n, struct anode *loc, 
 		            int dir);
 DECL void           avl_rem(struct anode *node);
+DECL void avl_apply(struct avl *t, apply_f func, void * ctx);
+DECL int	    avl_isempty(struct avl *t);
+DECL struct anode * avl_getroot(struct avl *t);
+DECL struct anode * avl_getmin(struct avl *t);
+DECL struct anode * avl_getmax(struct avl *t);
 
-DECL void avl_apply(struct avl *a, apply_f func, void * ctx);
 
 
 /* Auxiliary (helper) functions (don't use) */
@@ -77,24 +81,24 @@ DECL struct anode *avl_findrep(struct anode *node);
 /* actual implementation */
 #if defined(CAT_AVL_DO_DECL) && CAT_AVL_DO_DECL
 
-DECL void avl_init(struct avl *a, cmp_f cmp)
+DECL void avl_init(struct avl *t, cmp_f cmp)
 {
-	abort_unless(a);
+	abort_unless(t);
 	abort_unless(cmp);
-	a->cmp = cmp;
-	avl_ninit(&a->root, NULL, NULL);
-	a->root.pdir = CA_P;
+	t->cmp = cmp;
+	avl_ninit(&t->root, NULL, NULL);
+	t->root.pdir = CA_P;
 }
 
 
-DECL void avl_ninit(struct anode *a, void *k, void *d)
+DECL void avl_ninit(struct anode *n, void *k, void *d)
 {
-	abort_unless(a);
-	a->p[0] = a->p[1] = a->p[2] = NULL;
-	a->pdir = CA_P;
-	a->b = 0;
-	a->key = k;
-	a->data = d;
+	abort_unless(n);
+	n->p[0] = n->p[1] = n->p[2] = NULL;
+	n->pdir = CA_P;
+	n->b = 0;
+	n->key = k;
+	n->data = d;
 }
 
 
@@ -155,15 +159,55 @@ DECL struct anode *avl_ins(struct avl *t, struct anode *node, struct anode *loc,
 }
 
 
+DECL int avl_isempty(struct avl *t)
+{
+	abort_unless(t);
+	return t->avl_root == NULL;
+}
+
+
+DECL struct anode *avl_getroot(struct avl *t)
+{
+	abort_unless(t);
+	return t->avl_root;
+}
+
+
+DECL struct anode * avl_getmin(struct avl *t)
+{
+	struct anode *trav;
+	abort_unless(t);
+	trav = t->avl_root;
+	if ( trav != NULL ) {
+		while ( trav->p[CA_L] != NULL )
+			trav = trav->p[CA_L];
+	}
+	return trav;
+}
+
+
+DECL struct anode * avl_getmax(struct avl *t)
+{
+	struct anode *trav;
+	abort_unless(t);
+	trav = t->avl_root;
+	if ( trav != NULL ) {
+		while ( trav->p[CA_R] != NULL )
+			trav = trav->p[CA_R];
+	}
+	return trav;
+}
+
+
 /* currently an inorder traversal:  we could add an arg to change this */
-DECL void avl_apply(struct avl *a, apply_f func, void * ctx)
+DECL void avl_apply(struct avl *t, apply_f func, void * ctx)
 {
 	struct anode *trav;
 	int dir = CA_P;
 
-	abort_unless(a);
+	abort_unless(t);
 	abort_unless(func);
-	trav = a->avl_root;
+	trav = t->avl_root;
 	if ( ! trav )
 		return;
 	do {
@@ -197,7 +241,7 @@ DECL void avl_apply(struct avl *a, apply_f func, void * ctx)
 			trav = trav->p[CA_P];
 			break;
 		}
-	} while ( trav != &a->root );
+	} while ( trav != &t->root );
 }
 
 

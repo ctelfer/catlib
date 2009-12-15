@@ -19,7 +19,7 @@ void dokmp(struct raw *str, struct raw *pat)
 	struct kmppat *kmp;
 	unsigned long loc;
 
-	kmp = kmp_pnew(pat);
+	kmp = kmp_pnew(&estdmm, pat);
 	if (kmp_match(str, kmp, &loc))
 		printf("Found %s at position %u in %s\n", pat->data,
 		       (uint)loc, str->data);
@@ -34,7 +34,7 @@ void dobm(struct raw *str, struct raw *pat)
 	struct bmpat *bmp;
 	unsigned long loc;
 
-	bmp = bm_pnew(pat);
+	bmp = bm_pnew(&estdmm, pat);
 	if (bm_match(str, bmp, &loc))
 		printf("Found %s at position %u in %s\n", pat->data,
 		       (uint)loc, str->data);
@@ -59,9 +59,9 @@ void gather(void *edgep, void *gatherp)
 	struct sfxedge *edge = edgep;
 	struct gatherctx *gctx = gatherp;
 	++nedges;
-	if ( !ht_get(gctx->edges, edge) )
+	if ( !ht_get_dptr(gctx->edges, edge) )
 		ht_put(gctx->edges, edge, int2ptr(nedges));
-	if ( !ht_get(gctx->nodes, edge->hentry.data) ) {
+	if ( !ht_get_dptr(gctx->nodes, edge->hentry.data) ) {
 		++nnodes;
 		ht_put(gctx->nodes, edge->hentry.data, int2ptr(nnodes));
 	}
@@ -77,9 +77,9 @@ void printedges(void *edgep, void *gatherp)
 	char ch;
 	char str[50];
 
-	src = ptr2int(ht_get(gctx->nodes, ek->node));
-	dst = ptr2int(ht_get(gctx->nodes, edge->hentry.data));
-	edgenum = ptr2int(ht_get(gctx->edges, edge));
+	src = ptr2int(ht_get_dptr(gctx->nodes, ek->node));
+	dst = ptr2int(ht_get_dptr(gctx->nodes, edge->hentry.data));
+	edgenum = ptr2int(ht_get_dptr(gctx->edges, edge));
 	ch = ek->character;
 	if ( ch == '\0' )
 		ch = '@';
@@ -104,8 +104,8 @@ void printsfx(struct sfxtree *sfx)
 	char ch;
 
 	gctx.sfx = sfx;
-	gctx.edges = ht_new(100, CAT_DT_PTR);
-	gctx.nodes = ht_new(100, CAT_DT_PTR);
+	gctx.edges = ht_new(&estdmm, 100, CAT_KT_PTR, 0, 0);
+	gctx.nodes = ht_new(&estdmm, 100, CAT_KT_PTR, 0, 0);
 	ht_put(gctx.nodes, &sfx->root, int2ptr(1));
 	nnodes = 1;
 	ht_apply(&sfx->edges, gather, &gctx);
@@ -130,7 +130,7 @@ void dosuffix(struct raw *str, struct raw *pat)
 	struct sfxtree *sfx;
 	unsigned long loc;
 
-	sfx = sfx_new(str);
+	sfx = sfx_new(&estdmm, str);
 	if (sfx_match(sfx, pat, &loc))
 		printf("Found %s at position %u in %s\n", pat->data,
 		       (uint)loc, str->data);

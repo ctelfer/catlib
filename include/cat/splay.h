@@ -54,6 +54,10 @@ DECL struct stnode * st_lkup(struct splay *t, void *key);
 DECL struct stnode * st_ins(struct splay *t, struct stnode *node);
 DECL void            st_rem(struct stnode *node);
 DECL void            st_apply(struct splay *t, apply_f func, void * ctx);
+DECL int	     st_isempty(struct splay *t);
+DECL struct stnode * st_getroot(struct splay *t);
+DECL struct stnode * st_getmin(struct splay *t);
+DECL struct stnode * st_getmax(struct splay *t);
 
 
 /* Auxiliary (helper) functions (don't use) outside the module */
@@ -210,6 +214,46 @@ DECL void st_apply(struct splay *t, apply_f func, void * ctx)
 			break;
 		}
 	} while ( trav != &t->root );
+}
+
+
+DECL int st_isempty(struct splay *t)
+{
+	abort_unless(t);
+	return t->st_root == NULL;
+}
+
+
+DECL struct stnode * st_getroot(struct splay *t)
+{
+	abort_unless(t);
+	return t->st_root;
+}
+
+
+DECL struct stnode * st_getmin(struct splay *t)
+{
+	struct stnode *trav;
+	abort_unless(t);
+	trav = t->st_root;
+	if ( trav != NULL ) {
+		while ( trav->p[CST_L] != NULL )
+			trav = trav->p[CST_L];
+	}
+	return trav;
+}
+
+
+DECL struct stnode * st_getmax(struct splay *t)
+{
+	struct stnode *trav;
+	abort_unless(t);
+	trav = t->st_root;
+	if ( trav != NULL ) {
+		while ( trav->p[CST_R] != NULL )
+			trav = trav->p[CST_R];
+	}
+	return trav;
 }
 
 

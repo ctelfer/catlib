@@ -54,8 +54,8 @@ struct rbtree {
 DECL void            rb_init(struct rbtree *t, cmp_f cmp);
 DECL void            rb_ninit(struct rbnode *n, void *k, void *d);
 DECL struct rbnode * rb_lkup(struct rbtree *t, void *key, int *dir);
-DECL struct rbnode * rb_ins(struct rbtree *t, struct rbnode *node,
-								            struct rbnode *loc, int dir);
+DECL struct rbnode * rb_ins(struct rbtree *t, struct rbnode *node, 
+			    struct rbnode *loc, int dir);
 DECL void            rb_rem(struct rbnode *node);
 DECL void            rb_apply(struct rbtree *t, apply_f func, void * ctx);
 DECL int             rb_isempty(struct rbtree *t);
