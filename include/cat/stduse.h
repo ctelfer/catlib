@@ -79,6 +79,7 @@ int clist_dequeue(struct clist *list, void *val);
 int clist_push(struct clist *list, void *val);
 int clist_pop(struct clist *list, void *val);
 int clist_top(struct clist *list, void *val);
+void clist_apply(struct clist *list, apply_f f, void *arg);
 
 
 #include <cat/str.h>

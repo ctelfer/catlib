@@ -318,6 +318,20 @@ int clist_top(struct clist *list, void *val)
 }
 
 
+void clist_apply(struct clist *list, apply_f f, void *arg)
+{
+	struct clist_node *cur, *next;
+
+	abort_unless(list != NULL);
+	abort_unless(f != NULL);
+
+	for ( cur = cl_head(list) ; cur != cl_end(list) ; cur = next ) {
+		next = cln_next(cur);
+		(*f)(cur, arg);
+	}
+}
+
+
 /* String functions */
 
 

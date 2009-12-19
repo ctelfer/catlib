@@ -166,15 +166,14 @@ DECL int l_onlist(struct list *list)
 
 DECL void l_apply(struct list *list, apply_f f, void *arg)
 {
-	struct list *t, *h;
+	struct list *t, *next;
 
 	abort_unless(list);
 	abort_unless(f);
 
-	for ( t = list->next ; t != list ; ) {
-		h = t;
-		t = t->next;
-		f(h, arg);
+	for ( t = list->next ; t != list ; t = next ) {
+		next = t->next;
+		f(t, arg);
 	}
 }
 
