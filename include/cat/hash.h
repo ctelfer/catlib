@@ -14,7 +14,7 @@
 #include <cat/aux.h>
 #include <cat/list.h>
 
-typedef uint (*hash_f)(void *key, void *ctx);
+typedef uint (*hash_f)(const void *key, void *ctx);
 
 struct hashsys {
 	cmp_f		cmp;
@@ -52,16 +52,16 @@ struct hnode {
 DECL void           ht_init(struct htab *t, struct list *la, uint siz, 
 		            struct hashsys *hs);
 DECL void           ht_ninit(struct hnode *hn, void *k, void *d, uint h);
-DECL uint	    ht_hash(struct htab *t, void *key);
-DECL struct hnode * ht_lkup(struct htab *t, void *key, uint *hash);
+DECL uint	    ht_hash(struct htab *t, const void *key);
+DECL struct hnode * ht_lkup(struct htab *t, const void *key, uint *hash);
 DECL struct hnode * ht_ins(struct htab *t, struct hnode *node);
 DECL void           ht_rem(struct hnode *node);
 
 DECL void           ht_apply(struct htab *t, apply_f f, void * ctx);
 
-PTRDECL uint        ht_shash(void *k, void *unused);
-PTRDECL uint        ht_phash(void *k, void *unused);
-PTRDECL uint        ht_rhash(void *k, void *unused);
+PTRDECL uint        ht_shash(const void *k, void *unused);
+PTRDECL uint        ht_phash(const void *k, void *unused);
+PTRDECL uint        ht_rhash(const void *k, void *unused);
 
 
 #if defined(CAT_HASH_DO_DECL) && CAT_HASH_DO_DECL
@@ -109,7 +109,7 @@ DECL void ht_ninit(struct hnode *hn, void *key, void *data, uint hash)
 }
 
 
-DECL struct hnode * ht_lkup(struct htab *t, void *key, uint *hp)
+DECL struct hnode * ht_lkup(struct htab *t, const void *key, uint *hp)
 {
 	struct list *l, *list;
 	uint h;
@@ -139,7 +139,7 @@ DECL struct hnode * ht_ins(struct htab *t, struct hnode *n)
 {
 	struct hnode *old = NULL;
 	struct hashsys *hs;
-	void *key;
+	const void *key;
 	uint h;
 	struct list *list, *l;
 
@@ -175,7 +175,7 @@ DECL void ht_rem(struct hnode *node)
 }
 
 
-DECL uint ht_hash(struct htab *t, void *key)
+DECL uint ht_hash(struct htab *t, const void *key)
 {
 	abort_unless(t != NULL);
 	return (*t->sys.hash)(key, t->sys.hctx);
@@ -195,9 +195,9 @@ DECL void ht_apply(struct htab *t, apply_f func, void * ctx)
 }
 
 
-PTRDECL uint ht_shash(void *k, void *unused)  
+PTRDECL uint ht_shash(const void *k, void *unused)  
 {
-	uchar *p = k;
+	const uchar *p = k;
 	uint h = 0, g;
 
 	abort_unless(p != NULL);
@@ -214,16 +214,16 @@ PTRDECL uint ht_shash(void *k, void *unused)
 }
 
 
-PTRDECL uint ht_rhash(void *k, void *unused)  
+PTRDECL uint ht_rhash(const void *k, void *unused)  
 { 
-	uchar *p;
+	const uchar *p;
 	uint h = 0, g, l;
-	struct raw *r = k;
+	struct raw const *r = k;
 
 	abort_unless(k != NULL);
 
 	l = r->len;
-	p = (uchar *)r->data;
+	p = (const uchar *)r->data;
 
 	abort_unless(l != 0);
 	abort_unless(l <= (uint)-1);
@@ -241,7 +241,7 @@ PTRDECL uint ht_rhash(void *k, void *unused)
 }
 
 
-PTRDECL uint ht_phash(void *k, void *unused)  
+PTRDECL uint ht_phash(const void *k, void *unused)  
 {
 	return (uint)((ulong)k >> 2);
 }

@@ -50,7 +50,7 @@ struct splay {
 /* main functions */
 DECL void            st_init(struct splay *t, cmp_f cmp);
 DECL void            st_ninit(struct stnode *n, void *k, void *d);
-DECL struct stnode * st_lkup(struct splay *t, void *key);
+DECL struct stnode * st_lkup(struct splay *t, const void *key);
 DECL struct stnode * st_ins(struct splay *t, struct stnode *node);
 DECL void            st_rem(struct stnode *node);
 DECL void            st_apply(struct splay *t, apply_f func, void * ctx);
@@ -61,7 +61,8 @@ DECL struct stnode * st_getmax(struct splay *t);
 
 
 /* Auxiliary (helper) functions (don't use) outside the module */
-DECL void st_findloc(struct splay *t, void *key, struct stnode **pn, int *pd);
+DECL void st_findloc(struct splay *t, const void *key, struct stnode **pn,
+		     int *pd);
 DECL void st_fix(struct stnode *par, struct stnode *cld, int dir);
 DECL void st_rl(struct stnode *n);
 DECL void st_rr(struct stnode *n);
@@ -94,7 +95,7 @@ DECL void st_ninit(struct stnode *n, void *k, void *d)
 }
 
 
-DECL struct stnode * st_lkup(struct splay *t, void *key)
+DECL struct stnode * st_lkup(struct splay *t, const void *key)
 {
 	struct stnode *n;
 	int dir;
@@ -257,7 +258,8 @@ DECL struct stnode * st_getmax(struct splay *t)
 }
 
 
-DECL void st_findloc(struct splay *t, void *key, struct stnode **pn, int *pd)
+DECL void st_findloc(struct splay *t, const void *key, struct stnode **pn,
+		     int *pd)
 {
 	struct stnode *tmp, *par;
 	int dir = CST_P;

@@ -479,8 +479,8 @@ void * cdl_free(struct dlist * nodep)
 /* Generic data types for container adaptors */
 
 struct dictiface;
-typedef int (*std_keycopy_f)(byte_t *nodep, void *key, struct dictiface *di, 
-			     void **keyp);
+typedef int (*std_keycopy_f)(byte_t *nodep, const void *key, 
+			     struct dictiface *di, void **keyp);
 typedef void (*std_keyfree_f)(byte_t *nodep, struct dictiface *di);
 
 struct dictiface {
@@ -496,7 +496,8 @@ struct dictiface {
 };
 
 
-static int std_str_kcopy(byte_t *p, void *k, struct dictiface *di, void **kp)
+static int std_str_kcopy(byte_t *p, const void *k, struct dictiface *di, 
+			 void ** kp)
 {
 	size_t slen;
 	void *newk;
@@ -522,31 +523,34 @@ static void std_str_kfree(byte_t *p, struct dictiface *di)
 }
 
 
-static int std_ptr_kcopy(byte_t *p, void *k, struct dictiface *di, void **kp)
+static int std_ptr_kcopy(byte_t *p, const void *k, struct dictiface *di, 
+			 void ** kp)
 {
-	*kp = k;
+	*kp = (void *)k;
 	return 0;
 }
 
 
-static int std_bin_kcopy(byte_t *p, void *k, struct dictiface *di, void **kp)
+static int std_bin_kcopy(byte_t *p, const void *k, struct dictiface *di,
+			 void ** kp)
 {
 	/* The wrapped struct raw is used to pass the length to cmp_bin() */
 	struct raw *r = (struct raw *)(p + di->keyoff);
-	struct raw *rik = k;
+	struct raw const *rik = k;
 	void *k2 = (p + di->keyoff + CAT_ALIGN_SIZE(sizeof(struct raw)));
 	r->data = k2;
 	r->len = di->keysize;
-	abort_unless(r->len== rik->len);
+	abort_unless(r->len == rik->len);
 	memcpy(k2, rik->data, di->keysize);
 	*kp = r;
 	return 0;
 }
 
 
-static int std_raw_kcopy(byte_t *p, void *k, struct dictiface *di, void **kp)
+static int std_raw_kcopy(byte_t *p, const void *k, struct dictiface *di,
+			 void ** kp)
 {
-	struct raw *r1 = k;
+	struct raw const *r1 = k;
 	struct raw *r2 = (struct raw *)(p + di->keyoff);
 	void *k2;
 
@@ -630,7 +634,8 @@ static void init_dictiface(struct dictiface *di, struct memmgr *mm, size_t nlen,
 }
 
 
-static void *di_new_node(struct dictiface *di, void **key, void **data)
+static void *di_new_node(struct dictiface *di, void const * key, void **nk, 
+			 void **data)
 {
 	byte_t *node, *p;
 	struct memmgr *mm;
@@ -645,7 +650,7 @@ static void *di_new_node(struct dictiface *di, void **key, void **data)
 	if ( (node = mem_get(mm, di->nodesize)) == NULL )
 		return NULL;
 
-	if ( (*di->keycpy)(node, *key, di, key) < 0 ) {
+	if ( (*di->keycpy)(node, key, di, nk) < 0 ) {
 		mem_free(mm, node);
 		return NULL;
 	}
@@ -676,12 +681,12 @@ static void di_free_node(struct dictiface *di, void *nodep)
 }
 
 
-static void *di_get_key(struct dictiface *di, struct raw *r, void *k)
+static const void *di_get_key(struct dictiface *di, struct raw *r, const void *k)
 {
 	if ( !di->rawwrap ) {
 		return k;
 	} else {
-		r->data = k;
+		r->data = (void *)k;
 		r->len = di->keysize;
 		return r;
 	}
@@ -697,17 +702,17 @@ struct std_htab {
 };
 
 
-static uint std_ht_bin_hash(void *k, void *ctx)
+static uint std_ht_bin_hash(const void *k, void *ctx)
 {
 	size_t *len = ctx;
 	struct raw r;
-	r.data = k;
+	r.data = (void *)k;
 	r.len = *len;
 	return ht_rhash(&r, NULL);
 }
 
 
-static uint std_ht_int_hash(void *kp, void *ctx)
+static uint std_ht_int_hash(const void *kp, void *ctx)
 {
 	ulong v;
 	abort_unless(kp != NULL);
@@ -803,7 +808,7 @@ void ht_free(struct htab *t)
 }
 
 
-int ht_get(struct htab *t, void *key, void *res)
+int ht_get(struct htab *t, const void *key, void *res)
 {
 	struct std_htab *sh;
 	struct hnode *node;
@@ -826,7 +831,7 @@ int ht_get(struct htab *t, void *key, void *res)
 }
 
 
-void *ht_get_dptr(struct htab *t, void *key)
+void *ht_get_dptr(struct htab *t, const void *key)
 {
 	struct std_htab *sh;
 	struct hnode *node;
@@ -845,12 +850,13 @@ void *ht_get_dptr(struct htab *t, void *key)
 }
 
 
-int ht_put(struct htab *t, void *key, void *data)
+int ht_put(struct htab *t, const void *key, void *data)
 {
 	struct std_htab *sh;
 	struct hnode *node;
 	struct raw r;
 	unsigned h;
+	void *nk;
 
 	abort_unless(t != NULL);
 	abort_unless(key != NULL);
@@ -863,8 +869,8 @@ int ht_put(struct htab *t, void *key, void *data)
 		di_free_node(&sh->iface, node);
 	}
 
-	if ( (node = di_new_node(&sh->iface, &key, &data)) != NULL ) {
-		ht_ninit(node, key, data, h);
+	if ( (node = di_new_node(&sh->iface, key, &nk, &data)) != NULL ) {
+		ht_ninit(node, nk, data, h);
 		ht_ins(t, node);
 		return 1;
 	} else {
@@ -873,7 +879,7 @@ int ht_put(struct htab *t, void *key, void *data)
 }
 
 
-int ht_clr(struct htab *t, void *key)
+int ht_clr(struct htab *t, const void *key)
 {
 	struct std_htab *sh;
 	struct hnode *node;
@@ -959,7 +965,7 @@ void avl_free(struct avl *avl)
 }
 
 
-int avl_get(struct avl *avl, void *key, void *res)
+int avl_get(struct avl *avl, const void *key, void *res)
 {
 	struct std_avl *sat;
 	struct anode *node;
@@ -982,7 +988,7 @@ int avl_get(struct avl *avl, void *key, void *res)
 }
 
 
-void *avl_get_dptr(struct avl *avl, void *key)
+void *avl_get_dptr(struct avl *avl, const void *key)
 {
 	struct std_avl *sat;
 	struct anode *node;
@@ -1001,11 +1007,12 @@ void *avl_get_dptr(struct avl *avl, void *key)
 }
 
 
-int avl_put(struct avl *avl, void *key, void *data)
+int avl_put(struct avl *avl, const void *key, void *data)
 {
 	struct std_avl *sat;
 	struct anode *node;
 	struct raw r;
+	void *nk;
 
 	abort_unless(avl != NULL);
 	abort_unless(key != NULL);
@@ -1018,8 +1025,8 @@ int avl_put(struct avl *avl, void *key, void *data)
 		di_free_node(&sat->iface, node);
 	}
 
-	if ( (node = di_new_node(&sat->iface, &key, &data)) != NULL ) {
-		avl_ninit(node, key, data);
+	if ( (node = di_new_node(&sat->iface, key, &nk, &data)) != NULL ) {
+		avl_ninit(node, nk, data);
 		avl_ins(avl, node, NULL, CA_N);
 		return 1;
 	} else {
@@ -1028,7 +1035,7 @@ int avl_put(struct avl *avl, void *key, void *data)
 }
 
 
-int avl_clr(struct avl *avl, void *key)
+int avl_clr(struct avl *avl, const void *key)
 {
 	struct std_avl *sat;
 	struct anode *node;
@@ -1112,7 +1119,7 @@ void rb_free(struct rbtree *rbt)
 }
 
 
-int rb_get(struct rbtree *rbt, void *key, void *res)
+int rb_get(struct rbtree *rbt, const void *key, void *res)
 {
 	struct std_rbtree *srb;
 	struct rbnode *node;
@@ -1135,7 +1142,7 @@ int rb_get(struct rbtree *rbt, void *key, void *res)
 }
 
 
-void *rb_get_dptr(struct rbtree *rbt, void *key)
+void *rb_get_dptr(struct rbtree *rbt, const void *key)
 {
 	struct std_rbtree *srb;
 	struct rbnode *node;
@@ -1154,11 +1161,12 @@ void *rb_get_dptr(struct rbtree *rbt, void *key)
 }
 
 
-int rb_put(struct rbtree *rbt, void *key, void *data)
+int rb_put(struct rbtree *rbt, const void *key, void *data)
 {
 	struct std_rbtree *srb;
 	struct rbnode *node;
 	struct raw r;
+	void *nk;
 
 	abort_unless(rbt != NULL);
 	abort_unless(key != NULL);
@@ -1171,8 +1179,8 @@ int rb_put(struct rbtree *rbt, void *key, void *data)
 		di_free_node(&srb->iface, node);
 	}
 
-	if ( (node = di_new_node(&srb->iface, &key, &data)) != NULL ) {
-		rb_ninit(node, key, data);
+	if ( (node = di_new_node(&srb->iface, key, &nk, &data)) != NULL ) {
+		rb_ninit(node, nk, data);
 		rb_ins(rbt, node, NULL, CRB_N);
 		return 1;
 	} else { 
@@ -1181,7 +1189,7 @@ int rb_put(struct rbtree *rbt, void *key, void *data)
 }
 
 
-int rb_clr(struct rbtree *rbt, void *key)
+int rb_clr(struct rbtree *rbt, const void *key)
 {
 	struct std_rbtree *srb;
 	struct rbnode *node;
@@ -1266,7 +1274,7 @@ void st_free(struct splay *st)
 }
 
 
-int st_get(struct splay *st, void *key, void *res)
+int st_get(struct splay *st, const void *key, void *res)
 {
 	struct std_splay *sst;
 	struct stnode *node;
@@ -1289,7 +1297,7 @@ int st_get(struct splay *st, void *key, void *res)
 }
 
 
-void *st_get_dptr(struct splay *st, void *key)
+void *st_get_dptr(struct splay *st, const void *key)
 {
 	struct std_splay *sst;
 	struct stnode *node;
@@ -1308,11 +1316,12 @@ void *st_get_dptr(struct splay *st, void *key)
 }
 
 
-int st_put(struct splay *st, void *key, void *data)
+int st_put(struct splay *st, const void *key, void *data)
 {
 	struct std_splay *sst;
 	struct stnode *node;
 	struct raw r;
+	void *nk;
 
 	abort_unless(st != NULL);
 	abort_unless(key != NULL);
@@ -1326,8 +1335,8 @@ int st_put(struct splay *st, void *key, void *data)
 		di_free_node(&sst->iface, node);
 	}
 
-	if ( (node = di_new_node(&sst->iface, &key, &data)) != NULL ) {
-		st_ninit(node, key, data);
+	if ( (node = di_new_node(&sst->iface, key, &nk, &data)) != NULL ) {
+		st_ninit(node, nk, data);
 		st_ins(st, node);
 		return 1;
 	} else {
@@ -1336,7 +1345,7 @@ int st_put(struct splay *st, void *key, void *data)
 }
 
 
-int st_clr(struct splay *st, void *key)
+int st_clr(struct splay *st, const void *key)
 {
 	struct std_splay *sst;
 	struct stnode *node;

@@ -188,9 +188,9 @@ static int edgecmp(const void *c1, const void *c2)
 }
 
 
-static unsigned edgehash(void *key, void *notused)
+static unsigned edgehash(const void *key, void *notused)
 {
-	struct sfxedgekey *ek = key;
+	struct sfxedgekey const *ek = key;
 	return ((ulong)ek->node * 257) + ek->character;
 }
 

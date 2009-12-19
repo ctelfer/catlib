@@ -49,12 +49,17 @@ struct clist {
 #define cln_next(clnp)	l_to_cln((clnp)->cln_entry.next)
 #define cln_prev(clnp)	l_to_cln((clnp)->cln_entry.prev)
 #define cln_data(clnp, type)	(*((type *)&(clnp)->cln_data_u))
+#define cln_dptr(clnp)	((void *)((clnp)->cln_attr_ptr))
 #define cl_head(clp)	(&(clp)->cl_base)
 #define cl_end(clp)	(&(clp)->cl_base)
 #define cl_first(clp)	l_to_cln((clp)->cl_base.cln_entry.next)
 #define cl_last(clp)	l_to_cln((clp)->cl_base.cln_entry.prev)
+#define clist_for_each(node, list)	\
+	for ( (node) = cl_head(list) ;	\
+	      (node) != cl_end(list) ;	\
+	      (node) = cln_next(node) )
 
-struct clist *clist_new_list(struct memmgr *mm, size_t len);
+struct clist *clist_new_list(struct memmgr *mm, size_t dlen);
 void clist_free_list(struct clist *list);
 
 void clist_init_list(struct clist *list, struct memmgr *mm, size_t dlen);
@@ -114,40 +119,40 @@ enum {
 struct htab *	ht_new(struct memmgr *mm, size_t nbkts, int ktype, size_t ksize,
 		       size_t dsize);
 void		ht_free(struct htab *t);
-int		ht_get(struct htab *t, void *key, void *res);
-void *		ht_get_dptr(struct htab *t, void *key);
-int		ht_put(struct htab *t, void *key, void *data);
-int		ht_clr(struct htab *t, void *key);
+int		ht_get(struct htab *t, const void *key, void *res);
+void *		ht_get_dptr(struct htab *t, const void *key);
+int		ht_put(struct htab *t, const void *key, void *data);
+int		ht_clr(struct htab *t, const void *key);
 
 
 #include <cat/avl.h>
 
 struct avl *	avl_new(struct memmgr *mm, int ktype, size_t ksiz, size_t dsiz);
 void		avl_free(struct avl *t);
-int		avl_get(struct avl *t, void *key, void *res);
-void *		avl_get_dptr(struct avl *t, void *key);
-int		avl_put(struct avl *t, void *key, void *data);
-int		avl_clr(struct avl *t, void *key);
+int		avl_get(struct avl *t, const void *key, void *res);
+void *		avl_get_dptr(struct avl *t, const void *key);
+int		avl_put(struct avl *t, const void *key, void *data);
+int		avl_clr(struct avl *t, const void *key);
 
 
 #include <cat/rbtree.h>
 
 struct rbtree *	rb_new(struct memmgr *mm, int ktype, size_t ksiz, size_t dsiz);
 void		rb_free(struct rbtree *t);
-int		rb_get(struct rbtree *t, void *key, void *res);
-void *		rb_get_dptr(struct rbtree *t, void *key);
-int		rb_put(struct rbtree *t, void *key, void *data);
-int		rb_clr(struct rbtree *t, void *key);
+int		rb_get(struct rbtree *t, const void *key, void *res);
+void *		rb_get_dptr(struct rbtree *t, const void *key);
+int		rb_put(struct rbtree *t, const void *key, void *data);
+int		rb_clr(struct rbtree *t, const void *key);
 
 
 #include <cat/splay.h>
 
 struct splay *	st_new(struct memmgr *mm, int ktype, size_t ksiz, size_t dsiz);
 void		st_free(struct splay *t);
-int		st_get(struct splay *t, void *key, void *res);
-void *		st_get_dptr(struct splay *t, void *key);
-int		st_put(struct splay *t, void *key, void *data);
-int		st_clr(struct splay *t, void *key);
+int		st_get(struct splay *t, const void *key, void *res);
+void *		st_get_dptr(struct splay *t, const void *key);
+int		st_put(struct splay *t, const void *key, void *data);
+int		st_clr(struct splay *t, const void *key);
 
 
 #include <cat/heap.h>

@@ -53,7 +53,7 @@ struct rbtree {
 /* main functions */
 DECL void            rb_init(struct rbtree *t, cmp_f cmp);
 DECL void            rb_ninit(struct rbnode *n, void *k, void *d);
-DECL struct rbnode * rb_lkup(struct rbtree *t, void *key, int *dir);
+DECL struct rbnode * rb_lkup(struct rbtree *t, const void *key, int *dir);
 DECL struct rbnode * rb_ins(struct rbtree *t, struct rbnode *node, 
 			    struct rbnode *loc, int dir);
 DECL void            rb_rem(struct rbnode *node);
@@ -65,9 +65,10 @@ DECL struct rbnode * rb_getmax(struct rbtree *t);
 
 
 /* Auxiliary (helper) functions (don't use) */
-DECL void rb_findloc(struct rbtree *t, void *key, struct rbnode **p, int *dir);
+DECL void rb_findloc(struct rbtree *t, const void *key, struct rbnode **p, 
+		     int *dir);
 DECL void rb_ins_at(struct rbtree *t, struct rbnode *node, struct rbnode *par, 
-								    int dir);
+		    int dir);
 DECL void rb_fix(struct rbnode *par, struct rbnode *cld, int dir);
 DECL void rb_rleft(struct rbnode *n);
 DECL void rb_rright(struct rbnode *n);
@@ -97,7 +98,7 @@ DECL void rb_ninit(struct rbnode *n, void *k, void *d)
 }
 
 
-DECL struct rbnode *rb_lkup(struct rbtree *t, void *key, int *rdir)
+DECL struct rbnode *rb_lkup(struct rbtree *t, const void *key, int *rdir)
 {
 	struct rbnode *p;
 	int dir;
@@ -123,7 +124,7 @@ DECL struct rbnode *rb_ins(struct rbtree *t, struct rbnode *node,
 {
 	struct rbnode *p;
 	int dir;
-	void *key;
+	const void *key;
 
 	abort_unless(t);
 	if ( !node )
@@ -207,7 +208,8 @@ DECL void rb_apply(struct rbtree *t, apply_f func, void * ctx)
 }
 
 
-DECL void rb_findloc(struct rbtree *t, void *key, struct rbnode **pn, int *pd)
+DECL void rb_findloc(struct rbtree *t, const void *key, struct rbnode **pn,
+		     int *pd)
 {
 	struct rbnode *tmp, *par;
 	int dir = CRB_P;

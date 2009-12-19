@@ -54,7 +54,7 @@ struct avl {
 DECL void avl_init(struct avl *t, cmp_f cmp);
 DECL void avl_ninit(struct anode *n, void *k, void *d);
 
-DECL struct anode * avl_lkup(struct avl *t, void *key, int *dir);
+DECL struct anode * avl_lkup(struct avl *t, const void *key, int *dir);
 DECL struct anode * avl_ins(struct avl *t, struct anode *n, struct anode *loc, 
 		            int dir);
 DECL void           avl_rem(struct anode *node);
@@ -68,7 +68,7 @@ DECL struct anode * avl_getmax(struct avl *t);
 
 /* Auxiliary (helper) functions (don't use) */
 DECL void avl_fix(struct anode *p, struct anode *c, int dir);
-DECL void avl_findloc(struct avl *t, void *key, struct anode **p, int *d);
+DECL void avl_findloc(struct avl *t, const void *key, struct anode **p, int *d);
 DECL void avl_ins_at(struct avl *t, struct anode *node, struct anode *par, 
 		     int dir);
 DECL void avl_rleft(struct anode *n1, struct anode *n2, int ins);
@@ -102,7 +102,7 @@ DECL void avl_ninit(struct anode *n, void *k, void *d)
 }
 
 
-DECL struct anode *avl_lkup(struct avl *t, void *key, int *rdir)
+DECL struct anode *avl_lkup(struct avl *t, const void *key, int *rdir)
 {
 	struct anode *p;
 	int dir;
@@ -126,7 +126,7 @@ DECL struct anode *avl_ins(struct avl *t, struct anode *node, struct anode *loc,
 {
 	struct anode *p;
 	int dir;
-	void *key;
+	const void *key;
 
 	abort_unless(t);
 	if ( !node )
@@ -245,7 +245,8 @@ DECL void avl_apply(struct avl *t, apply_f func, void * ctx)
 }
 
 
-DECL void avl_findloc(struct avl *t, void *key, struct anode **pn, int *pd)
+DECL void avl_findloc(struct avl *t, const void *key, struct anode **pn,
+		      int *pd)
 {
 	struct anode *tmp, *par;
 	int dir = CA_P;
