@@ -72,17 +72,17 @@ void ue_runfor(struct uemux *mux, ulong msec);
 /* timer events */
 void ue_tm_init(struct ue_timer *t, int type, ulong ttl, callback_f tof,
 		void *arg);
-void ue_tm_reg(struct uemux *mux, struct ue_timer *t);
+int ue_tm_reg(struct uemux *mux, struct ue_timer *t);
 void ue_tm_cancel(struct ue_timer *t);
 
 /* i/o events */
 void ue_io_init(struct ue_ioevent *io, int type, int fd, callback_f f, void *x);
-void ue_io_reg(struct uemux *mux, struct ue_ioevent *io);
+int ue_io_reg(struct uemux *mux, struct ue_ioevent *io);
 void ue_io_cancel(struct ue_ioevent *io);
 
 /* Signal events */
 void ue_sig_init(struct ue_sigevent *io, int signum, callback_f f, void *x);
-void ue_sig_reg(struct uemux *mux, struct ue_sigevent *se);
+int ue_sig_reg(struct uemux *mux, struct ue_sigevent *se);
 void ue_sig_cancel(struct ue_sigevent *se);
 void ue_sig_clear(void);
 

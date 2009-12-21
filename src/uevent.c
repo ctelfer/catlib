@@ -25,6 +25,8 @@
 #include <cat/stduse.h>
 
 static int  fdmax(struct avl *a);
+static void disable_signals(sigset_t *save);
+static void restore_signals(sigset_t *save);
 static void tdispatch(void *lp, void *muxp);
 static void iorun(void *ioep, void *param);
 static void run_sig_handlers(struct uemux *mux, sigset_t *ss, int maxsig);
@@ -32,6 +34,7 @@ static void run_sig_handlers(struct uemux *mux, sigset_t *ss, int maxsig);
 static sigset_t uemux_sset;
 static int uemux_maxsig;
 static int uemux_initialized = 0;
+
 
 static int fdmax(struct avl *a)
 {
@@ -41,6 +44,24 @@ static int fdmax(struct avl *a)
 		return -1;
 	io = n->data;
 	return io->fd;
+}
+
+
+static void disable_signals(sigset_t *save)
+{
+	sigset_t block;
+	abort_unless(save);
+	sigfillset(&block);
+	if ( sigprocmask(SIG_BLOCK, &block, save) < 0 )
+		errsys("disabling signals in sigprocmask(): ");
+}
+
+
+static void restore_signals(sigset_t *save)
+{
+	abort_unless(save);
+	if ( sigprocmask(SIG_SETMASK, save, NULL) < 0 )
+		errsys("restoring signals in sigprocmask(): ");
 }
 
 
@@ -136,12 +157,13 @@ void ue_tm_init(struct ue_timer *t, int flags, ulong ttl, callback_f func,
 }
 
 
-void ue_tm_reg(struct uemux *mux, struct ue_timer *t)
+int ue_tm_reg(struct uemux *mux, struct ue_timer *t)
 {
 	abort_unless(t);
 	abort_unless(mux);
 	dl_ins(&mux->timers, &t->entry);
 	t->flags |= UE_TREG;
+	return 0;
 }
 
 
@@ -167,10 +189,10 @@ void ue_io_init(struct ue_ioevent *io, int type, int fd, callback_f f, void *a)
 }
 
 
-void ue_io_reg(struct uemux *mux, struct ue_ioevent *io)
+int ue_io_reg(struct uemux *mux, struct ue_ioevent *io)
 {
-	struct ue_ioevent *io2;
 	int wasempty = 0;
+	struct list *list;
 
 	abort_unless(mux);
 	abort_unless(io);
@@ -178,13 +200,18 @@ void ue_io_reg(struct uemux *mux, struct ue_ioevent *io)
 		     io->type == UE_EX);
 	abort_unless(io->fd >= 0);
 
-	if ( (io2 = avl_get_dptr(mux->fdtab, &io->fd)) != NULL ) {
-		l_ins(&io2->fdlist, &io->fdlist);
-	} else {
+	if ( (list = avl_get_dptr(mux->fdtab, &io->fd)) == NULL ) {
 		wasempty = 1;
-		/* TODO: check for failure here */
-		avl_put(mux->fdtab, &io->fd, io);
+		list = mem_get(mux->mm, sizeof(struct list));
+		if ( list == NULL )
+			return -1;
+		l_init(list);
+		if ( !avl_put(mux->fdtab, &io->fd, list) ) {
+			mem_free(mux->mm, list);
+			return -1;
+		}
 	}
+	l_ins(list, &io->fdlist);
 
 	cb_reg(&mux->iolist, &io->cb);
 	switch(io->type) {
@@ -204,13 +231,15 @@ void ue_io_reg(struct uemux *mux, struct ue_ioevent *io)
 		mux->maxfd = io->fd;
 
 	io->mux = mux;
+
+	return 0;
 }
 
 
 void ue_io_cancel(struct ue_ioevent *io)
 {
 	struct uemux *mux;
-	struct list *l;
+	struct list *list, *trav;
 	struct ue_ioevent *io2;
 
 	abort_unless(io);
@@ -220,32 +249,27 @@ void ue_io_cancel(struct ue_ioevent *io)
 	io->mux = NULL;
 	cb_unreg(&io->cb);
 
-	for ( l = l_head(&io->fdlist) ; l != l_end(&io->fdlist) ; l = l->next ){
-		io2 = container(l, struct ue_ioevent, fdlist);
+	l_rem(&io->fdlist);
+	list = avl_get_dptr(mux->fdtab, &io->fd);
+	abort_unless(list);
+
+	l_for_each(trav, list) {
+		io2 = container(trav, struct ue_ioevent, fdlist);
 		if ( io2->type == io->type )
 			break;
 	}
-	if ( l == l_end(&io->fdlist) ) {
+	if ( trav == l_end(list) ) {
 		switch(io->type) {
 		case UE_RD: FD_CLR(io->fd, &mux->rset); break;
 		case UE_WR: FD_CLR(io->fd, &mux->wset); break;
 		case UE_EX: FD_CLR(io->fd, &mux->eset); break;
 		}
 	}
-
-	io2 = avl_get_dptr(mux->fdtab, &io->fd);
-	abort_unless(io2);
-	if ( l_isempty(&io2->fdlist) ) {
+	if ( l_isempty(list) ) {
 		avl_clr(mux->fdtab, &io->fd);
 		if ( io->fd == mux->maxfd )
 			mux->maxfd = fdmax(mux->fdtab);
-	} else {
-		if ( io2 == io ) {
-			/* TODO: check the return code for this */
-			avl_put(mux->fdtab, &io->fd, 
-				container(io->fdlist.next, struct ue_ioevent, fdlist));
-		}
-		l_rem(&io->fdlist);
+		mem_free(mux->mm, list);
 	}
 }
 
@@ -269,104 +293,116 @@ static void ue_handler(int signum)
 }
 
 
-void ue_sig_reg(struct uemux *mux, struct ue_sigevent *se)
+int ue_sig_reg(struct uemux *mux, struct ue_sigevent *se)
 {
 	int wasempty = 0;
-	struct ue_sigevent *se2;
-	sigset_t block, oset;
+	struct list *list;
+	sigset_t save;
 	struct sigaction sa;
+
+	disable_signals(&save);
 
 	se->mux = mux;
 	l_init(&se->cb.entry);
-	if ( (se2 = avl_get_dptr(mux->sigtab, &se->signum)) == NULL ) {
+	if ( (list = avl_get_dptr(mux->sigtab, &se->signum)) == NULL ) {
+		list = mem_get(mux->mm, sizeof(struct list));
+		if ( list == NULL ) {
+			restore_signals(&save);
+			return -1;
+		}
+		l_init(list);
+		if ( !avl_put(mux->sigtab, &se->signum, list) ) {
+			mem_free(mux->mm, list);
+			restore_signals(&save);
+			return -1;
+		}
+
 		/* ADD the signal to the list to watch */
-		sigfillset(&block);
-		sigprocmask(SIG_BLOCK, &block, &oset);
+		wasempty = 1;
+
+		/* TODO: is this necessary?  Why did I put this here*/
+		memset(&sa, 0, sizeof(sa));
 		sa.sa_handler = ue_handler;
 		sigfillset(&sa.sa_mask);
 		sa.sa_flags = SA_RESTART;
-		/* TODO: check if this fails */
-		if ( sigaction(se->signum, &sa, NULL) < 0 )
-			errsys("sigaction: ");
-		sigprocmask(SIG_BLOCK, &oset, NULL);
-		wasempty = 1;
-		/* TODO: check if this fails */
-		avl_put(mux->sigtab, &se->signum, se);
-	} else {
-		l_ins(&se2->cb.entry, &se2->cb.entry);
-	}
+
+		if ( sigaction(se->signum, &sa, NULL) < 0 ) {
+			avl_clr(mux->sigtab, &se->signum);
+			mem_free(mux->mm, list);
+			restore_signals(&save);
+			return -1;
+		}
+		
+	} 
+	cb_reg(list, &se->cb);
+
+	restore_signals(&save);
+
+	return 0;
 }
 
 
 void ue_sig_cancel(struct ue_sigevent *se)
 {
-	struct ue_sigevent *se2;
 	struct uemux *mux;
+	struct list *list;
+	sigset_t save;
 
 	abort_unless(se);
-	if ( !(mux = se->mux) )
+
+	disable_signals(&save);
+
+	if ( !(mux = se->mux) ) {
+		restore_signals(&save);
 		return;
+	}
 	se->mux = NULL;
 
-	se2 = avl_get_dptr(mux->sigtab, &se->signum);
-	abort_unless(se2);
-	if ( l_isempty(&se2->cb.entry) ) {
+	cb_unreg(&se->cb);
+	list = avl_get_dptr(mux->sigtab, &se->signum);
+	abort_unless(list);
+
+	if ( l_isempty(list) ) {
 		avl_clr(mux->sigtab, &se->signum);
+		mem_free(mux->mm, list);
 		/* TODO could add code to remove handler */
 		/* would need to save the old sigaction entry */
-	} else {
-		if ( se2 == se ) {
-			struct callback *cb = container(se->cb.entry.next, 
-							struct callback, entry);
-			avl_put(mux->sigtab, &se->signum,
-				container(cb, struct ue_sigevent, cb));
-		}
-		l_rem(&se->cb.entry);
-	}
+	} 
+	restore_signals(&save);
 }
 
 
 void ue_sig_clear(void)
 {
-	sigset_t block, oset;
-	sigfillset(&block);
-	sigprocmask(SIG_BLOCK, &block, &oset);
+	sigset_t save;
+	disable_signals(&save);
 	sigemptyset(&uemux_sset);
 	uemux_maxsig = -1;
-	sigprocmask(SIG_BLOCK, &oset, NULL);
+	restore_signals(&save);
 }
 
 
 static void run_sig_handlers(struct uemux *mux, sigset_t *ss, int maxsig)
 {
 	int i;
-	struct list *first, *cur;
-	struct callback *cb;
-	struct ue_sigevent *se;
+	struct list *list;
 
-	for ( i = 0; i < maxsig ; ++i ) {
+	for ( i = 0; i <= maxsig ; ++i ) {
 		if ( mux->done )
 			return;
 		if ( !sigismember(ss, i) )
 			continue;
-
-		if ( (se = avl_get_dptr(mux->sigtab, &i)) == NULL )
+		if ( (list = avl_get_dptr(mux->sigtab, &i)) == NULL )
 			continue;
-		abort_unless(se);
-		first = &se->cb.entry;
-		do { 
-			cur = first;
-			cb = container(cur, struct callback, entry);
-			/* TODO, fix this int2ptr */
-			cb_call(cb, int2ptr(i));
-			cur = cur->next;
-		} while ( cur != first );
+		abort_unless(list);
+		/* TODO, fix this int2ptr */
+		cb_run(list, int2ptr(i));
 	}
 }
 
 
 struct ue_iorun_prm {
-	struct uemux *mux;
+	struct uemux *	mux;
 	fd_set *	rset;
 	fd_set *	wset;
 	fd_set *	eset;
@@ -403,7 +439,7 @@ void ue_next(struct uemux *mux)
 	struct ue_iorun_prm iorp;
 	struct list l;
 	struct cat_time ct;
-	sigset_t block, oset, fired;
+	sigset_t save, fired;
 
 	abort_unless(mux);
 	if ( mux->done )
@@ -427,15 +463,19 @@ void ue_next(struct uemux *mux)
 		errsys("ue_next (select): ");
 	}
 
-	sigfillset(&block);
-	sigprocmask(SIG_BLOCK, &block, &oset);
+	disable_signals(&save);
 	maxsig = uemux_maxsig;
 	uemux_maxsig = -1;
 	if ( maxsig >= 0 )
 		fired = uemux_sset;
-	sigprocmask(SIG_SETMASK, &oset, NULL);
+	restore_signals(&save);
+
 	if ( maxsig >= 0 )
 		run_sig_handlers(mux, &fired, maxsig);
+
+	/* possible if a signal fired */
+	if ( i < 0 )
+		return;
 
 	if ( tvp ) { 
 		gettimeofday(&tv, NULL);

@@ -4,7 +4,8 @@
 #include <cat/stduse.h>
 #include <string.h>
 #include <stdio.h>
-
+#include <unistd.h>
+#include <signal.h>
 
 
 struct ioctx {
@@ -15,9 +16,6 @@ struct ioctx {
 	struct ue_ioevent *out;
 	char 		buf[256];
 };
-
-
-
 
 
 int incb(void *arg, struct callback *cb)
@@ -96,6 +94,11 @@ int attimecb(void *arg, struct callback *cb)
 }
 
 
+int alarmcb(void *arg, struct callback *cb)
+{
+	printf("Alarm signal fired!\n");
+	return 0;
+}
 
 
 int main(int argc, char *argv[])
@@ -106,8 +109,10 @@ int main(int argc, char *argv[])
 	struct ioctx x;
 
 	ue_init(&m, &estdmm);
-	ue_tm_new(&m, UE_PERIODIC, 2000, percb, 0);
-	ue_tm_new(&m, UE_TIMEOUT, 7000, attimecb, 0);
+	ue_tm_new(&m, UE_PERIODIC, 2000, percb, NULL);
+	ue_tm_new(&m, UE_TIMEOUT, 7000, attimecb, NULL);
+	ue_sig_new(&m, SIGALRM, alarmcb, NULL);
+	alarm(5);
 
 	x.infd  = 0;
 	x.outfd = 1;
