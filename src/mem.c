@@ -42,20 +42,26 @@ void applyfree(void *data, void *mp)
 }
 
 
-static void *amm_get(struct memmgr *mm, size_t len)
+static void *amm_get_hi2lo(struct memmgr *mm, size_t len)
 {
-	struct arraymm *amm = (struct arraymm *)mm;
-	size_t nu = (len + amm->alignp2 - 1) >> amm->alignp2;
+	struct arraymm *amm = container(mm, struct arraymm, mm); 
+	size_t nu = (len + (1 << amm->alignp2) - 1) >> amm->alignp2;
+	if ( nu > amm->mlen - amm->fill )
+		return NULL;
+	amm->fill += nu;
+	return amm->mem - (amm->fill << amm->alignp2);
+}
+
+
+static void *amm_get_lo2hi(struct memmgr *mm, size_t len)
+{
+	struct arraymm *amm = container(mm, struct arraymm, mm); 
+	size_t nu = (len + (1 << amm->alignp2) - 1) >> amm->alignp2;
 	void *a;
 	if ( nu > amm->mlen - amm->fill )
 		return NULL;
-	if ( amm->hi2lo ) {
-		amm->fill += nu;
-		a = amm->mem - (amm->fill << amm->alignp2);
-	} else {
-		a = amm->mem + (amm->fill << amm->alignp2);
-		amm->fill += nu;
-	}
+	a = amm->mem + (amm->fill << amm->alignp2);
+	amm->fill += nu;
 	return a;
 }
 
@@ -67,21 +73,21 @@ void amm_init(struct arraymm *amm, void *mem, size_t mlen, int align, int hi2lo)
 		     !(align & (align-1)));
 	if ( align == 0 )
 		align = sizeof(cat_align_t);
-	amm->mm.mm_alloc = amm_get;
+	while ( (align >>= 1) > 0 ) /* Dumb log base-2 */
+		++i;
+	amm->fill = 0;
+	amm->alignp2 = i;
+	amm->mlen = mlen >> i;
+	if ( hi2lo ) {
+		amm->mm.mm_alloc = amm_get_hi2lo;
+		amm->mem = (byte_t *)mem + (amm->mlen << i);
+	} else {
+		amm->mm.mm_alloc = amm_get_lo2hi;
+		amm->mem = mem;
+	}
 	amm->mm.mm_resize = NULL;
 	amm->mm.mm_free = NULL;
 	amm->mm.mm_ctx = amm;
-	amm->fill = 0;
-	amm->mlen = mlen / align;
-	if ( hi2lo )
-		amm->mem = (byte_t *)mem + (amm->mlen * align);
-	else
-		amm->mem = mem;
-	while ( align > 0 ) { /* dumb log base-2 */
-		++i;
-		align >>= 1;
-	}
-	amm->alignp2 = i;
 	amm->hi2lo = hi2lo;
 }
 
