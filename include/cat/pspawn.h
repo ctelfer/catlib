@@ -147,11 +147,11 @@ enum {
 };
 
 struct pspawn {
-	int			state;
-	int			exit_status;
-	void			(*o_sigcld)(int sig);
-	int			error;
-	pid_t			cpid;
+	int		state;
+	int		exit_status;
+	void		(*o_sigcld)(int sig);
+	int		error;
+	pid_t		cpid;
 	struct ps_spec	spec;
 };
 
