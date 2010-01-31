@@ -628,7 +628,7 @@ static int rex_parse_str(struct rex_node **rxnn, uchar *p,
 	op = p;
 	if ( (rv = rex_check_repitions(&rs->base, &p, aux)) < 0 )
 		return rv;
-	if ( p != op ) { 
+	if ( p != op ) {
 		if ( rs->len > 1 ) {
 			struct rex_node_str *rs2;
 			if ( !(rs2 = mem_get(aux->mm, sizeof(*rs2))) )
@@ -841,7 +841,7 @@ static int rex_parse_group_e(struct rex_node **rxnn, uchar *p,
 
 	/* reinstate enclosing group's choice (if any) */
 	if ( ((rgn = aux->gstack) != NULL) && 
-			 (rgn->base.next->type == REX_T_CHOICE) ) {
+	      (rgn->base.next->type == REX_T_CHOICE) ) {
 		struct rex_choice *rc = (struct rex_choice *)rgn->base.next;
 		while ( rc->opt2->type == REX_T_CHOICE )
 			rc = (struct rex_choice *)rc->opt2;
@@ -852,6 +852,9 @@ static int rex_parse_group_e(struct rex_node **rxnn, uchar *p,
 
 	if ( (rv = rex_check_repitions(&rge->base, &p, aux)) < 0 )
 		return rv;
+	rgs->base.repmin = rge->base.repmin;
+	rgs->base.repmax = rge->base.repmax;
+
 	return rex_parse(rxnn, p, aux);
 }
 
@@ -1040,7 +1043,7 @@ static int rex_match_string(struct rex_node *rxn, char *cur, unsigned rep,
 {
 	struct rex_node_str *rs = (struct rex_node_str *)rxn;
 	if ( ((aux->end - cur) >= rs->len) &&
-			 (memcmp(rs->str, cur, rs->len) == 0) ) {
+	     (memcmp(rs->str, cur, rs->len) == 0) ) {
 		return rex_next(rxn, cur + rs->len, rep + 1, aux);
 	} else if ( rxn->repmin == 0 && rep == 0 ) { 
 		return rex_match_rxn(rxn->next, cur, 0, aux);
@@ -1054,16 +1057,20 @@ static int rex_match_class(struct rex_node *rxn, char *cur, unsigned rep,
 		           struct rex_match_aux *aux)
 {
 	struct rex_ascii_class *rac = (struct rex_ascii_class *)rxn;
-	int rv = REX_NOMATCH;
-	int i = *((uchar *)cur);
-	int j = i >> 3;
-	i &= 0x7;
-	if ( (rac->set[j] & (1 << i)) ) { 
-		rv = rex_next(rxn, cur + 1, rep + 1, aux);
-	} else if ( rxn->repmin == 0 && rep == 0 ) { 
-		rv = rex_match_rxn(rxn->next, cur, 0, aux);
+	int i, j;
+
+	if ( aux->end - cur > 0 ) {
+		i = *(uchar *)cur;
+		j = i >> 3;
+		i &= 0x7;
+		if ( (rac->set[j] & (1 << i)) )
+			return rex_next(rxn, cur + 1, rep + 1, aux);
 	}
-	return rv;
+
+	if ( rxn->repmin == 0 && rep == 0 )
+		return rex_match_rxn(rxn->next, cur, 0, aux);
+
+	return REX_NOMATCH;
 }
 
 
@@ -1103,7 +1110,7 @@ static int rex_match_group_s(struct rex_node *rxn, char *cur, unsigned rep,
 		if ( rv == REX_NOMATCH && rxn->repmin == 0 && rep == 0 ) {
 			/* we are doing the job of the end group here */
 			if ( rg->num < aux->nmatch && 
-					 !aux->match[rg->num].valid ) {
+			     !aux->match[rg->num].valid ) {
 				aux->match[rg->num].valid = 1;
 				aux->match[rg->num].start = cur - aux->start;
 				aux->match[rg->num].len = 0;
@@ -1150,16 +1157,6 @@ static int rex_match_rxn(struct rex_node *rxn, char *cur, unsigned rep,
 	if ( rxn == NULL )
 		return REX_MATCH;
 
-	/* handle end anchor */
-	if ( cur == aux->end ) {
-		if ( rxn->type == REX_T_EANCHOR )
-			return rex_match_rxn(rxn->next, cur, 0, aux);
-		else if ( rxn->type == REX_T_GROUP_E )
-			return rex_match_group_e(rxn, cur, 0, aux);
-		else
-			return REX_NOMATCH;
-	}
-
 	switch( rxn->type ) { 
 	case REX_T_STRING:
 		rv = rex_match_string(rxn, cur, rep, aux);
@@ -1183,7 +1180,11 @@ static int rex_match_rxn(struct rex_node *rxn, char *cur, unsigned rep,
 			return REX_NOMATCH;
 		break;
 	case REX_T_EANCHOR:
-		return REX_NOMATCH;
+		if ( cur == aux->end )
+			return rex_match_rxn(rxn->next, cur, 0, aux);
+		else
+			return REX_NOMATCH;
+		break;
 	default:
 		return REX_ERROR;
 	}
@@ -1213,15 +1214,18 @@ int rex_match(struct rex_pat *rxp, struct raw *str, struct rex_match_loc *m,
 	aux.nmatch = nm;
 	memset(m, 0, sizeof(*m) * nm);
 
-	for ( cur = aux.start; cur < aux.end; ++cur ) { 
+	/* if all paths start with a start anchor don't search */
+	/* the entire string: stop and return here */
+	aux.gstart = aux.start;
+	rv = rex_match_rxn(&rxp->start.base, aux.gstart, 0, &aux);
+	if ( rv != REX_NOMATCH || rxp->start_anchor || aux.gstart == aux.end )
+		return rv;
+
+	for ( cur = aux.start + 1; cur < aux.end; ++cur ) {
 		aux.gstart = cur;
 		rv = rex_match_rxn(&rxp->start.base, cur, 0, &aux);
 		if ( rv != REX_NOMATCH )
 			return rv;
-		/* if all paths start with a start anchor don't search */
-		/* the entire string: stop and return here */
-		if ( rxp->start_anchor )
-			return REX_NOMATCH;
 	}
 
 	return REX_NOMATCH;

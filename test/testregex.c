@@ -83,5 +83,11 @@ int main(int argc, char *argv[])
 	tmatch("^abc", "aaabcd");
 	tmatch("abc$", "abcd");
 	tmatch("bcd$", "aaabcd");
+	tmatch("^", "");
+	tmatch("$", "");
+	tmatch("^$", "");
+	tmatch("a?", "");
+	tmatch("a*", "");
+	tmatch("a+", "");
 	return 0;
 }
