@@ -508,6 +508,7 @@ static int rex_parse_error(struct rex_node **rxnn, struct rex_parse_aux *aux,
 }
 
 
+#define INTERNAL_WILDCARD	256
 static int parse_bound(uchar **p)
 {
 	int v = 0;
@@ -518,7 +519,7 @@ static int parse_bound(uchar **p)
 		++dp;
 	}
 	if ( dp == *p )
-		return REX_WILDCARD;
+		return INTERNAL_WILDCARD;
 	if ( v < 0 || v > 255 )
 		return -1;
 	*p = dp;
@@ -551,7 +552,7 @@ static int rex_check_repitions(struct rex_node *rxn, uchar **pp,
 		v = parse_bound(&p);
 		if ( v < 0 )
 			return rex_parse_error(&rxn->next, aux, p);
-		rxn->repmin = (v == REX_WILDCARD) ? 0 : v;
+		rxn->repmin = (v == INTERNAL_WILDCARD) ? 0 : v;
 		if ( *p != ',' ) { 
 			if ( *p != '}' || v < 1 )
 				return rex_parse_error(&rxn->next, aux, p);
@@ -564,8 +565,8 @@ static int rex_check_repitions(struct rex_node *rxn, uchar **pp,
 		v = parse_bound(&p);
 		if ( v < 1 )
 			return rex_parse_error(&rxn->next, aux, p);
-		rxn->repmax = v;
-		if ( rxn->repmin > rxn->repmax ) 
+		rxn->repmax = (v == INTERNAL_WILDCARD) ? REX_WILDCARD : v;
+		if ( rxn->repmin > rxn->repmax && rxn->repmax != REX_WILDCARD ) 
 			return rex_parse_error(&rxn->next, aux, *pp);
 		if ( *p != '}' )
 			return rex_parse_error(&rxn->next, aux, p);
