@@ -176,8 +176,7 @@ void test_strarr()
 			break;
 		}
 	if ( i == SARRLEN )
-		printf("qsort3 for strings succeeded w/%llu comparisons\n",
-		       n);
+		printf("qsort3 for strings succeeded w/%llu comparisons\n", n);
 }
 
 
