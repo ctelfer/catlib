@@ -2,7 +2,7 @@
 #include <sys/time.h>
 #include <cat/stduse.h>
 
-#define S0LEN	199
+#define S0LEN	1024
 #define NT 100000000
 
 int main(int argc, char *argv[])
@@ -10,7 +10,7 @@ int main(int argc, char *argv[])
 	struct timeval tv, tv2;
 	double usec;
 	struct safebitset *set1, *set2;
-	unsigned i;
+	unsigned i, bit;
 	DECLARE_BITSET(set0, S0LEN);
 
 	bset_fill(set0, S0LEN);
@@ -95,6 +95,19 @@ int main(int argc, char *argv[])
 	sbs_free(set2);
 	sbs_free(set1);
 
+
+	gettimeofday(&tv, 0);
+	for ( i = 0 ; i < NT ; ++i ) {
+		bit = i & (S0LEN - 1);
+		if ( bset_test(set0, bit) )
+			bset_clr(set0, bit);
+		else
+			bset_set(set0, bit);
+	}
+	gettimeofday(&tv2, 0);
+	usec = (tv2.tv_sec - tv.tv_sec) * 1000000 + tv2.tv_usec - tv.tv_usec;
+	usec /= NT;
+	printf("Roughly %f nanoseconds for bset_*()-based toggle\n", usec * 1000);
 
 
 	printf("Tests completed\n");

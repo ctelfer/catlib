@@ -207,6 +207,7 @@ uint sbs_copy(struct safebitset *dst, struct safebitset *src);
 int  sbs_test(struct safebitset *set, uint index);
 void sbs_set(struct safebitset *set, uint index);
 void sbs_clr(struct safebitset *set, uint index);
+void sbs_flip(struct safebitset *set, uint index);
 void sbs_set_to(struct safebitset *set, uint index, int val);
 
 

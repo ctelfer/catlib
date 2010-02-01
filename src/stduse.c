@@ -1671,8 +1671,8 @@ int sbs_test(struct safebitset *set, uint index)
 	abort_unless(BITSET_LEN(set->nbits) == set->len);
 
 	if ( index > set->nbits )
-		err("sbs_test: index out of bounds (%u > %u)\n",
-				index, set->nbits);
+		err("sbs_test: index out of bounds (%u > %u)\n", index,
+		    set->nbits);
 	return bset_test(set->set, index);
 }
 
@@ -1684,8 +1684,8 @@ void sbs_set(struct safebitset *set, uint index)
 	abort_unless(BITSET_LEN(set->nbits) == set->len);
 
 	if ( index > set->nbits )
-		err("sbs_set: index out of bounds (%u > %u)\n",
-				index, set->nbits);
+		err("sbs_set: index out of bounds (%u > %u)\n", index, 
+		    set->nbits);
 	bset_set(set->set, index);
 }
 
@@ -1697,9 +1697,22 @@ void sbs_clr(struct safebitset *set, uint index)
 	abort_unless(BITSET_LEN(set->nbits) == set->len);
 
 	if ( index > set->nbits )
-		err("sbs_clr: index out of bounds (%u > %u)\n",
-				index, set->nbits );
+		err("sbs_clr: index out of bounds (%u > %u)\n", index, 
+		    set->nbits);
 	bset_clr(set->set, index);
+}
+
+
+void sbs_flip(struct safebitset *set, uint index)
+{
+	abort_unless(set);
+	abort_unless(set->set);
+	abort_unless(BITSET_LEN(set->nbits) == set->len);
+
+	if ( index > set->nbits )
+		err("sbs_clr: index out of bounds (%u > %u)\n", index,
+		    set->nbits);
+	bset_flip(set->set, index);
 }
 
 
@@ -1710,7 +1723,7 @@ void sbs_set_to(struct safebitset *set, uint index, int val)
 	abort_unless(BITSET_LEN(set->nbits) == set->len);
 	if ( index > set->nbits )
 		err("sbs_set_to: index out of bounds (%u > %u)\n",
-				index, set->nbits);
+		    index, set->nbits);
 	bset_set_to(set->set, index, val);
 }
 

@@ -28,6 +28,7 @@ DECL void bset_copy(bitset_t *dst, bitset_t *src, unsigned nbits);
 DECL int  bset_test(bitset_t *set, unsigned index);
 DECL void bset_set(bitset_t *set, unsigned index);
 DECL void bset_clr(bitset_t *set, unsigned index);
+DECL void bset_flip(bitset_t *set, unsigned index);
 DECL void bset_set_to(bitset_t *set, unsigned index, int val);
 
 
@@ -78,6 +79,12 @@ DECL void bset_set(bitset_t *set, unsigned index)
 DECL void bset_clr(bitset_t *set, unsigned index)
 {
 	set[index / CAT_UINT_BIT] &=  ~(1 << (index % CAT_UINT_BIT));
+}
+
+
+DECL void bset_flip(bitset_t *set, unsigned index)
+{
+	set[index / CAT_UINT_BIT] ^=  (1 << (index % CAT_UINT_BIT));
 }
 
 
