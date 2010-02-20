@@ -390,11 +390,6 @@ double strtod(const char *start, char **cpp)
 
 	}
 
-	if ( *(start - 1) == '.' ) {
-		if ( cpp )
-			*cpp = (char *)start - 1;
-		return v;
-	}
 
 	if ( *start == 'e' || *start == 'E' ) {
 		++start;
@@ -413,10 +408,16 @@ double strtod(const char *start, char **cpp)
 			while ( exp-- < 0 )
 				v *= 10.0;
 		}
+
+		start = cp;
 	}
 
-	if (cpp)
-		*cpp = (char *)start;
+	if ( cpp ) { 
+		if ( *(start - 1) == '.' )
+			*cpp = (char *)start - 1;
+		else
+			*cpp = (char *)start;
+	}
 
 	return v;
 }
