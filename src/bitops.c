@@ -42,7 +42,7 @@ uint32_t compress_l32(uint32_t x, uint32_t m)
 		mv = m & mp;
 		m = (m ^ mv) | (mv << ((uint32_t)1 << i));
 		t = x & mv;
-		x = (x ^ t) | (t << ((uint32_t)1 <<  i));
+		x = (x ^ t) | (t << ((uint32_t)1 << i));
 		mk = mk & ~mp;
 	}
 
@@ -68,7 +68,7 @@ uint32_t compress_r32(uint32_t x, uint32_t m)
 		mv = m & mp;
 		m = (m ^ mv) | (mv >> ((uint32_t)1 << i));
 		t = x & mv;
-		x = (x ^ t) | (t >> ((uint32_t)1 <<  i));
+		x = (x ^ t) | (t >> ((uint32_t)1 << i));
 		mk = mk & ~mp;
 	}
 
@@ -94,7 +94,7 @@ uint64_t compress_l64(uint64_t x, uint64_t m)
 		mv = m & mp;
 		m = (m ^ mv) | (mv << ((uint64_t)1 << i));
 		t = x & mv;
-		x = (x ^ t) | (t << ((uint64_t)1 <<  i));
+		x = (x ^ t) | (t << ((uint64_t)1 << i));
 		mk = mk & ~mp;
 	}
 
@@ -120,7 +120,7 @@ uint64_t compress_r64(uint64_t x, uint64_t m)
 		mv = m & mp;
 		m = (m ^ mv) | (mv >> ((uint64_t)1 << i));
 		t = x & mv;
-		x = (x ^ t) | (t >> ((uint64_t)1 <<  i));
+		x = (x ^ t) | (t >> ((uint64_t)1 << i));
 		mk = mk & ~mp;
 	}
 
@@ -162,7 +162,7 @@ int arr_to_SAG_permvec32(uint8_t arr[32], uint32_t pv[5])
 	for ( i = 0; i < 5; ++i ) {
 		pv[i] = 0;
 		for ( j = 0; j < 32; ++j )
-			pv[i] |= ((arr[j] & ((uint32_t)1 << i)) >> i) << j;
+			pv[i] |= ((arr[j] >> i) & 1) << j;
 	}
 
 	/* now permute each bit of p[x] for x > 1 so it lines up with */
@@ -212,7 +212,7 @@ int arr_to_SAG_permvec64(uint8_t arr[64], uint64_t pv[6])
 	for ( i = 0; i < 6; ++i ) {
 		pv[i] = 0;
 		for ( j = 0; j < 64; ++j )
-			pv[i] |= ((arr[j] & ((uint64_t)1 << i)) >> i) << j;
+			pv[i] |= (uint64_t)((arr[j] >> i) & 1) << j;
 	}
 
 	/* now permute each bit of p[x] for x > 1 so it lines up with */
@@ -245,24 +245,20 @@ uint64_t permute64_SAG(uint64_t bits, uint64_t pv[6])
 
 uint32_t bitgather32(uint32_t bits, uint8_t pos[32])
 {
-	int i, p;
+	int i;
 	uint32_t x = 0;
-	for ( i = 0; i < 32; ++i ) {
-		p = pos[i] & 0x1f;
-		x |= (bits & ((uint32_t)1 << p)) >> p << i;
-	}
+	for ( i = 0; i < 32; ++i )
+		x |= ((bits >> (pos[i] & 0x1f)) & 1) << i;
 	return x;
 }
 
 
 uint64_t bitgather64(uint64_t bits, uint8_t pos[64])
 {
-	int i, p;
+	int i;
 	uint64_t x = 0;
-	for ( i = 0; i < 64; ++i ) {
-		p = pos[i] & 0x3f;
-		x |= ((bits & ((uint64_t)1 << p)) >> p) << i;
-	}
+	for ( i = 0; i < 64; ++i )
+		x |= ((bits >> (pos[i] & 0x3f)) & 1) << i;
 	return x;
 }
 

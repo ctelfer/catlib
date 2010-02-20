@@ -8,7 +8,7 @@
 void print_bits32(uint32_t x) {
 	int i;
 	for ( i = 31; i >= 0; i-- ) {
-		printf("%u", (uint)((x & ((uint32_t)1 << i)) >> i));
+		printf("%u", (uint)((x >> i) & 1));
 		if ( i == 0 )
 			printf("\n");
 		else if ( i % 4 == 0 )
@@ -18,16 +18,18 @@ void print_bits32(uint32_t x) {
 }
 
 
+#if CAT_64BIT
 void print_bits64(uint64_t x) {
 	int i;
 	for ( i = 63; i >= 0; i-- ) {
-		printf("%u", (uint)((x & ((uint64_t)1 << i)) >> i));
+		printf("%u", (uint)((x >> i) & 1));
 		if ( i == 0 )
 			printf("\n");
 		else if ( i % 4 == 0 )
 			printf(" ");
 	}
 }
+#endif
 
 
 void test_compress()
@@ -78,7 +80,7 @@ void test_compress()
 void print_perm32(uint32_t x, uint8_t p[32]) {
 	int i;
 	for ( i = 31; i >= 0; i-- ) {
-		printf("%u", (uint)((x & ((uint32_t)1 << p[i])) >> p[i]));
+		printf("%u", (uint)((x >> p[i]) & 1));
 		if ( i == 0 )
 			printf("\n");
 		else if ( i % 4 == 0 )
@@ -89,10 +91,10 @@ void print_perm32(uint32_t x, uint8_t p[32]) {
 
 
 #if CAT_64BIT
-void print_perm64(uint32_t x, uint8_t p[64]) {
+void print_perm64(uint64_t x, uint8_t p[64]) {
 	int i;
 	for ( i = 63; i >= 0; i-- ) {
-		printf("%u", (uint)((x & ((uint64_t)1 << p[i])) >> p[i]));
+		printf("%u", (uint)((x >> p[i]) & 1));
 		if ( i == 0 )
 			printf("\n");
 		else if ( i % 4 == 0 )
@@ -153,14 +155,14 @@ int main(int argc, char *argv[])
 {
 	int i;
 	uint32_t word32, p32_sag, p32_bg;
-	uint8_t perm32[32];
-	uint8_t perm64[64];
+	uint8_t perm32[32];     /* comes from */
 	uint8_t perm32_SAG[32]; /* goes-to rather than comes-from */
 	uint32_t sagpv32[5];
 #if CAT_64BIT
-	uint64_t sagpv64[6];
 	uint64_t word64, p64_sag, p64_bg;
+	uint8_t perm64[64];     /* comes from */
 	uint8_t perm64_SAG[64]; /* goes-to rather than comes-from */
+	uint64_t sagpv64[6];
 #endif /* CAT_64BIT */
 
 	srand(time(NULL));
@@ -204,8 +206,8 @@ int main(int argc, char *argv[])
 		printf("32-bit SAG and 32-bit bit gather perms disagree\n");
 	}
 	for ( i = 0; i < 32; i++ ) {
-		uint8_t b1 = !!(word32 & ((uint32_t)1 << perm32[i]));
-		uint8_t b2 = !!(p32_sag & ((uint32_t)1 << i));
+		uint8_t b1 = (word32 >> perm32[i]) & 1;
+		uint8_t b2 = (p32_sag >> i) & 1;
 		if ( b1 != b2 ) {
 			printf("32-bit SAG value is wrong ");
 			printf("at position %d: %d vs %d.  Perm[%d] = %d\n",
@@ -214,8 +216,8 @@ int main(int argc, char *argv[])
 		}
 	}
 	for ( i = 0; i < 32; i++ ) {
-		uint8_t b1 = !!(word32 & (1 << perm32[i]));
-		uint8_t b2 = !!(p32_bg & (1 << i));
+		uint8_t b1 = (word32 >> perm32[i]) & 1;
+		uint8_t b2 = (p32_bg >> i) & 1;
 		if ( b1 != b2 ) {
 			printf("32-bit bit gather value is wrong ");
 			printf("at position %d: %d vs %d.  Perm[%d] = %d\n",
@@ -241,8 +243,8 @@ int main(int argc, char *argv[])
 		printf("64-bit SAG and 64-bit bit gather perms disagree\n");
 	}
 	for ( i = 0; i < 64; i++ ) {
-		uint8_t b1 = !!(word64 & ((uint64_t)1 << perm64[i]));
-		uint8_t b2 = !!(p64_sag & ((uint64_t)1 << i));
+		uint8_t b1 = (word64 >> perm64[i]) & 1;
+		uint8_t b2 = (p64_sag >> i) & 1;
 		if ( b1 != b2 ) {
 			printf("64-bit SAG value is wrong ");
 			printf("at position %d: %d vs %d.  Perm[%d] = %d\n",
@@ -251,8 +253,8 @@ int main(int argc, char *argv[])
 		}
 	}
 	for ( i = 0; i < 64; i++ ) {
-		uint8_t b1 = !!(word64 & ((uint64_t)1 << perm64[i]));
-		uint8_t b2 = !!(p64_bg & ((uint64_t)1 << i));
+		uint8_t b1 = (word64 >> perm64[i]) & 1;
+		uint8_t b2 = (p64_bg >> i) & 1;
 		if ( b1 != b2 ) {
 			printf("64-bit bit gather value is wrong ");
 			printf("at position %d: %d vs %d.  Perm[%d] = %d\n",
