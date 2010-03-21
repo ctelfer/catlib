@@ -76,27 +76,27 @@ int ps_spec_copy(struct ps_spec *dst, const struct ps_spec *src);
       (ps_spec_add_remap() for each)
       + for the fde returned from each ps_spec_add_remap() call:
         - for each fd that the child should have this parent fd mapped to:
-    ps_fde_addfd() for that target fd
+           * ps_fde_addfd() for that target fd
 
    3) specify which file descriptors to have as pipes/sockets to/from/both
       the parent
       + ps_spec_add_pipe() for each specifying
         - whether input, output or both
-  - whether the server side should use stdio
-  - what buffering mode to use if using stdio
+        - whether the server side should use stdio
+        - what buffering mode to use if using stdio
       + for each fde returned from ps_spec_add_pipe()
         - for each fd that the child should have this pipe mapped to:
-    ps_fde_addfd() for the target fd
+           * ps_fde_addfd() for the target fd
 
    4) specify which file descriptors to redirect from/to a file system
       object (such as a file)
       + ps_spec_add_fsrdr() for each specifying
         - whether to open for input / output or both
-  - whether to open for appending (output-only)
+        - whether to open for appending (output-only)
       + for each fde returned from ps_spec_add_fsrdr()
         - for each fd that the child should have this file mapped to:
-    ps_fde_addfd() for the target fd
-  - if the mode should be changed call ps_rdr_set_mode()
+           * ps_fde_addfd() for the target fd
+        - if the mode should be changed call ps_rdr_set_mode()
    ------------- */
 
 /* specify to add a pipe to the child process (uni- or bi-directional) */
