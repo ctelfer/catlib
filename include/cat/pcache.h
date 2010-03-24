@@ -19,7 +19,7 @@ struct pcache {
 	unsigned		npools;
 	unsigned		maxpools;
 	unsigned		hiwat;
-	struct memmgr *	mm;
+	struct memmgr *		mm;
 };
 
 

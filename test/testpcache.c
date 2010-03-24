@@ -17,15 +17,20 @@ int main(int argc, char *argv[])
   void **allocs;
   struct timeval tv, tv2;
   double usec;
+  uint hiwat = 0;
 
 
   if ( argc < 4 )
-    err("usage: %s <alloc size> <pool size> <number of allocs>\n", argv[0]);
+    err("usage: %s <alloc size> <pool size> <number of allocs> [<hwm>]\n",
+	argv[0]);
 
   psiz = atoi(argv[2]);
   na = atoi(argv[3]);
 
-  pc_init(&Pcache, atoi(argv[1]), psiz, 1, 0, &estdmm);
+  if ( argc > 4 )
+    hiwat = atoi(argv[4]);
+
+  pc_init(&Pcache, atoi(argv[1]), psiz, hiwat, 0, &estdmm);
 
   /* add one page */
   pc_addpg(&Pcache, emalloc(psiz), psiz);

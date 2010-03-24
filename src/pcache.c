@@ -29,6 +29,7 @@ void pc_init(struct pcache *pc, size_t asiz, size_t pgsiz, uint hiwat,
 
 	l_init(&pc->avail);
 	l_init(&pc->empty);
+	l_init(&pc->full);
 }
 
 
@@ -52,15 +53,20 @@ void * pc_alloc(struct pcache *pc)
 
 	abort_unless(pc);
 
-	if ( l_isempty(&pc->avail) ) { 
+	if ( l_isempty(&pc->avail) ) {
+		if ( l_isempty(&pc->full) ) {
+			if ( ! pc->mm || (pc->npools == pc->maxpools) )
+				return NULL;
 
-		if ( ! pc->mm || (pc->npools == pc->maxpools) )
-			return NULL;
-
-		pcp = mem_get(pc->mm, pc->pgsiz);
-		if ( ! pcp ) 
-			return NULL;
-		pc_addpg(pc, pcp, pc->pgsiz);
+			pcp = mem_get(pc->mm, pc->pgsiz);
+			if ( ! pcp ) 
+				return NULL;
+			pc_addpg(pc, pcp, pc->pgsiz);
+		} else {
+			pcp = (struct pc_pool *)pc->full.next;
+			l_rem(&pcp->entry);
+			l_ins(pc->avail.prev, &pcp->entry);
+		}
 	} 
 
 	pcp = (struct pc_pool *)pc->avail.next;
@@ -95,13 +101,15 @@ void pc_free(void *item)
 
 	pl_free(pp, item);
 
-	if ( pp->fill == pp->max ) { 
+	if ( pp->fill == pp->max ) {
 		pc = pcp->cache;
 
-		if (pc->mm && (pc->hiwat > 0) && (pc->npools > pc->hiwat)) {
-			l_rem(&pcp->entry);
+		l_rem(&pcp->entry);
+		if ( pc->mm && (pc->hiwat > 0) && (pc->npools > pc->hiwat) ) {
 			mem_free(pc->mm, pcp);
 			pc->npools -= 1;
+		} else {
+			l_ins(pc->full.next, &pcp->entry);
 		}
 	}
 }
