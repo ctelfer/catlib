@@ -4,6 +4,7 @@
 #include <cat/aux.h>
 #include <cat/err.h>
 #include <cat/pcache.h>
+#include <cat/list.h>
 #include <cat/stduse.h>
 
 #define NCONS	10000
@@ -18,6 +19,7 @@ int main(int argc, char *argv[])
   struct timeval tv, tv2;
   double usec;
   uint hiwat = 0;
+  struct list hold;
 
 
   if ( argc < 4 )
@@ -54,6 +56,27 @@ int main(int argc, char *argv[])
   usec /= NCONS * na;
 
   printf("Roughly %f nanoseconds for the two operations\n", usec * 1000);
+  fflush(stdout);
+
+  if ( psiz < sizeof(struct list) ) {
+    printf("Size too small for list test\n");
+    return 0;
+  }
+
+  l_init(&hold);
+  gettimeofday(&tv, 0);
+  for ( i = 0 ; i < NCONS; ++i )
+  {
+    for ( j = 0 ; j < na ; ++j ) 
+      l_ins(&hold, pc_alloc(&Pcache));
+    for ( j = 0 ; j < na ; ++j ) 
+      pc_free(l_pop(&hold));
+  }
+  gettimeofday(&tv2, 0);
+  usec = (tv2.tv_sec - tv.tv_sec) * 1000000 + tv2.tv_usec - tv.tv_usec;
+  usec /= NCONS * na;
+
+  printf("Roughly %f nanoseconds for the two operations with touch\n", usec * 1000);
   fflush(stdout);
 
   pc_freeall(&Pcache);

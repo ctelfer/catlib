@@ -109,7 +109,7 @@ void pc_free(void *item)
 			mem_free(pc->mm, pcp);
 			pc->npools -= 1;
 		} else {
-			l_ins(pc->full.next, &pcp->entry);
+			l_ins(&pc->full, &pcp->entry);
 		}
 	}
 }
