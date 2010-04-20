@@ -20,11 +20,21 @@ int main(int argc, char *argv[])
   double usec;
   uint hiwat = 0;
   struct list hold;
+  int domalloc = 0;
 
 
   if ( argc < 4 )
-    err("usage: %s <alloc size> <pool size> <number of allocs> [<hwm>]\n",
+    err("usage: %s [-m] <alloc size> <pool size> <# of allocs> [<hwm>]\n",
 	argv[0]);
+
+  if ( strcmp(argv[1], "-m") == 0 ) {
+    if ( argc < 5 ) 
+      err("usage: %s [-m] <alloc size> <pool size> <# of allocs> [<hwm>]\n",
+  	argv[0]);
+    domalloc = 1;
+    argc--;
+    argv++;
+  }
 
   psiz = atoi(argv[2]);
   na = atoi(argv[3]);
@@ -58,6 +68,23 @@ int main(int argc, char *argv[])
   printf("Roughly %f nanoseconds for the two operations\n", usec * 1000);
   fflush(stdout);
 
+  if ( domalloc ) {
+    gettimeofday(&tv, 0);
+    for ( i = 0 ; i < NCONS; ++i )
+    {
+      for ( j = 0 ; j < na ; ++j ) 
+        allocs[j] = malloc(psiz);
+      for ( j = 0 ; j < na ; ++j ) 
+        free(allocs[j]);
+    }
+    gettimeofday(&tv2, 0);
+    usec = (tv2.tv_sec - tv.tv_sec) * 1000000 + tv2.tv_usec - tv.tv_usec;
+    usec /= NCONS * na;
+
+    printf("Roughly %f nanoseconds for the malloc()/free()\n", usec * 1000);
+    fflush(stdout);
+  }
+
   if ( psiz < sizeof(struct list) ) {
     printf("Size too small for list test\n");
     return 0;
@@ -80,6 +107,23 @@ int main(int argc, char *argv[])
   fflush(stdout);
 
   pc_freeall(&Pcache);
+
+  if ( domalloc ) {
+    gettimeofday(&tv, 0);
+    for ( i = 0 ; i < NCONS; ++i )
+    {
+      for ( j = 0 ; j < na ; ++j ) 
+        l_ins(&hold, malloc(psiz));
+      for ( j = 0 ; j < na ; ++j ) 
+        free(l_pop(&hold));
+    }
+    gettimeofday(&tv2, 0);
+    usec = (tv2.tv_sec - tv.tv_sec) * 1000000 + tv2.tv_usec - tv.tv_usec;
+    usec /= NCONS * na;
+
+    printf("Roughly %f nanoseconds for the malloc()/free()\n", usec * 1000);
+    fflush(stdout);
+  }
 
   return 0;
 }
