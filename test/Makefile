@@ -154,6 +154,7 @@ testoptparse: testoptparse.c $(CAT_DBG_LIBDEP)
 
 testsort: testsort.c $(CAT_LIBDEP)
 	$(CC) $(CAT_CF) -o testsort testsort.c $(INC) $(CAT_LIB)
+#	$(CC) $(CAT_DBG_CF) -o testsort testsort.c $(INC) $(CAT_DBG_LIB)
 
 testcatstr: testcatstr.c $(CAT_DBG_LIBDEP)
 	$(CC) $(CAT_DBG_CF) -o testcatstr testcatstr.c $(INC) $(CAT_DBG_LIB)

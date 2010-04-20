@@ -180,7 +180,7 @@ void test_strarr()
 }
 
 
-#define SPEEDLEN	10000
+#define SPEEDLEN	100000
 #define NTRIES		100
 
 byte_t spd_dst[SPEEDLEN];
@@ -230,6 +230,66 @@ void test_speed()
 }
 
 
+#define SPEED2LEN	100000
+#define NTRIES2		100
+#define SPEED2PLEN	256
+
+struct speed2_elem {
+	int	key;
+	char	pad[SPEED2PLEN];
+};
+
+struct speed2_elem spd2_arr1[SPEED2LEN];
+struct speed2_elem spd2_arr2[SPEED2LEN];
+
+
+unsigned long long spd2_ncmps;
+int spd2_cmp(const void *i1, const void *i2)
+{
+	++spd2_ncmps;
+	return *(int *)i1 - *(int *)i2;
+}
+
+
+void test_speed2()
+{
+	int i, j;
+	struct timeval start, end;
+	for ( i = 0; i < SPEED2LEN; ++i ) {
+		spd2_arr1[i].key = rand();
+		for ( j = 0 ; j < SPEED2PLEN ; ++j )
+			spd2_arr1[i].pad[j] = rand();
+	}
+	spd2_ncmps = 0;
+	gettimeofday(&start, NULL);
+	for ( j = 0 ; j < NTRIES2 ; ++j ) {
+		memcpy(spd2_arr2, spd2_arr1, sizeof(spd2_arr1));
+		qsort_array(spd2_arr2, SPEED2LEN, 
+		            sizeof(struct speed2_elem), &spd2_cmp);
+	}
+	gettimeofday(&end, NULL);
+	printf("Time taken for %u sorts of %u elements for my sort: %f\n",
+	       NTRIES2, SPEED2LEN, 
+	       (double)(end.tv_sec - start.tv_sec) + 
+	       (double)(end.tv_usec - start.tv_usec) / 1000000.0);
+	printf("my sort used %llu comparisons\n", spd2_ncmps);
+
+	spd2_ncmps = 0;
+	gettimeofday(&start, NULL);
+	for ( j = 0 ; j < NTRIES2 ; ++j ) {
+		memcpy(spd2_arr2, spd2_arr1, sizeof(spd2_arr1));
+		qsort(spd2_arr2, SPEED2LEN, sizeof(struct speed2_elem),
+		      &spd2_cmp);
+	}
+	gettimeofday(&end, NULL);
+	printf("Time taken for %u sorts of %u elements for std qsort: %f\n",
+	       NTRIES2, SPEED2LEN, 
+	       (double)(end.tv_sec - start.tv_sec) + 
+	       (double)(end.tv_usec - start.tv_usec) / 1000000.0);
+	printf("standard qsort used %llu comparisons\n", spd2_ncmps);
+}
+
+
 int main(int argc, char *argv[])
 {
 	size_t i;
@@ -244,6 +304,9 @@ int main(int argc, char *argv[])
 	test_strarr();
 	printf("\n\nspeed test\n");
 	test_speed();
+	printf("\n\nspeed test 2 -- with %u byte elements\n",
+	       (unsigned)sizeof(struct speed2_elem));
+	test_speed2();
 
 	return 0;
 }

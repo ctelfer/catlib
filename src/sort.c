@@ -1,43 +1,33 @@
 #include <cat/sort.h>
 
-#define INTSWAP		0
-#define LONGSWAP	1
-#define BULKLONG	2
-#define BULKBYTE	3
+#define PTRSWAP		0
+#define BULKLONG	1
+#define BULKBYTE	2
 
 
 #define SWAPTYPE(a, size)						\
-	(((size) == sizeof(int)) && 				        \
-	 (((byte_t*)(a) - (byte_t *)0) % sizeof(int) == 0)) ?	        \
-	 INTSWAP :						        \
-	(((size) == sizeof(long)) && 				        \
-	 (((byte_t *)(a) - (byte_t *)0) % sizeof(long) == 0)) ?		\
-	 LONGSWAP :						        \
+	(((size) == sizeof(void *)) && 				        \
+	 (((byte_t *)(a) - (byte_t *)0) % sizeof(cat_align_t) == 0)) ?	\
+	 PTRSWAP :						        \
 	(((size) % sizeof(long) == 0) && 			        \
-	 (((byte_t *)(a) - (byte_t *)0) % sizeof(long) == 0)) ?		\
+	 (((byte_t *)(a) - (byte_t *)0) % sizeof(cat_align_t) == 0)) ?	\
 	 BULKLONG :						        \
 	 BULKBYTE
 	
 
 #define SWAP(a,b,type) 							\
 	switch (type) { 						\
-		case INTSWAP: {						\
-			int __t = *(int *)a;				\
-			*(int *)a = *(int *)b;				\
-			*(int *)b = __t;			        \
-		}							\
-		break;							\
-		case LONGSWAP: {					\
-			long __t = *(long *)a;				\
-			*(long *)a = *(long *)b;		        \
-			*(long *)b = __t;			        \
+		case PTRSWAP: {						\
+			void *__t = *(void **)(a);			\
+			*(void **)(a) = *(void **)(b);	        	\
+			*(void **)(b) = __t;			        \
 		}							\
 		break;							\
 		case BULKLONG: {					\
-			size_t __n = esize / sizeof(long);		\
-			long *__ap = (long *)a;				\
-			long *__bp = (long *)b;				\
-			long __t;				        \
+			register size_t __n = esize / sizeof(long);	\
+			register long *__ap = (long *)(a);		\
+			register long *__bp = (long *)(b);		\
+			register long __t;			        \
 			do {						\
 				__t = *__ap;			        \
 				*__ap++ = *__bp;		        \
@@ -45,18 +35,17 @@
 			} while ( --__n > 0 );				\
 		}							\
 		break;				        		\
-		case BULKBYTE: {					\
-			size_t __n = esize;				\
-			byte_t *__ap = (byte_t *)a;			\
-			byte_t *__bp = (byte_t *)b;			\
-			byte_t __t;					\
+		default: {						\
+			register size_t __n = esize;			\
+			register byte_t *__ap = (byte_t *)(a);		\
+			register byte_t *__bp = (byte_t *)(b);		\
+			register byte_t __t;				\
 			do {						\
 				__t = *__ap;			        \
 				*__ap++ = *__bp;		        \
 				*__bp++ = __t;			        \
 			} while ( --__n > 0 );				\
 		}							\
-		break;							\
 	}
 
 
@@ -68,8 +57,8 @@ static void isort_i(void *arr, const size_t nelem, const size_t esize,
 
 	for ( p1 = start + esize ; p1 < end ; p1 += esize ) {
 		for ( p2 = p1 ; p2 > start ; p2 -= esize ) {
-			if ((*cmp)(p2 - esize, p2) > 0) {
-				tmp = p2 - esize;
+			tmp = p2 - esize;
+			if ((*cmp)(tmp, p2) > 0) {
 				SWAP(tmp, p2, swaptype);
 			} else {
 				break;
@@ -195,115 +184,139 @@ struct qswork {
 	__ne = __stk[__t].nelem;		\
 	__qd = __stk[__t].qdepth;
 
+
+static byte_t *median3(byte_t *m1, byte_t *m2, byte_t *m3, cmp_f cmp)
+{
+	if ( (*cmp)(m1, m2) < 0 ) { 
+		/* (1,2,3),(3,1,2),(1,3,2) */
+		if ( (*cmp)(m2, m3) < 0 ) { /* (1,2,3) */
+			return m2;
+		} else if ( (*cmp)(m1, m3) < 0 ) { /* (1,3,2) */
+			return m3;
+		} else { /* (3,1,2) */
+			return m1;
+		}
+	} else {  /* m2 >= m1 */
+		/* (2,1,3),(2,3,1),(3,2,1) */
+		if ( (*cmp)(m1, m3) < 0 ) { /* (2,1,3) */
+			return m1;
+		} else if ( (*cmp)(m2, m3) < 0 ) { /* (2,3,1) */
+			return m3;
+		} else { /* (3,2,1) */
+			return m2;
+		}
+	}
+}
+
+
+#define ISORT_THRESH	8
+
 /* This is actually an "intro-sort" because it will only sort down to 2log2 */
 /* of the number of elements and will heap sort sub arrays past that. This */
 /* guarantees nlogn performance.  Also, the sort uses insertion sort for   */
 /* subarrays of 8 elements or less. */
 void qsort_array(void *arr, const size_t nelem, const size_t esize, cmp_f cmp)
 {
-	byte_t *pivot, *lo, *hi, *end;
+	byte_t *start, *pivot, *lo, *hi, *end, *m1, *m2, *m3;
 	int bailout_depth = 0, depth;
 	struct qswork stack[QS_MAXDEPTH];
 	int top = 0;
-	size_t n;
+	size_t n, nlo, stride;
 	const int swaptype = SWAPTYPE(arr, esize);
 
 	if ( arr == NULL || nelem <= 1 || esize == 0 || cmp == NULL )
 		return;
 
+	if ( nelem <= ISORT_THRESH ) {
+		isort_i(arr, nelem, esize, cmp, swaptype);
+		return;
+	}
+
 	/* find 2*floor(log2(nelem)) */
 	n = nelem;
 	while ( (n >>= 1) )
 		++bailout_depth;
-	bailout_depth <<= 1;
+	bailout_depth = bailout_depth * 2;
+	if ( bailout_depth > QS_MAXDEPTH-3 )
+		bailout_depth = QS_MAXDEPTH-3;
 
-	PUSH(stack, top, arr, nelem, 1);
+	start = arr;
+	n = nelem;
+	depth = 1;
 
-	while ( top != 0 ) {
-		POP(stack, top, pivot, n, depth);
-		/* insertion sort for small arrays */
-		if ( n <= 8 ) {
-			isort_i(pivot, n, esize, cmp, swaptype);
-			continue;
-		}
+	while ( 1 ) {
 		/* heap sort past the log2 of # of elements in recurse depth */
 		if ( depth > bailout_depth ) {
-			hsort_i(pivot, n, esize, cmp, swaptype);
+			hsort_i(start, n, esize, cmp, swaptype);
+			if ( top == 0 )
+				break;
+			POP(stack, top, start, n, depth);
 			continue;
 		}
 
 		/* actual quicksort:  we must have 9 or more elements now */
-		end = pivot + esize * n;
-		hi = end - esize;
-
-		/* find median-of-3: median of the low, mid and high elements */
-		/* use the 'lo' pointer for the middle, and 'pivot' pointer */
-		/* for the low */
-		lo = pivot + (n >> 2) * esize;
-		if ( (*cmp)(pivot, lo) < 0 ) { 
-			/* (p,l,h),(p,h,l),(h,p,l) */
-			if ( (*cmp)(lo, hi) < 0 ) {
-				/* (p,l.h) */
-				SWAP(pivot, lo, swaptype);
-			} else if ( (*cmp)(pivot, hi) < 0 ) {
-				/* (p,h,l) */
-				SWAP(pivot, hi, swaptype);
-			} /* else (h,p,l): do nothing */
-		} else {  /* pivot >= lo */
-			/* (l,p,h),(h,l,p),(l,h,p) */
-			if ( (*cmp)(lo, hi) >= 0 ) {
-				/* (h,l,p) */
-				SWAP(pivot, lo, swaptype);
-			} else if ( (*cmp)(pivot, hi) >= 0 ) {
-				/* (l,h,p) */
-				SWAP(pivot, hi, swaptype);
-			} /* else do nothing */
+		m1 = start;
+		lo = start + esize;
+		m2 = start + (n >> 1) * esize;
+		end = start + esize * n;
+		m3 = hi = end - esize;
+		if ( n > 64 ) {
+			stride = esize * (n / 9);
+			m1 = median3(m1, m1 + stride, m1 + stride * 2, cmp);
+			m2 = median3(m2 - stride, m2, m2 + stride, cmp);
+			m3 = median3(m3 - stride * 2, m3 - stride, m3, cmp);
 		}
+		pivot = median3(m1, m2, m3, cmp);
+		if ( pivot != start )
+			SWAP(start, pivot, swaptype);
 
-		/* set the 'lo' variable properly */
-		lo = pivot + esize;
-
-		while ( lo < hi ) {
-			while ( (lo < hi) && (*cmp)(pivot, lo) >= 0 )
+		while ( 1 ) {
+			while ( (*cmp)(start, lo) >= 0 ) {
+				if ( lo == hi ) { 
+					hi += esize;
+					goto done_inner;
+				}
 				lo += esize;
-			while ( (lo < hi) && (*cmp)(pivot, hi) < 0 )
-				hi -= esize;
-			if ( lo < hi ) {
-				SWAP(lo, hi, swaptype);
-				lo += esize;
+			}
+			while ( (*cmp)(start, hi) < 0 ) {
+				if ( lo == hi ) { 
+					lo -= esize;
+					goto done_inner;
+				}
 				hi -= esize;
 			}
-		}
 
-		/* At this point, there are 2 cases:  low > hi or low == hi. */
-		/* the former can only happen if we ended the loop swapping */
-		/* two adjacent elements.  The latter happens when the scan */
-		/* can't find an element lower or higher than the pivot */
-		if ( lo > hi ) { 
-			/* swap the pivot to the end of the low array */
-			SWAP(pivot, hi, swaptype);
-			PUSH(stack, top, pivot, (hi-pivot)/esize, depth+1);
-			hi += esize;
+			SWAP(lo, hi, swaptype);
+			if ( lo + esize == hi )
+				goto done_inner;
+			lo += esize;
+			hi -= esize;
 		}
-		else {
-			/* see whether the last element goes in the first or */
-			/* second subarray */
-			if ( (*cmp)(pivot, lo) >= 0 ) /* low subarray */
-				hi += esize;
-			else                          /* high subarray */
-				lo -= esize;
-			if ( lo != pivot ) {
-				SWAP(pivot, lo, swaptype);
-				PUSH(stack, top, pivot, (lo-pivot)/esize,
-						 depth+1);
-			} 
+done_inner:
+
+		/* swap the pivot to the end of the low array */
+		SWAP(start, lo, swaptype);
+		depth += 1;
+
+		n = (end - hi) / esize;
+		if ( n > ISORT_THRESH ) { 
+			nlo = (lo - start) / esize;
+			if ( nlo > ISORT_THRESH ) {
+				PUSH(stack, top, start, nlo, depth);
+			} else {
+				isort_i(start, nlo, esize, cmp, swaptype);
+			}
+			start = hi;
+		} else {
+			isort_i(hi, n, esize, cmp, swaptype);
+			n = (lo - start) / esize;
+			if ( n <= ISORT_THRESH ) { 
+				isort_i(start, n, esize, cmp, swaptype);
+				if ( top == 0 )
+					break;
+				POP(stack, top, start, n, depth);
+			}
 		}
-
-
-		if ( top == QS_MAXDEPTH )
-			hsort_i(hi, (end-hi)/esize, esize, cmp, swaptype);
-		else
-			PUSH(stack, top, hi, (end-hi)/esize, depth+1);
 	} 
 }
 
