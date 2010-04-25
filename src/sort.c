@@ -1,5 +1,12 @@
 #include <cat/sort.h>
 
+#if CAT_USE_STDLIB
+#include <string.h>
+#else /* CAT_USE_STDLIB */
+#include <cat/catstdlib.h>
+#endif /* CAT_USE_STDLIB */
+
+
 #define PTRSWAP		0
 #define BULKLONG	1
 #define BULKBYTE	2
@@ -320,3 +327,46 @@ done_inner:
 	} 
 }
 
+
+
+void array_to_voidp(void **varr, void *arr, size_t nelem, size_t esize)
+{
+	byte_t *p = arr;
+
+	if ( (nelem < 1) || (esize == 0) || (~(size_t)0 / esize < nelem) )
+		return;
+	do {
+		*varr++ = p;
+		p += esize;
+	} while ( --nelem > 0 );
+}
+
+
+void permute_array(void *arr, void *tmp, void **varr, size_t nelem, size_t esize)
+{
+	byte_t *ap = arr, *phi, *lastp, *hold;
+	size_t hi, to;
+
+	if ( (nelem < 2) || (esize == 0) || (~(size_t)0 / esize < nelem) )
+		return;
+
+	for ( hi = 0, phi = ap; hi < nelem ; ++hi, phi += esize ) {
+		if ( varr[hi] == phi )
+			continue;
+
+		to = hi;
+		lastp = phi;
+		memcpy(tmp, phi, esize);
+
+		do {
+			memcpy(lastp, varr[to], esize);
+			hold = lastp;
+			lastp = varr[to];
+			varr[to] = hold;
+			to = (lastp - ap) / esize;
+		} while ( varr[to] != phi );
+
+		memcpy(lastp, tmp, esize);
+		varr[to] = lastp;
+	}
+}
