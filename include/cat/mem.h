@@ -39,8 +39,7 @@ size_t amm_get_fill(struct arraymm *amm);
 size_t amm_get_avail(struct arraymm *amm);
 
 
-/* Declarations for default memmgr.  Will be a null allocator unless */
-/* CAT_USE_STDLIB != 0 */
+/* Declaration of default memmgr. */
 extern struct memmgr stdmm;
 
 #endif /* __cat_mem_h */

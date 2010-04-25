@@ -2,6 +2,7 @@
 #include <cat/emalloc.h>
 #include <cat/err.h>
 #include <stdlib.h>
+#include <string.h>
 
 static void def_emalloc_abort(char *s, void *omem, size_t size, size_t nmem,
 		              int syserr);
@@ -47,12 +48,6 @@ void * erealloc(void *old, size_t size)
 
 
 #else /* CAT_DEBUG_LEVEL <= 0 */
-
-#if CAT_USE_STDLIB
-#include <string.h>
-#else /* CAT_USE_STDLIB */
-#include <cat/catstdlib.h>
-#endif /* CAT_USE_STDLIB */
 
 
 void * emalloc(size_t size)

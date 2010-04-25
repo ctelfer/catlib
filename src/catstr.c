@@ -16,10 +16,10 @@
 #include <string.h>
 #include <stdlib.h>
 
-#if CAT_USE_STDLIB
+#if CAT_HAS_POSIX
 #include <errno.h>
 #include <unistd.h>
-#endif /* CAT_USE_STDLIB */
+#endif /* CAT_HAS_POSIX */
 
 
 static struct memmgr *cs_mmp = &stdmm;
@@ -541,7 +541,7 @@ size_t cs_rev_off(const struct catstr *cs, size_t roff)
 }
 
 
-#if CAT_USE_STDLIB
+#if CAT_HAS_POSIX
 int cs_fd_readline(int fd, struct catstr **csp)
 {
 	struct catstr *cs;
@@ -635,7 +635,7 @@ int cs_file_readline(FILE *file, struct catstr **csp)
 	*csp = cs;
 	return 0;
 }
-#endif /* CAT_USE_STDLIB */
+#endif /* CAT_HAS_POSIX */
 
 
 struct catstr *cs_alloc(size_t len)

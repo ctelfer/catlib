@@ -3,7 +3,7 @@
 
 #include <cat/cat.h>
 
-#if CAT_USE_STDLIB
+#if CAT_HAS_POSIX
 
 #include <cat/csv.h>
 
@@ -18,6 +18,6 @@ int  csv_read_field(struct csv_state *csv, char **field);
 int  csv_read_rec(struct csv_state *csv, struct csv_record *cr);
 void csv_free_rec(struct csv_record *cr);
 
-#endif /* CAT_USE_STDLIB */
+#endif /* CAT_HAS_POSIX */
 
 #endif /* __stdcsv_h */

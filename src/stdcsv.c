@@ -1,6 +1,6 @@
 #include <cat/cat.h>
 
-#if CAT_USE_STDLIB
+#if CAT_HAS_POSIX
 
 #include <cat/stdcsv.h>
 #include <cat/stduse.h>
@@ -137,4 +137,4 @@ void csv_free_rec(struct csv_record *cr)
 	memset(cr, 0, sizeof(*cr));
 }
 
-#endif /* CAT_USE_STDLIB */
+#endif /* CAT_HAS_POSIX */

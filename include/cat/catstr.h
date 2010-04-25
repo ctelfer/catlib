@@ -64,11 +64,11 @@ int cs_addch(struct catstr *cs, char ch);
 struct catstr *cs_substr(const struct catstr *cs, size_t off, size_t len);
 size_t         cs_rev_off(const struct catstr *cs, size_t roff);
 
-#if CAT_USE_STDLIB
+#if CAT_HAS_POSIX
 int cs_fd_readline(int fd, struct catstr **csp);
 /* TODO: move out of here once we have input in the nolibc version*/
 int cs_file_readline(FILE *file, struct catstr **csp);
-#endif /* CAT_USE_STDLIB */
+#endif /* CAT_HAS_POSIX */
 
 /* returns -1 if there are outstanding dynamic strings with the current mm */
 void cs_setmm(struct memmgr *mm);
