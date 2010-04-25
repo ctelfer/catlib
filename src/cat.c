@@ -1,12 +1,7 @@
 #include <cat/cat.h>
 
-#if CAT_USE_STDLIB
-#include <stdlib.h>
 #include <stdio.h>
-#else /* CAT_USE_STDLIB */
-#include <cat/catstdlib.h>
-#include <cat/catstdio.h>
-#endif /* CAT_USE_STDLIB */
+#include <stdlib.h>
 
 void cat_abort(const char *fn, unsigned ln, const char *expr)
 {

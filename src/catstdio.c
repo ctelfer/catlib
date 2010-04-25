@@ -3,10 +3,12 @@
 #include <limits.h>
 
 #if !CAT_USE_STDLIB
-#include <cat/catstdio.h>
+#include <stdio.h>  /* should be my copy */
+#include <stdlib.h>  /* should be my copy */
+#include <string.h> /* should be my copy */
+
 #include <cat/emit.h>
 #include <cat/emit_format.h>
-#include <cat/catstdlib.h>
 
 /* This is the machine dependent part */
 #if CAT_HAS_POSIX

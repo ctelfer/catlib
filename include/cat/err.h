@@ -12,12 +12,7 @@
 
 #include <cat/cat.h>
 #include <cat/emit.h>
-
-#if CAT_USE_STDIO
 #include <stdio.h>
-#else /* CAT_USE_STDIO */
-#include <cat/catstdio.h>
-#endif /* CAT_USE_STDIO */
 
 typedef void (*log_close_f)(struct emitter *);
 

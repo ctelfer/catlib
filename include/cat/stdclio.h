@@ -3,12 +3,7 @@
 #include <cat/cat.h>
 #include <cat/emit.h>
 #include <cat/inport.h>
-
-#if CAT_USE_STDLIB
 #include <stdio.h>
-#else /* CAT_USE_STDLIB */
-#include <cat/catstdio.h>
-#endif /* CAT_USE_STDLIB */
 
 struct file_emitter {
 	struct emitter	fe_emitter;

@@ -13,15 +13,10 @@
 #include <cat/stdclio.h>
 #include <cat/str.h>
 
-#if CAT_USE_STDLIB
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
 #include <stdlib.h>
-#else /* CAT_USE_STDLIB */
-#include <cat/catstdlib.h>
-#include <cat/catstdio.h>
-#endif /* CAT_USE_STDLIB */
 
 #if CAT_HAS_POSIX
 #include <syslog.h>

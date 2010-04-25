@@ -12,11 +12,7 @@
 #define __cat_cds_h
 
 #include <cat/cat.h>
-#ifdef CAT_USE_STDLIB
 #include <stdlib.h>
-#else /* CAT_USE_STDLIB */
-#include <catstdlib.h>
-#endif
 
 #define CDS_NEWSTRUCT(_ds, _dt, _name)			\
 typedef struct {					\

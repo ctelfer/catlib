@@ -1,11 +1,7 @@
 #include <cat/lex.h>
 #include <cat/raw.h>
-#if CAT_USE_STDLIB
 #include <string.h>
 #include <stdlib.h>
-#else /* CAT_USE_STDLIB */
-#include <cat/catstdlib.h>
-#endif /* CAT_USE_STDLIB */
 
 
 #define node_to_lexent(node) container((node), struct lexer_entry, entry)

@@ -10,12 +10,8 @@
 #include <cat/cat.h>
 #include <cat/aux.h>
 
-#if CAT_USE_STDLIB
 #include <stdlib.h>
 #include <string.h>
-#else /* CAT_USE_STDLIB */
-#include <cat/catstdlib.h>
-#endif /* CAT_USE_STDLIB */
 
 
 int cmp_ptr(const void *k1, const void *k2)

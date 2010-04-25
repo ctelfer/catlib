@@ -1,9 +1,9 @@
 #ifndef __cat_stdio_h
 #define __cat_stdio_h
 #include <cat/cat.h>
+#include <stdarg.h>
 
 #if !CAT_USE_STDLIB
-#include <cat/catstdlib.h>
 
 typedef struct {
 	char *		f_buffer;
@@ -56,6 +56,11 @@ int   printf(const char *format, ...);
 int   fprintf(FILE *stream, const char *format, ...);
 int   vprintf(const char *format, va_list ap);
 int   vfprintf(FILE *stream, const char *format, va_list ap);
+
+int   snprintf(char *buf, size_t len, const char *fmt, ...);
+int   sprintf(char *buf, const char *fmt, ...);
+int   vsnprintf(char *buf, size_t len, const char *fmt, va_list ap);
+int   vsprintf(char *buf, const char *fmt, va_list ap);
 
 /* not implemented */
 int   fgetc(FILE *stream);

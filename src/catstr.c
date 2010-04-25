@@ -12,16 +12,13 @@
 #include <cat/grow.h>
 #include <cat/match.h>
 
-/* for memmove and strlen */
-#if CAT_USE_STDLIB
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+
+#if CAT_USE_STDLIB
 #include <errno.h>
 #include <unistd.h>
-#include <stdlib.h>
-#else /* CAT_USE_STDLIB */
-#include <cat/catstdio.h>
-#include <cat/catstdlib.h>
 #endif /* CAT_USE_STDLIB */
 
 

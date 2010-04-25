@@ -1,13 +1,8 @@
 #include <cat/cat.h>
 #include <cat/match.h>
-
-#if CAT_USE_STDLIB
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#else /* CAT_USE_STDLIB */
-#include <cat/catstdlib.h>
-#endif /* CAT_USE_STDLIB */
 
 
 void kmp_pinit(struct kmppat *kmp, struct raw *pat, ulong *skips)

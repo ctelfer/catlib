@@ -1,10 +1,5 @@
 #include <cat/sort.h>
-
-#if CAT_USE_STDLIB
 #include <string.h>
-#else /* CAT_USE_STDLIB */
-#include <cat/catstdlib.h>
-#endif /* CAT_USE_STDLIB */
 
 
 #define PTRSWAP		0

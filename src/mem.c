@@ -9,6 +9,7 @@
 
 #include <cat/cat.h>
 #include <cat/mem.h>
+#include <stdlib.h>
 
 
 void *mem_get(struct memmgr *mm, size_t len)
@@ -112,12 +113,6 @@ size_t amm_get_avail(struct arraymm *amm)
 	return (amm->mlen - amm->fill) << amm->alignp2;
 }
 
-
-#if CAT_USE_STDLIB
-#include <stdlib.h>
-#else /* CAT_USE_STDLIB */
-#include <cat/catstdlib.h>
-#endif /* CAT_USE_STDLIB */
 
 static void * std_alloc(struct memmgr *mm, size_t size) 
 {

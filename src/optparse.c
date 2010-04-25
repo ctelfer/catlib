@@ -1,13 +1,8 @@
 #include <cat/optparse.h>
-#if CAT_USE_STDLIB
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
 #include <stdio.h>
-#else
-#include <cat/catstdlib.h>
-#include <cat/catstdio.h>
-#endif
 
 
 int optparse_reset(struct clopt_parser *clp, int argc, char *argv[])

@@ -5,11 +5,7 @@
 
 /* TODO:  Make thread safe */
 
-#if CAT_USE_STDLIB
 #include <stdlib.h>
-#else  /* CAT_USE_STDLIB */
-#include <cat/catstdlib.h>
-#endif /* CAT_USE_STDLIB */
 
 #ifndef CAT_DBGMEM_NBUCKETS
 #define CAT_DBGMEM_NBUCKETS	4096

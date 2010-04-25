@@ -1,10 +1,6 @@
 #include <cat/emit.h>
 #include <limits.h>
-#if CAT_USE_STDLIB
 #include <string.h>
-#else /* CAT_USE_STDLIB */
-#include <cat/catstdlib.h>
-#endif /* CAT_USE_STDLIB */
 
 
 int emit_char(struct emitter *em, char ch)

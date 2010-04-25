@@ -1,11 +1,6 @@
 #include <cat/cat.h>
 #include <cat/stdclio.h>
-
-#if CAT_USE_STDLIB
 #include <stdio.h>
-#else /* CAT_USE_STDLIB */
-#include <cat/catstdio.h>
-#endif /* CAT_USE_STDLIB */
 
 
 int file_emit_func(struct emitter *em, const void *buf, size_t len)

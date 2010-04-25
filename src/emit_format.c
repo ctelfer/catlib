@@ -3,13 +3,9 @@
 #include <limits.h>
 #include <cat/emit.h>
 #include <cat/emit_format.h>
-#if CAT_USE_STDLIB
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
-#else /* CAT_USE_STDLIB */
-#include <cat/catstdlib.h>
-#endif /* CAT_USE_STDLIB */
 
 
 enum {

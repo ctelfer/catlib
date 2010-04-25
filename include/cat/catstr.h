@@ -12,12 +12,7 @@
 
 #include <cat/cat.h>
 #include <cat/mem.h>
-
-#if CAT_USE_STDLIB
 #include <stdio.h>
-#else
-#include <cat/catstdio.h>
-#endif
 
 struct catstr {
 	size_t	cs_size;

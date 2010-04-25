@@ -9,14 +9,9 @@
 
 #include <cat/cat.h>
 
-#if CAT_USE_STDLIB
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#else /* CAT_USE_STDLIB */
-#include <cat/catstdio.h>
-#include <cat/catstdlib.h>
-#endif /* CAT_USE_STDLIB */
 #include <cat/err.h>
 #include <cat/stduse.h>
 #include <cat/grow.h>

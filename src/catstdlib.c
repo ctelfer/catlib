@@ -1,8 +1,10 @@
 #include <cat/cat.h>
-#include <cat/catstdlib.h>
 
 /* We use several functions even if we don't use the standard library */
 #if !CAT_USE_STDLIB
+#include <stdlib.h>	/* should be my copies */
+#include <string.h>	/* should be my copies */
+#include <ctype.h>	/* should be my copies */
 
 int memcmp(const void *b1p, const void *b2p, size_t len)
 {

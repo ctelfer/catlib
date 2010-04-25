@@ -3,13 +3,8 @@
 #include <cat/emit_format.h>
 #include <stdarg.h>
 #include <limits.h>
-
-#if CAT_USE_STDLIB
 #include <string.h>
 #include <ctype.h>
-#else /* CAT_USE_STDLIB */
-#include <cat/catstdlib.h>
-#endif /* CAT_USE_STDLIB */
 
 
 #ifndef va_copy

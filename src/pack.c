@@ -9,14 +9,10 @@
 
 #include <cat/cat.h>
 #include <cat/pack.h>
-#if CAT_USE_STDLIB
 #include <stdarg.h>
 #include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
-#else /* CAT_USE_STDLIB */
-#include <cat/catstdlib.h>
-#endif /* CAT_USE_STDLIB */
 
 typedef unsigned char	byte;
 typedef unsigned short	half;

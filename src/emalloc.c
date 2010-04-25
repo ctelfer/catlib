@@ -1,12 +1,7 @@
 #include <cat/cat.h>
 #include <cat/emalloc.h>
 #include <cat/err.h>
-
-#if CAT_USE_STDLIB
 #include <stdlib.h>
-#else /* CAT_USE_STDLIB */
-#include <cat/catstdlib.h>
-#endif /* CAT_USE_STDLIB */
 
 static void def_emalloc_abort(char *s, void *omem, size_t size, size_t nmem,
 		              int syserr);

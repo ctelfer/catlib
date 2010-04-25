@@ -2,12 +2,7 @@
 #define __cat_str_h
 
 #include <cat/cat.h>
-
-#if CAT_USE_STDLIB
 #include <stdarg.h>
-#else /* CAT_USE_STDLIB */
-#include <cat/catstdlib.h>
-#endif /* CAT_USE_STDLIB */
 
 size_t str_copy(char *dst, const char *src, size_t dlen);
 size_t str_cat(char *dst, const char *src, size_t dlen);

@@ -1,6 +1,7 @@
 #include <cat/cat.h>
 #include <cat/mem.h>
 #include <cat/grow.h>
+#include <stdlib.h>
 
 /* 
  * Rules: 
@@ -12,14 +13,6 @@
  *  - the new length will be a power of 2 multiple of the old length or 
  *    CAT_MAXGROW if doubling the length would put it above CAT_MAXGROW
  */
-
-
-/* TODO:  allow this using limited memory allocation routines */
-#if CAT_USE_STDLIB
-#include <stdlib.h>
-#else /* CAT_USE_STDLIB */
-#include <cat/catstdlib.h>
-#endif /* CAT_USE_STDLIB */
 
 
 int grow(byte_t **ptr, size_t *lenp, size_t min)
