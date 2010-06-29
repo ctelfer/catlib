@@ -172,7 +172,9 @@ extern void cat_abort(const char *fn, unsigned ln, const char *expr);
 	do { if (!(x)) { cat_abort(__FILE__, __LINE__, #x); } } while (0)
 
 
-#define CT_ERROR_IF(__name, __test) \
-static char __ct_##__name[(__test) ? -1 : 1];
+#define __STATIC_BUGNAME(name, line) __bug_on_##name##_##line
+#define STATIC_BUGNAME(name, line) __STATIC_BUGNAME(name, line)
+#define STATIC_BUG_ON(name, test) \
+	enum { STATIC_BUGNAME(name, __LINE__) = 1 / !(test) };
 
 #endif /* __cat_cat_h */
