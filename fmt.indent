@@ -1,0 +1,6 @@
+Very close to linux:
+	-linux -nsob <disable comment disciplines: -c33 -cd33 -cp33>
+
+or: 
+	-nbad -bap -nbc -bbo -hnl -br -brs -ncdb -ce -ci4 -cli0 -d0 -di1 -nfc1 -i8 -ip0 -l80 -lp -npcs -nprs -npsl -sai -saf -saw -ncs -nsc -nsob -nfca -ss -ts8 -il1
+
