@@ -45,4 +45,11 @@ void  pc_free(void *item);
 void  pc_addpg(struct pcache *pc, void *page, size_t size);
 void  pc_delpg(void *page);
 
+/* Each pool item will require one of these as overhead, so it's often */
+/* good to account for this when one wants to cache align pool items. */
+typedef union {
+	struct pc_pool *	pool;
+	cat_align_t	        align;
+} cat_pcpad_t;
+
 #endif /* __pcache_h */

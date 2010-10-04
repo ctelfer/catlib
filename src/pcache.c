@@ -1,11 +1,5 @@
 #include <cat/pcache.h>
 
-typedef union {
-	struct pc_pool *	pool;
-	cat_align_t	        align;
-} cat_pcpad_t;
-
-
 void pc_init(struct pcache *pc, size_t asiz, size_t pgsiz, uint hiwat, 
 	     uint maxpools, struct memmgr *mm)
 {
