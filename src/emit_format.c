@@ -45,7 +45,7 @@ struct va_list_s {
 #endif
 
 typedef int (*format_f)(struct emitter *em, struct format_params *fp,
-						struct va_list_s *app, int *flen);
+			struct va_list_s *app, int *flen);
 
 
 #define EMIT_CHAR(em, ch)                               \
