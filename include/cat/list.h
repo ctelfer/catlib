@@ -35,6 +35,7 @@ DECL void l_ins(struct list *prev, struct list *elem);
 DECL void l_rem(struct list *elem);
 DECL int  l_isempty(struct list *list);
 DECL int  l_onlist(struct list *elem);
+DECL ulong l_length(struct list *list);
 
 /* stack and queue functions */
 DECL void          l_enq(struct list *list, struct list *elem);
@@ -161,6 +162,19 @@ DECL int l_onlist(struct list *list)
 {
 	abort_unless(list);
 	return (list->next != list);
+}
+
+
+DECL ulong l_length(struct list *list)
+{
+	struct list *t;
+	unsigned long n = 0;
+
+	abort_unless(list && list->next);
+	for ( t = list->next ; t != list ; t = t->next )
+		++n;
+
+	return n;
 }
 
 

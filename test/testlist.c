@@ -48,8 +48,10 @@ int main(int argc, char *argv[])
   printf("Roughly %f nanoseconds for l_ins(),l_rem()\n", usec * 1000);
 
 
+  printf("loading %u elements\n", LLEN);
   for ( i = 0 ; i < LLEN ; ++i ) 
     l_ins(&list, emalloc(sizeof(struct list)));
+  printf("The l_length(&list) is %lu\n", l_length(&list));
 
   gettimeofday(&tv, 0);
   for ( i = 0 ; i < NT2 ; ++i )
