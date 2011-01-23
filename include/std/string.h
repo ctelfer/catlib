@@ -18,6 +18,8 @@ char *strstr(const char *str, const char *pat);
 char *strchr(const char *s, int ch);
 char *strrchr(const char *s, int ch);
 char *strcpy(char *dst, const char *src);
+size_t strspn(const char *s, const char *accept);
+size_t strcspn(const char *s, const char *reject);
 char *strdup(const char *s);
 
 #endif /* !CAT_USE_STDLIB */

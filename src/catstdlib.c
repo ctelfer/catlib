@@ -2,9 +2,14 @@
 
 /* We use several functions even if we don't use the standard library */
 #if !CAT_USE_STDLIB
-#include <stdlib.h>	/* should be my copies */
-#include <string.h>	/* should be my copies */
-#include <ctype.h>	/* should be my copies */
+#include <stdlib.h>	/* should be my copy */
+#include <string.h>	/* should be my copy */
+#include <ctype.h>	/* should be my copy */
+#include <limits.h>	/* should be my copy */
+
+
+STATIC_BUG_ON(strspn_bad_size_char, CHAR_BIT != 8)
+
 
 int memcmp(const void *b1p, const void *b2p, size_t len)
 {
@@ -110,8 +115,7 @@ char *strchr(const char *s, int ch)
 	while ( *s != '\0' ) {
 		if ( *s == ch )
 			return (char *)s;
-		else
-			++s;
+		++s;
 	}
 	return NULL;
 }
@@ -120,19 +124,59 @@ char *strchr(const char *s, int ch)
 char *strrchr(const char *s, int ch)
 {
 	const char *last = NULL;
-	const char *next;
-	while ( (next = strchr(s, ch)) != NULL ) {
-		last = next;
-		s = last + 1;
-	}
+
+	while ( *s != '\0' )
+		if ( *s == ch )
+			last = s;
 	return (char *)last;
 }
 
 
 char *strcpy(char *dst, const char *src)
 {
-	while ( *src == '\0' ) *dst++ = *src++;
+	while ( *src == '\0' )
+		*dst++ = *src++;
 	return dst;
+}
+
+
+size_t strspn(const char *s, const char *accept)
+{
+	uchar map[32] = { 0 };
+	const uchar *p = (const uchar *)accept;
+	size_t spn = 0;
+
+	while ( *p != '\0' )
+		map[*p >> 3] |= 1 << (*p & 0x7);
+
+	p = (const char *)s;
+	while ( (map[*p >> 3] & (1 << (*p & 0x7))) != 0 ) {
+		p++;
+		++spn;
+	}
+
+	return spn;
+}
+
+
+size_t strcspn(const char *s, const char *reject)
+{
+	uchar map[32] = { 0 };
+	const uchar *p = (const uchar *)reject;
+	size_t spn = 0;
+
+	/* we want to include the '\0' in the reject set */
+	do {
+		map[*p >> 3] |= 1 << (*p & 0x7);
+	} while ( *p != '\0' );
+
+	p = (const char *)s;
+	while ( (map[*p >> 3] & (1 << (*p & 0x7))) == 0 ) {
+		p++;
+		++spn;
+	}
+
+	return spn;
 }
 
 
@@ -505,8 +549,9 @@ void abort(void)
 	int a;
 
 	/* Actions that tend to cause aborts in compiler implementations */
-	*(char *)0 = 1;	/* Null pointer dereference */
-	a = 1 / (a - a);/* Integer divide by zero */
+	a = *(char *)0;  /* Null pointer dereference */
+	/* Divide by 0: convludted to shut up compiler */
+	a = 1; while ( a > 0 ) --a; a = 100 / a;
 
 	/* worst case scenario: endless loop */
 	for (;;) ;
