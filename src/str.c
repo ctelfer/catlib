@@ -113,7 +113,113 @@ int str_fmt(char *buf, size_t len, const char *fmt, ...)
 }
 
 
-char * str_findc(const char *sprm, const char *cprm)
+uchar chnval(char d)
+{
+	return isdigit(d) ? 
+		(d) - '0' : 
+		(isalpha(d) ? 10 + toupper(d) - 'A' : 0);
+}
+
+
+int str_parse_ip6a(void *ap, const char *src)
+{
+	size_t spn;
+	int i;
+	int plen = 0;
+	int slen = 0; 
+	int zcomp = 0;
+	const char *nxt, *p = src;
+	byte_t *addr = ap;
+	byte_t suffix[16];
+
+	spn = strspn(p, ":abcdefABCDEF0123456789");
+	if ( spn < 2 || spn > 39 || src[spn] != '\0' )
+		return -1;
+	if ( src[0] == ':' && src[1] != ':' )
+		return -1;
+
+	memset(ap, 0, 16);
+
+	while ( (nxt = strchr(p, ':')) && (nxt != p) ) {
+		if ( plen >= 16 )
+			return -1;
+		switch (nxt - p) {
+		case 1: addr[plen+1] = chnval(p[0]);
+			break;
+		case 2: addr[plen+1] = chnval(p[0]) << 4 | chnval(p[1]);
+			break;
+		case 3: addr[plen] = chnval(p[0]);
+			addr[plen+1] = chnval(p[1]) << 4 | chnval(p[2]);
+			break;
+		case 4: addr[plen] = chnval(p[0]) << 4 | chnval(p[1]);
+			addr[plen+1] = chnval(p[2]) << 4 | chnval(p[3]);
+			break;
+		default:
+			return -1;
+		}
+		plen += 2;
+		p = nxt + 1;
+	}
+
+	if ( *p != '\0' ) {
+		if ( plen == 16 )
+			return -1;
+		p += (p == src) + 1;
+		zcomp = 2;
+	}
+
+	while ( (nxt = strchr(p, ':')) && (nxt != p) ) {
+		if ( plen + zcomp + slen >= 16 )
+			return -1;
+		suffix[slen] = 0;
+		switch (nxt - p) {
+		case 1: suffix[slen+1] = chnval(p[0]);
+			break;
+		case 2: suffix[slen+1] = chnval(p[0]) << 4 | chnval(p[1]);
+			break;
+		case 3: suffix[slen] = chnval(p[0]);
+			suffix[slen+1] = chnval(p[1]) << 4 | chnval(p[2]);
+			break;
+		case 4: suffix[slen] = chnval(p[0]) << 4 | chnval(p[1]);
+			suffix[slen+1] = chnval(p[2]) << 4 | chnval(p[3]);
+			break;
+		default:
+			return -1;
+		}
+		slen += 2;
+		p = nxt + 1;
+	}
+
+	for ( i = 16 - slen ; i < 16 ; ++i )
+		addr[i] = suffix[i-slen];
+
+	return (int)(p - src);  /* 2 <= len <= 39 */
+}
+
+
+/* UTF8 Functions */
+
+int utf8_find_nbytes(const uchar c)
+{
+	int hibit = 0x80;
+	int firstz = 0;
+
+	while ( c & hibit ) {
+		++firstz;
+		hibit >>= 1;
+	}
+
+	if ( firstz == 0 )
+		return 1;
+	else if ( firstz == 1 )
+		return -1;
+	else if ( firstz >= 7 )
+		return -1;
+	return firstz;
+}
+
+
+char * utf8_findc(const char *sprm, const char *cprm)
 {
 	int clen, slen;
 	int i;
@@ -151,7 +257,7 @@ char * str_findc(const char *sprm, const char *cprm)
 }
 
 
-static int char_is_in(const uchar *c, int cnb, const uchar *set)
+static int utf8_char_is_in(const uchar *c, int cnb, const uchar *set)
 {
 	int snb, i;
 
@@ -172,7 +278,7 @@ static int char_is_in(const uchar *c, int cnb, const uchar *set)
 }
 
 
-size_t str_span(const char *s, const char *accept)
+size_t utf8_span(const char *s, const char *accept)
 {
 	size_t off = 0;
 	int len;
@@ -180,8 +286,7 @@ size_t str_span(const char *s, const char *accept)
 	while ( *s != '\0' ) {
 		len = utf8_nbytes(*s);
 		abort_unless(len > 0);
-		if ( !char_is_in((uchar *)s, len, 
-				 (uchar *)accept) )
+		if ( !utf8_char_is_in((uchar *)s, len, (uchar *)accept) )
 			return off;
 		s += len;
 		off += len;
@@ -190,40 +295,19 @@ size_t str_span(const char *s, const char *accept)
 }
 
 
-size_t str_cspan(const char *s, const char *reject)
+size_t utf8_cspan(const char *s, const char *reject)
 {
 	size_t off = 0;
 	int len;
 	while ( *s != '\0' ) {
 		len = utf8_nbytes(*s);
 		abort_unless(len > 0);
-		if ( char_is_in((uchar *)s, len, 
-				(uchar *)reject) )
+		if ( utf8_char_is_in((uchar *)s, len, (uchar *)reject) )
 			return off;
 		s += len;
 		off += len;
 	}
 	return off;
-}
-
-
-int utf8_find_nbytes(const uchar c)
-{
-	int hibit = 0x80;
-	int firstz = 0;
-
-	while ( c & hibit ) {
-		++firstz;
-		hibit >>= 1;
-	}
-
-	if ( firstz == 0 )
-		return 1;
-	else if ( firstz == 1 )
-		return -1;
-	else if ( firstz >= 7 )
-		return -1;
-	return firstz;
 }
 
 

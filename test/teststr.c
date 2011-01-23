@@ -38,15 +38,6 @@ void test_regular_str()
 	irv = str_fmt(buf1, sizeof(buf1), "Hi! %d: %s\n", (int)ret, cp);
 	printf("formatted: /%s/ ret: /%d/\n", buf1, irv);
 
-	cp = "    Hello World";
-	printf("space span of /%s/ = %d\n", cp, (int)str_span(cp, " "));
-
-	cp = "Hello World";
-	printf("non-space span of /%s/ = %d\n", cp, (int)str_cspan(cp, " "));
-
-	cp = "Hello World";
-	printf("first instance of /%s/ in /%s/ is at offset /%u/\n", 
-		"o", cp, (uint)(str_findc(cp, "o") - cp));
 }
 
 
@@ -68,10 +59,21 @@ void test_utf8_codec()
 {
 	unsigned long longs[BLEN], olongs[BLEN];
 	char buf[BLEN * 6];
+	char *cp;
 	const char *errp;
 	unsigned short shorts[BLEN], oshorts[BLEN];
 	size_t i, nch, clen;
 	int nb, elen, maxclen;
+
+	cp = "    Hello World";
+	printf("space span of /%s/ = %d\n", cp, (int)utf8_span(cp, " "));
+
+	cp = "Hello World";
+	printf("non-space span of /%s/ = %d\n", cp, (int)utf8_cspan(cp, " "));
+
+	cp = "Hello World";
+	printf("first instance of /%s/ in /%s/ is at offset /%u/\n", 
+		"o", cp, (uint)(utf8_findc(cp, "o") - cp));
 
 	for ( i = 0; i < BLEN-1 ; ++i ) {
 		if ( allrandom )
