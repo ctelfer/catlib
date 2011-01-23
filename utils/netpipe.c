@@ -166,7 +166,7 @@ int main(int argc, char *argv[])
 	if ( io_setnblk(cfd) < 0 )
 		errsys("Couldn't set client to non-blocking mode");
 
-	ue_init(&mux);
+	ue_init(&mux, &estdmm);
 	c2sbuf = emalloc(bsiz);
 	s2cbuf = emalloc(bsiz);
 	ring_init(&c2s, c2sbuf, bsiz);
