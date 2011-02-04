@@ -158,7 +158,8 @@ static int get_format_flags(const char **fmtp, struct format_params *fp,
 				fp->alternate = 1;
 				break;
 			case '*':
-				if ( (argval = va_arg(app->ap, int)) < 0 )
+				if ( (app == NULL) || 
+				     ((argval = va_arg(app->ap, int)) < 0) )
 					return -1;
 				if ( pastperiod ) {
 					if ( fp->precision > 0 )
@@ -973,25 +974,26 @@ static int fmt_ptr(struct emitter *em, struct format_params *fp,
 }
 
 
-struct {
+struct format_table_entry {
 	char		fmtchar;
 	format_f	formatter;
+	int		basetype;
 } format_tab[] = { 
-	{ 'd', fmt_int },
-	{ 'i', fmt_int },
-	{ 'o', fmt_oct },
-	{ 'x', fmt_hex },
-	{ 'X', fmt_hex },
-	{ 'u', fmt_uint },
-	{ 'b', fmt_binary },
-	{ 'c', fmt_char },
-	{ 's', fmt_str },
-	{ 'f', fmt_double },
-	{ 'e', fmt_exp_double },
-	{ 'E', fmt_exp_double },
-	{ 'g', fmt_variable_double },
-	{ 'G', fmt_variable_double },
-	{ 'p', fmt_ptr },
+	{ 'd', fmt_int, FMT_INTVAL },
+	{ 'i', fmt_int, FMT_INTVAL },
+	{ 'o', fmt_oct, FMT_INTVAL },
+	{ 'x', fmt_hex, FMT_INTVAL },
+	{ 'X', fmt_hex, FMT_INTVAL },
+	{ 'u', fmt_uint, FMT_INTVAL },
+	{ 'b', fmt_binary, FMT_INTVAL },
+	{ 'c', fmt_char, FMT_INTVAL },
+	{ 's', fmt_str, FMT_STRVAL },
+	{ 'f', fmt_double, FMT_DBLVAL },
+	{ 'e', fmt_exp_double, FMT_DBLVAL },
+	{ 'E', fmt_exp_double, FMT_DBLVAL },
+	{ 'g', fmt_variable_double, FMT_DBLVAL },
+	{ 'G', fmt_variable_double, FMT_DBLVAL },
+	{ 'p', fmt_ptr, FMT_PTRVAL },
 };
 static const int format_tab_len = sizeof(format_tab) / sizeof(format_tab[0]);
 
@@ -1022,7 +1024,7 @@ static int emit_format_help(struct emitter *em, const char **fmtp,
 	struct format_params fp;
 	format_f formatter;
 
-	abort_unless(em && fmtp && *fmtp && app && flen);
+	abort_unless(em && fmtp && *fmtp && flen);
 
 	init_format_params(&fp);
 
@@ -1089,3 +1091,74 @@ int emit_format(struct emitter *em, const char *fmt, ...)
 	va_end(ap);
 	return rv;
 }
+
+
+static int prm2type(struct format_table_entry *te, struct format_params *fp)
+{
+	int pt = te->basetype;
+
+	if ( pt == FMT_DBLVAL ) {
+		if ( fp->argsize == ARG_LONGDBL )
+			pt |= FMT_LONGSIZE;
+		else if ( fp->argsize != ARG_REG )
+			return -1;
+	}
+	else if ( pt == FMT_INTVAL ) {
+		switch(fp->argsize) {
+		case ARG_REG:
+			break;
+		case ARG_HALF:
+			pt |= FMT_HALFSIZE;
+			break;
+		case ARG_LONG:
+			pt |= FMT_LONGSIZE;
+			break;
+		case ARG_LONGLONG:
+			pt |= FMT_LONGLONGSIZE;
+			break;
+		default:
+			return -1;
+		}
+	}
+
+	return pt;
+}
+
+
+int emit_format_ckprm(const char *fmt, uchar ptypes[], int npt)
+{
+	int i, pi = 0;
+	struct format_params fp;
+
+	abort_unless(fmt && (npt >= 0) && ((npt == 0) || ptypes != NULL));
+
+	while ( *fmt != '\0' ) {
+		if ( *fmt++ == '%' ) {
+			if ( *fmt == '\0' )
+				break;
+			if ( *fmt == '%' ) {
+				++fmt;
+				continue;
+			}
+			init_format_params(&fp);
+			if ( get_format_flags(&fmt, &fp, NULL) < 0 )
+				return -1;
+			for ( i = 0; i < format_tab_len; ++i )
+				if ( fp.fmtchar == format_tab[i].fmtchar )
+					break;
+			if ( pi == npt )
+				return -1;
+			if ( i == format_tab_len )
+				return -1;
+			if ( prm2type(&format_tab[i], &fp) != ptypes[pi] )
+				return -1;
+			++pi;
+		}
+	}
+
+	if ( pi != npt )
+		return -1;
+
+	return 0;
+}
+

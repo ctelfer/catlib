@@ -1,5 +1,6 @@
 #include <cat/cat.h>
 #include <cat/emit.h>
+#include <cat/emit_format.h>
 #include <cat/str.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -91,6 +92,66 @@ void speed_test(const char *fmt, ...)
 }
 
 
+#define CKFMT(l, s, p, np) { 					\
+	if ( l emit_format_ckprm(s, p, np) )			\
+		fprintf(stderr, "Error validating %s\n", s);	\
+	else							\
+		printf("%s correctly validates (%strue)\n",s,#l);\
+	}
+
+
+void check_formats()
+{
+	uchar p[4];
+
+	printf("Starting format check tests\n");
+
+	p[0] = FMT_INTVAL;
+	CKFMT(, "%d", p, 1);
+	CKFMT(, "%17d", p, 1);
+	CKFMT(, "%u", p, 1);
+	CKFMT(, "%-17b", p, 1);
+	CKFMT(!, "%e", p, 1);
+	CKFMT(!, "%17f", p, 1);
+	CKFMT(!, "%g", p, 1);
+	CKFMT(!, "%-17G", p, 1);
+	CKFMT(!, "%-17Lg", p, 1);
+
+	p[0] = FMT_DBLVAL;
+	CKFMT(!, "%d", p, 1);
+	CKFMT(!, "%17d", p, 1);
+	CKFMT(!, "%u", p, 1);
+	CKFMT(!, "%-17b", p, 1);
+	CKFMT(, "%e", p, 1);
+	CKFMT(, "%17f", p, 1);
+	CKFMT(, "%g", p, 1);
+	CKFMT(, "%-17G", p, 1);
+
+	p[0] = FMT_INTVAL | FMT_LONGSIZE;
+	CKFMT(!, "%d", p, 1);
+	CKFMT(!, "%17d", p, 1);
+	CKFMT(!, "%u", p, 1);
+	CKFMT(!, "%-17b", p, 1);
+	CKFMT(!, "%Ld", p, 1);
+	CKFMT(, "%ld", p, 1);
+	CKFMT(, "%17ld", p, 1);
+	CKFMT(, "%lu", p, 1);
+	CKFMT(, "%-17lb", p, 1);
+	CKFMT(, "%-17lx", p, 1);
+
+	p[0] = FMT_STRVAL;
+	CKFMT(!, "%d", p, 1);
+	CKFMT(!, "%17d", p, 1);
+	CKFMT(!, "%u", p, 1);
+	CKFMT(!, "%e", p, 1);
+	CKFMT(, "%300s", p, 1);
+	p[1] = FMT_INTVAL;
+	CKFMT(!, "%300s", p, 2);
+	CKFMT(!, "%300s", p, 0);
+	CKFMT(, "%s hello %20d", p, 2);
+}
+
+
 int main(int argc, char *argv[])
 {
 	test_printf("hi");
@@ -136,6 +197,8 @@ int main(int argc, char *argv[])
 	speed_test("abc - %s - def", "goodbye");
 	speed_test("%7.3e", .0123);
 	speed_test("%17d", 12345678);
+
+	check_formats();
 
 	return npassed == ntests ? 0 : ntests;
 }
