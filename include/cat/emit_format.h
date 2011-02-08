@@ -18,12 +18,13 @@ enum {
 	FMT_HALFSIZE = 0x10,
 	FMT_BYTESIZE = 0x20,
 	FMT_LONGSIZE = 0x30,
-	FMT_LONGLONGSIZE = 0x40,
+	FMT_LONGLONGSIZE = 0x40
 };
 
 #define FMT_BASETYPE(type) ((type) & 0x0F)
 #define FMT_SIZETYPE(type) ((type) & 0xF0)
 
+int emit_format_getprm(const char *fmt, uchar ptypes[], int maxpt);
 int emit_format_ckprm(const char *fmt, uchar ptypes[], int npt);
 
 #endif /* __cat_emit_format_h */

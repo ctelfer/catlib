@@ -1125,9 +1125,9 @@ static int prm2type(struct format_table_entry *te, struct format_params *fp)
 }
 
 
-int emit_format_ckprm(const char *fmt, uchar ptypes[], int npt)
+static int parsefmt(const char *fmt, uchar ptypes[], int npt, int chk)
 {
-	int i, pi = 0;
+	int i, pi = 0, pt;
 	struct format_params fp;
 
 	abort_unless(fmt && (npt >= 0) && ((npt == 0) || ptypes != NULL));
@@ -1150,15 +1150,36 @@ int emit_format_ckprm(const char *fmt, uchar ptypes[], int npt)
 				return -1;
 			if ( i == format_tab_len )
 				return -1;
-			if ( prm2type(&format_tab[i], &fp) != ptypes[pi] )
+			if ( (pt = prm2type(&format_tab[i], &fp)) < 0 )
 				return -1;
+
+			if ( chk ) {
+				if ( ptypes[pi] != pt )
+					return -1;
+			} else {
+				ptypes[pi] = pt;
+			}
 			++pi;
 		}
 	}
 
-	if ( pi != npt )
+	if ( chk && (pi != npt) )
 		return -1;
 
-	return 0;
+	return pi;
+}
+
+
+int emit_format_ckprm(const char *fmt, uchar ptypes[], int npt)
+{
+	int rv;
+	rv = parsefmt(fmt, ptypes, npt, 1);
+	return (rv < 0) ? rv : 0;
+}
+
+
+int emit_format_getprm(const char *fmt, uchar ptypes[], int maxpt)
+{
+	return parsefmt(fmt, ptypes, maxpt, 0);
 }
 
