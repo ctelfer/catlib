@@ -738,7 +738,6 @@ struct htab *ht_new(struct memmgr *mm, size_t size, int ktype, size_t klen,
 {
 	struct std_htab *sh;
 	struct dictiface *di;
-	struct hashsys sys = {NULL, NULL, NULL};
 	size_t n;
 
 	abort_unless(mm != NULL);
@@ -755,36 +754,28 @@ struct htab *ht_new(struct memmgr *mm, size_t size, int ktype, size_t klen,
 		       ktype, klen, dlen);
 	switch (ktype) {
 	case CAT_KT_STR:
-		sys.hash  = ht_shash;
-		sys.cmp   = cmp_str;
-		sys.hctx  = NULL;
+		ht_init(&sh->table, sh->buckets, size, cmp_str, ht_shash, NULL);
 		break;
 
 	case CAT_KT_BIN:
-		sys.hash  = std_ht_bin_hash;
-		sys.cmp   = cmp_raw;
-		sys.hctx  = &di->datasize;
+		ht_init(&sh->table, sh->buckets, size, cmp_raw, std_ht_bin_hash,
+			&di->datasize);
 		break;
 
 	case CAT_KT_RAW:
-		sys.hash  = ht_rhash;
-		sys.cmp   = cmp_raw;
-		sys.hctx  = NULL;
+		ht_init(&sh->table, sh->buckets, size, cmp_raw, ht_rhash, NULL);
 		break;
 
 	case CAT_KT_PTR:
-		sys.hash  = ht_phash;
-		sys.cmp   = cmp_ptr;
-		sys.hctx  = NULL;
+		ht_init(&sh->table, sh->buckets, size, cmp_ptr, ht_phash, NULL);
 		break;
+
 	case CAT_KT_NUM:
-		sys.hash  = std_ht_int_hash;
-		sys.cmp   = cmp_raw;
-		sys.hctx  = NULL;
+		ht_init(&sh->table, sh->buckets, size, cmp_raw, std_ht_int_hash,
+			NULL);
 		break;
 	}
 
-	ht_init(&sh->table, sh->buckets, size, &sys);
 	return &sh->table;
 }
 
@@ -795,7 +786,6 @@ void ht_free(struct htab *t)
 	unsigned i;
 	struct list *l;
 	struct hnode *node;
-	struct hashsys *hs;
 	struct memmgr *mm;
 
 	abort_unless(t != NULL);
@@ -803,7 +793,6 @@ void ht_free(struct htab *t)
 	mm = sh->iface.mm;
 
 	l = t->tab;
-	hs = &t->sys;
 
 	for ( i = t->size ; i > 0 ; --i, ++l ) {
 		while ( ! l_isempty(l) ) {

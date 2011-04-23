@@ -383,7 +383,6 @@ int sfx_init(struct sfxtree *sfx, struct raw *str, struct memmgr *mm)
 {
 	struct list *entries;
 	struct sfxnode *root;
-	struct hashsys sfxhsys = { edgecmp, edgehash, NULL };
 
 	abort_unless(sfx);
 	abort_unless(str && str->data);
@@ -396,7 +395,7 @@ int sfx_init(struct sfxtree *sfx, struct raw *str, struct memmgr *mm)
 		return -1;
 	if ( !(entries = mem_get(mm, sizeof(struct list) * str->len)) )
 		return -1;
-	ht_init(&sfx->edges, entries, str->len, &sfxhsys);
+	ht_init(&sfx->edges, entries, str->len, edgecmp, edgehash, NULL);
 	root = &sfx->root;
 	root->sptr = NULL;
 

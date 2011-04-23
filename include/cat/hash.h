@@ -16,18 +16,13 @@
 
 typedef uint (*hash_f)(const void *key, void *ctx);
 
-struct hashsys {
-	cmp_f		cmp;
-	hash_f		hash;
-	void *		hctx;
-};
-
-
 struct htab {
 	struct list *	tab;
 	uint		size;
 	uint		po2mask;
-	struct hashsys	sys;
+	cmp_f		cmp;
+	hash_f		hash;
+	void *		hctx;
 } ;
 
 
@@ -50,7 +45,7 @@ struct hnode {
 
 
 DECL void           ht_init(struct htab *t, struct list *la, uint siz, 
-		            struct hashsys *hs);
+		            cmp_f cmp, hash_f hash, void *hctx);
 DECL void           ht_ninit(struct hnode *hn, void *k, void *d, uint h);
 DECL uint	    ht_hash(struct htab *t, const void *key);
 DECL struct hnode * ht_lkup(struct htab *t, const void *key, uint *hash);
@@ -68,7 +63,7 @@ PTRDECL uint        ht_rhash(const void *k, void *unused);
 
 
 DECL void ht_init(struct htab *t, struct list *l, uint size, 
-		  struct hashsys *hsys)
+		  cmp_f cmp, hash_f hash, void *hctx)
 {
 	uint i;
 
@@ -79,7 +74,6 @@ DECL void ht_init(struct htab *t, struct list *l, uint size,
 
 	abort_unless(t != NULL);
 	abort_unless(l != NULL);
-	abort_unless(hsys != NULL);
 	abort_unless(size > 0);
 
 	t->size = size;
@@ -87,13 +81,15 @@ DECL void ht_init(struct htab *t, struct list *l, uint size,
 	for ( i = size ; i > 0 ; --i, ++l ) 
 		l_init(l);
 
-	t->sys = *hsys;
-
 	/* check if size is a power of 2 */
 	if ( ((~size ^ (size - 1)) & (size - 1)) == 0 )
 		t->po2mask = size - 1;
 	else
 		t->po2mask = 0;
+
+	t->cmp = cmp;
+	t->hash = hash;
+	t->hctx = hctx;
 }
 
 
@@ -113,13 +109,11 @@ DECL struct hnode * ht_lkup(struct htab *t, const void *key, uint *hp)
 {
 	struct list *l, *list;
 	uint h;
-	struct hashsys *hs;
 
 	abort_unless(t != NULL);
 	abort_unless(key != NULL);
 
-	hs = &t->sys;
-	h = (*hs->hash)(key, hs->hctx);
+	h = (*t->hash)(key, t->hctx);
 	if ( hp ) 
 		*hp = h;
 	if ( t->po2mask )
@@ -128,7 +122,7 @@ DECL struct hnode * ht_lkup(struct htab *t, const void *key, uint *hp)
 		list = t->tab + (h % t->size);
 
 	for ( l = list->next ; l != list ; l = l->next )
-		if ( ! (*hs->cmp)(((struct hnode *)l)->key, key) )
+		if ( !(*t->cmp)(((struct hnode *)l)->key, key) )
 			return (struct hnode *)l;
 
 	return NULL;
@@ -138,7 +132,6 @@ DECL struct hnode * ht_lkup(struct htab *t, const void *key, uint *hp)
 DECL struct hnode * ht_ins(struct htab *t, struct hnode *n)
 {
 	struct hnode *old = NULL;
-	struct hashsys *hs;
 	const void *key;
 	uint h;
 	struct list *list, *l;
@@ -146,7 +139,6 @@ DECL struct hnode * ht_ins(struct htab *t, struct hnode *n)
 	abort_unless(t != NULL);
 	abort_unless(n != NULL);
 
-	hs = &t->sys;
 	key = n->key;
 	h = n->hash;
 
@@ -156,7 +148,7 @@ DECL struct hnode * ht_ins(struct htab *t, struct hnode *n)
 		list = t->tab + (h % t->size);
 
 	for ( l = list->next ; l != list ; l = l->next )
-		if ( ! (*hs->cmp)(((struct hnode *)l)->key, key) ) {
+		if ( ! (*t->cmp)(((struct hnode *)l)->key, key) ) {
 			old = (struct hnode *)l;
 			l_rem(&old->le);
 			break;
@@ -178,7 +170,7 @@ DECL void ht_rem(struct hnode *node)
 DECL uint ht_hash(struct htab *t, const void *key)
 {
 	abort_unless(t != NULL);
-	return (*t->sys.hash)(key, t->sys.hctx);
+	return (*t->hash)(key, t->hctx);
 }
 
 

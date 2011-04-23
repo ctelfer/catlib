@@ -15,17 +15,14 @@ struct memmgr dbgmem = { dbg_mem_get, dbg_mem_resize, dbg_mem_free, NULL };
 static ulong dbg_alloc_amt = 0;
 static ulong dbg_num_alloc = 0;
 
-static struct hashsys dbg_hashsys = { 
-	cmp_ptr, 
-	ht_phash,
-	NULL
-};
 static struct list dbg_ht_buckets[CAT_DBGMEM_NBUCKETS];
 static struct htab dbg_htab = { 
 	dbg_ht_buckets, 
 	CAT_DBGMEM_NBUCKETS, 
 	CAT_DBGMEM_NBUCKETS - 1,
-	{ cmp_ptr, ht_phash, NULL }
+	cmp_ptr,
+	ht_phash,
+	NULL
 };
 
 struct dbg_header {
@@ -47,7 +44,8 @@ static int initialized = 0;
 
 static void dbg_initialize(void)
 {
-	ht_init(&dbg_htab, dbg_ht_buckets, CAT_DBGMEM_NBUCKETS, &dbg_hashsys);
+	ht_init(&dbg_htab, dbg_ht_buckets, CAT_DBGMEM_NBUCKETS, 
+		cmp_ptr, ht_phash, NULL);
 	initialized = 1;
 }
 
