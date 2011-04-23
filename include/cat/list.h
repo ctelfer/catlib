@@ -20,9 +20,12 @@
 #endif /* CAT_USE_INLINE */
 
 struct list {
-	struct list * next;
-	struct list * prev;
-} ;
+	struct list *next;
+	struct list *prev;
+};
+
+#define LIST_INITALIZER(name)	{ &(name), &(name) }
+#define LIST_DECLARE(name)	struct list name = LIST_INITIALIZER(name);
 
 #define l_head(listp)	(listp)->next
 #define l_tail(listp)	(listp)->prev
