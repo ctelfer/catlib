@@ -129,23 +129,12 @@ struct raw {
 	byte_t *	data;
 } ;
 
-union attrib_u {
-	void *		au_pointer;
-	long double	au_dblval;
-	int		au_intval;
-	uint		au_uintval;
-	uchar		au_data[1];
-	cat_align_t	au_align;
-};
-
 /* Generic scalar value union */
-union scalar_u {
+union attrib_u {
 	int		int_val;
 	unsigned int	uint_val;
-	double		dbl_val;
 	void *		ptr_val;
 	char *		str_val;
-
 #if CAT_HAS_LONG_LONG
 	long long		llong_val;
 	unsigned long long	ullong_val;
@@ -157,14 +146,22 @@ union scalar_u {
 	signed char	sch_val;
 	unsigned char	uch_val;
 	long double	ldbl_val;
+	double		dbl_val;
 	float		float_val;
+	byte_t		bytes[1];
+	cat_align_t	align[1];
 };
 
-typedef union scalar_u scalar_t;
+typedef union attrib_u attrib_t;
+
+#define attrib_csize(type, afld, asize) \
+	(offsetof(type, afld) + \
+	 ((((asize) <= 1) ? 1 : (asize)) + sizeof(attrib_t) - 1) \
+	  / sizeof(attrib_t) * sizeof(attrib_t))
 
 /* Special function types */
 typedef int  (*cmp_f)(const void *v1, const void *v2);
-typedef void (*apply_f)(void * data, void * ctx); 
+typedef void (*apply_f)(void *data, void *ctx); 
 typedef int (*copy_f)(void *dst, void *src, void *ctx);
 
 extern void cat_abort(const char *fn, unsigned ln, const char *expr);

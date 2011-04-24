@@ -29,7 +29,7 @@ struct clopt {
 	char 		ch;
 	const char *	str;
 	const char *	desc;
-	scalar_t	val;
+	attrib_t	val;
 };
 
 #define CLOPT_INIT(type, ch, str, desc) { type, ch, str, desc, {0} }

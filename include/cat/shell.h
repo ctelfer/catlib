@@ -21,7 +21,7 @@ enum {
 
 struct shell_value {
 	int		sval_type;
-	scalar_t	sval_val;
+	attrib_t	sval_val;
 	struct memmgr *	sval_mm;
 	free_f		sval_free;
 };

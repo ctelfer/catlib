@@ -14,17 +14,9 @@ struct graph *gr_new(struct memmgr *mm, int isbi, uint nxsize, uint exsize)
 	if ( !mm )
 		return NULL;
 
-	if ( nxsize < sizeof(union attrib_u) )
-		nxsize = sizeof(union attrib_u);
-	if ( exsize < sizeof(union attrib_u) )
-		exsize = sizeof(union attrib_u);
-
-	if ( sizeof(struct gr_node) - sizeof(union attrib_u) + nxsize < 
-	     sizeof(struct gr_node) )
-		return NULL;
-
-	if ( sizeof(struct gr_edge) - sizeof(union attrib_u) + exsize < 
-	     sizeof(struct gr_edge) )
+	nxsize = attrib_csize(struct gr_node, grn_u, nxsize);
+	exsize = attrib_csize(struct gr_edge, gre_u, exsize);
+	if ( nxsize < sizeof(struct gr_node) || exsize < sizeof(struct gr_edge) )
 		return NULL;
 
 	g = mem_get(mm, sizeof(*g));
@@ -35,8 +27,8 @@ struct graph *gr_new(struct memmgr *mm, int isbi, uint nxsize, uint exsize)
 	l_init(&g->edges);
 	g->isbi = isbi;
 	g->mm = mm;
-	g->nodex = nxsize - sizeof(union attrib_u);
-	g->edgex = nxsize - sizeof(union attrib_u);
+	g->nsize = nxsize;
+	g->esize = exsize;
 
 	return g;
 }
@@ -48,7 +40,7 @@ struct gr_node * gr_add_node(struct graph *g)
 
 	abort_unless(g && g->mm);
 
-	n = mem_get(g->mm, sizeof(*n) + g->nodex);
+	n = mem_get(g->mm, g->nsize);
 	if ( !n )
 		return NULL;
 	n->graph = g;
@@ -126,7 +118,7 @@ struct gr_edge * gr_add_edge(struct gr_node *from, struct gr_node *to)
 	g = from->graph;
 	abort_unless(g && g == to->graph && g->mm);
 
-	edge = mem_get(g->mm, sizeof(*edge) + g->edgex);
+	edge = mem_get(g->mm, g->esize);
 	if ( !edge )
 		return NULL;
 
