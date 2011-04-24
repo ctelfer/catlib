@@ -129,15 +129,15 @@ void clist_init_list(struct clist *list, struct memmgr *mm, size_t dlen)
 	abort_unless(mm != NULL);
 	abort_unless(dlen >= 1);
 
-	nsize = sizeof(struct clist_node) - sizeof(union attrib_u);
-	abort_unless(nsize + dlen > nsize);
+	nsize = attrib_csize(struct clist_node, cln_data_u, dlen);
+	abort_unless(nsize >= sizeof(struct clist_node));
 
 	l_init(&list->cl_base.cln_entry);
 	list->cl_base.cln_list = NULL;
 	list->cl_base.cln_mm = NULL;
 	list->cl_mm = mm;
 	list->cl_fill = 0;
-	list->cl_node_size = nsize + dlen;
+	list->cl_node_size = nsize;
 	list->cl_data_size = dlen;
 }
 
@@ -707,7 +707,7 @@ static const void *di_get_key(struct dictiface *di, struct raw *r, const void *k
 struct std_htab {
 	struct htab		table;
 	struct dictiface	iface;
-	struct list		buckets[1];
+	struct hnode *		buckets[1];
 };
 
 
@@ -742,16 +742,15 @@ struct htab *ht_new(struct memmgr *mm, size_t size, int ktype, size_t klen,
 
 	abort_unless(mm != NULL);
 	abort_unless(size > 0);
-	abort_unless(size < (((size_t)~0 - sizeof(*sh)) / sizeof(struct list)));
+	abort_unless(size < (((size_t)~0 - sizeof(*sh)) / sizeof(struct hnode *)));
 	abort_unless(ktype >= CAT_KT_STR && ktype <= CAT_KT_NUM);
 
-	n = offsetof(struct std_htab, buckets) + sizeof(struct list) * size;
+	n = offsetof(struct std_htab, buckets) + sizeof(struct hnode *) * size;
 	if ( (sh = mem_get(mm, n)) == NULL )
 		return NULL;
 	di = &sh->iface;
 
-	init_dictiface(di, mm, sizeof(struct hnode), 
-		       ktype, klen, dlen);
+	init_dictiface(di, mm, sizeof(struct hnode), ktype, klen, dlen);
 	switch (ktype) {
 	case CAT_KT_STR:
 		ht_init(&sh->table, sh->buckets, size, cmp_str, ht_shash, NULL);
@@ -784,7 +783,6 @@ void ht_free(struct htab *t)
 {
 	struct std_htab *sh;
 	unsigned i;
-	struct list *l;
 	struct hnode *node;
 	struct memmgr *mm;
 
@@ -792,11 +790,9 @@ void ht_free(struct htab *t)
 	sh = container(t, struct std_htab, table);
 	mm = sh->iface.mm;
 
-	l = t->tab;
-
-	for ( i = t->size ; i > 0 ; --i, ++l ) {
-		while ( ! l_isempty(l) ) {
-			node = (struct hnode *)l->next;
+	for ( i = 0; i < t->nbkts ; ++i ) {
+		while ( t->bkts[i] ) {
+			node = t->bkts[i];
 			ht_rem(node);
 			mem_free(mm, node);
 		}
@@ -868,8 +864,8 @@ int ht_put(struct htab *t, const void *key, void *data)
 	}
 
 	if ( (node = di_new_node(&sh->iface, key, &nk, &data)) != NULL ) {
-		ht_ninit(node, nk, data, h);
-		ht_ins(t, node);
+		ht_ninit(node, nk, data);
+		ht_ins(t, node, h);
 		return 1;
 	} else {
 		return 0;

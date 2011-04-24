@@ -15,9 +15,9 @@ struct memmgr dbgmem = { dbg_mem_get, dbg_mem_resize, dbg_mem_free, NULL };
 static ulong dbg_alloc_amt = 0;
 static ulong dbg_num_alloc = 0;
 
-static struct list dbg_ht_buckets[CAT_DBGMEM_NBUCKETS];
+static struct hnode *dbg_ht_buckets[CAT_DBGMEM_NBUCKETS];
 static struct htab dbg_htab = { 
-	dbg_ht_buckets, 
+	dbg_ht_buckets,
 	CAT_DBGMEM_NBUCKETS, 
 	CAT_DBGMEM_NBUCKETS - 1,
 	cmp_ptr,
@@ -39,17 +39,6 @@ union dbg_header_u {
 					 sizeof(union dbg_header_u)) * sizeof(union dbg_header_u))
 #define TOMEM(dh) ((void *)((union dbg_header_u *)(dh) + 1))
 
-static int initialized = 0;
-
-
-static void dbg_initialize(void)
-{
-	ht_init(&dbg_htab, dbg_ht_buckets, CAT_DBGMEM_NBUCKETS, 
-		cmp_ptr, ht_phash, NULL);
-	initialized = 1;
-}
-
-
 
 void *dbg_mem_get(struct memmgr *mm, size_t amt)
 {
@@ -58,8 +47,6 @@ void *dbg_mem_get(struct memmgr *mm, size_t amt)
 	void *p;
 
 	abort_unless(mm == &dbgmem);
-	if ( !initialized )
-		dbg_initialize();
 
 	ramt = ROUNDUP(amt);
 	abort_unless(ramt >= amt);
@@ -73,8 +60,8 @@ void *dbg_mem_get(struct memmgr *mm, size_t amt)
 	dh->dh_amt = amt;
 	
 	p = TOMEM(dh);
-	ht_ninit(&dh->dh_hnode, p, dh, ht_phash(p, NULL));
-	ht_ins(&dbg_htab, &dh->dh_hnode);
+	ht_ninit(&dh->dh_hnode, p, dh);
+	ht_ins_h(&dbg_htab, &dh->dh_hnode);
 
 	return p;
 }
@@ -89,8 +76,6 @@ void *dbg_mem_resize(struct memmgr *mm, void *p, size_t newsize)
 	size_t osize;
 
 	abort_unless(mm == &dbgmem);
-	if ( !initialized )
-		dbg_initialize();
 
 	hn = ht_lkup(&dbg_htab, p, NULL); 
 	if ( hn == NULL )
@@ -120,8 +105,8 @@ void *dbg_mem_resize(struct memmgr *mm, void *p, size_t newsize)
 	dh = p2;
 	dh->dh_amt = newsize;
 	p = TOMEM(dh);
-	ht_ninit(&dh->dh_hnode, p, dh, ht_phash(p, NULL));
-	ht_ins(&dbg_htab, &dh->dh_hnode);
+	ht_ninit(&dh->dh_hnode, p, dh);
+	ht_ins_h(&dbg_htab, &dh->dh_hnode);
 
 	return p;
 }
@@ -133,8 +118,6 @@ void dbg_mem_free(struct memmgr *mm, void *p)
 	struct dbg_header *dh;
 
 	abort_unless(mm == &dbgmem);
-	if ( !initialized )
-		dbg_initialize();
 
 	hn = ht_lkup(&dbg_htab, p, NULL); 
 	if ( hn == NULL )
@@ -161,22 +144,18 @@ ulong dbg_get_alloc_amt(void)
 
 int dbg_is_dyn_mem(void *p)
 {
-	if ( !initialized )
-		dbg_initialize();
 	return ht_lkup(&dbg_htab, p, NULL) != NULL;
 }
 
 void dbg_mem_reset(void)
 {
-	struct list *le, *end;
+	struct hnode **bkt, **bend;
 
-	if ( !initialized ) {
-		dbg_initialize();
-		return;
-	}
 	dbg_alloc_amt = 0;
 	dbg_num_alloc = 0;
-	for ( le = dbg_htab.tab, end = le + dbg_htab.size; le < end ; ++le )
-		while ( !l_isempty(le) )
-			ht_rem(container(le->next, struct hnode, le));
+	for ( bkt = dbg_htab.bkts, bend = bkt + dbg_htab.nbkts ; 
+	      bkt < bend ;
+	      ++bkt )
+		while ( *bkt )
+			ht_rem(*bkt);
 }

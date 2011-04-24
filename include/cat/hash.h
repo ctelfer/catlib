@@ -12,13 +12,12 @@
 
 #include <cat/cat.h>
 #include <cat/aux.h>
-#include <cat/list.h>
 
 typedef uint (*hash_f)(const void *key, void *ctx);
 
 struct htab {
-	struct list *	tab;
-	uint		size;
+	struct hnode **	bkts;
+	uint		nbkts;
 	uint		po2mask;
 	cmp_f		cmp;
 	hash_f		hash;
@@ -27,8 +26,8 @@ struct htab {
 
 
 struct hnode {
-	struct list	le;
-	uint		hash;
+	struct hnode *	next;
+	struct hnode **	prevp;
 	void *		key;
 	void *		data;
 } ;
@@ -44,25 +43,26 @@ struct hnode {
 #endif /* CAT_USE_INLINE */
 
 
-DECL void           ht_init(struct htab *t, struct list *la, uint siz, 
-		            cmp_f cmp, hash_f hash, void *hctx);
-DECL void           ht_ninit(struct hnode *hn, void *k, void *d, uint h);
+DECL void           ht_init(struct htab *t, struct hnode **bkts, uint nbkts,
+		            cmp_f cmpf, hash_f hashf, void *hctx);
+DECL void           ht_ninit(struct hnode *node, void *key, void *data);
 DECL uint	    ht_hash(struct htab *t, const void *key);
 DECL struct hnode * ht_lkup(struct htab *t, const void *key, uint *hash);
-DECL struct hnode * ht_ins(struct htab *t, struct hnode *node);
+DECL struct hnode * ht_ins(struct htab *t, struct hnode *node, uint hash);
+DECL struct hnode * ht_ins_h(struct htab *t, struct hnode *node);
 DECL void           ht_rem(struct hnode *node);
 
-DECL void           ht_apply(struct htab *t, apply_f f, void * ctx);
+DECL void           ht_apply(struct htab *t, apply_f func, void * ctx);
 
-PTRDECL uint        ht_shash(const void *k, void *unused);
-PTRDECL uint        ht_phash(const void *k, void *unused);
-PTRDECL uint        ht_rhash(const void *k, void *unused);
+PTRDECL uint        ht_shash(const void *key, void *unused);
+PTRDECL uint        ht_phash(const void *key, void *unused);
+PTRDECL uint        ht_rhash(const void *key, void *unused);
 
 
 #if defined(CAT_HASH_DO_DECL) && CAT_HASH_DO_DECL
 
 
-DECL void ht_init(struct htab *t, struct list *l, uint size, 
+DECL void ht_init(struct htab *t, struct hnode **bkts, uint nbkts,
 		  cmp_f cmp, hash_f hash, void *hctx)
 {
 	uint i;
@@ -73,17 +73,17 @@ DECL void ht_init(struct htab *t, struct list *l, uint size,
 	(void)ht_rhash;
 
 	abort_unless(t != NULL);
-	abort_unless(l != NULL);
-	abort_unless(size > 0);
+	abort_unless(bkts != NULL);
+	abort_unless(nbkts > 0);
 
-	t->size = size;
-	t->tab = l;
-	for ( i = size ; i > 0 ; --i, ++l ) 
-		l_init(l);
+	t->nbkts = nbkts;
+	t->bkts = bkts;
+	for ( i = 0 ; i < nbkts ; ++i )
+		bkts[i] = NULL;
 
 	/* check if size is a power of 2 */
-	if ( ((~size ^ (size - 1)) & (size - 1)) == 0 )
-		t->po2mask = size - 1;
+	if ( (nbkts & (nbkts - 1)) == 0 )
+		t->po2mask = nbkts - 1;
 	else
 		t->po2mask = 0;
 
@@ -93,77 +93,96 @@ DECL void ht_init(struct htab *t, struct list *l, uint size,
 }
 
 
-DECL void ht_ninit(struct hnode *hn, void *key, void *data, uint hash)
+DECL void ht_ninit(struct hnode *node, void *key, void *data)
 {
-	abort_unless(hn != NULL);
+	abort_unless(node != NULL);
 	abort_unless(key != NULL);
 
-	l_init(&hn->le);
-	hn->key  = key;
-	hn->hash = hash;
-	hn->data = data;
+	node->next = NULL;
+	node->prevp = NULL;
+	node->key  = key;
+	node->data = data;
 }
 
 
 DECL struct hnode * ht_lkup(struct htab *t, const void *key, uint *hp)
 {
-	struct list *l, *list;
+	struct hnode *node;
 	uint h;
 
 	abort_unless(t != NULL);
 	abort_unless(key != NULL);
 
 	h = (*t->hash)(key, t->hctx);
-	if ( hp ) 
+	if ( hp != NULL ) 
 		*hp = h;
 	if ( t->po2mask )
-		list = t->tab + (h & t->po2mask);
+		node = t->bkts[h & t->po2mask];
 	else
-		list = t->tab + (h % t->size);
+		node = t->bkts[h % t->nbkts];
 
-	for ( l = list->next ; l != list ; l = l->next )
-		if ( !(*t->cmp)(((struct hnode *)l)->key, key) )
-			return (struct hnode *)l;
+	while ( node != NULL ) {
+		if ( !(*t->cmp)(node->key, key) )
+			return node;
+		node = node->next;
+	}
 
 	return NULL;
 }
 
 
-DECL struct hnode * ht_ins(struct htab *t, struct hnode *n)
+DECL struct hnode *ht_ins(struct htab *t, struct hnode *node, uint hash)
 {
-	struct hnode *old = NULL;
 	const void *key;
-	uint h;
-	struct list *list, *l;
+	struct hnode **trav, *old;
 
 	abort_unless(t != NULL);
-	abort_unless(n != NULL);
+	abort_unless(node != NULL);
 
-	key = n->key;
-	h = n->hash;
+	key = node->key;
 
 	if ( t->po2mask )
-		list = t->tab + (h & t->po2mask);
+		trav = t->bkts + (hash & t->po2mask);
 	else
-		list = t->tab + (h % t->size);
+		trav = t->bkts + (hash % t->nbkts);
 
-	for ( l = list->next ; l != list ; l = l->next )
-		if ( ! (*t->cmp)(((struct hnode *)l)->key, key) ) {
-			old = (struct hnode *)l;
-			l_rem(&old->le);
-			break;
+	while ( *trav != NULL ) {
+		if ( ! (*t->cmp)((*trav)->key, key) ) {
+			old = *trav;
+			node->prevp = trav;
+			node->next = old->next;
+			*trav = node;
+			old->next = NULL;
+			old->prevp = NULL;
+			return old;
 		}
+		trav = &(*trav)->next;
+	}
 
-	l_ins(list, &n->le);
+	node->prevp = trav;
+	node->next = *trav;
+	*trav = node;
 
-	return old;
+	return NULL;
+}
+
+
+DECL struct hnode *ht_ins_h(struct htab *t, struct hnode *node)
+{
+	abort_unless(node != NULL);
+	return ht_ins(t, node, ht_hash(t, node->key));
 }
 
 
 DECL void ht_rem(struct hnode *node)
 {
+	struct hnode **prevp;
 	abort_unless(node != NULL);
-	l_rem(&node->le);
+	prevp = node->prevp;
+	if ( (*prevp = node->next) != NULL )
+		(*prevp)->prevp = prevp;
+	node->next = NULL;
+	node->prevp = NULL;
 }
 
 
@@ -174,22 +193,26 @@ DECL uint ht_hash(struct htab *t, const void *key)
 }
 
 
-DECL void ht_apply(struct htab *t, apply_f func, void * ctx)
+DECL void ht_apply(struct htab *t, apply_f func, void *ctx)
 {
 	uint num;
-	struct list *bucket;
+	struct hnode **bkt, *node, *next;
 
 	abort_unless(t != NULL);
 	abort_unless(func != NULL);
 
-	for ( num = t->size, bucket = t->tab ; num ; --num, ++bucket )
-		l_apply(bucket, func, ctx);
+	for ( num = t->nbkts, bkt = t->bkts ; num ; --num, ++bkt ) {
+		for ( node = *bkt ; node ; node = next ) {
+			next = node->next;
+			(*func)(node, ctx);
+		}
+	}
 }
 
 
-PTRDECL uint ht_shash(const void *k, void *unused)  
+PTRDECL uint ht_shash(const void *key, void *unused)  
 {
-	const uchar *p = k;
+	const uchar *p = key;
 	uint h = 0, g;
 
 	abort_unless(p != NULL);
@@ -206,13 +229,13 @@ PTRDECL uint ht_shash(const void *k, void *unused)
 }
 
 
-PTRDECL uint ht_rhash(const void *k, void *unused)  
+PTRDECL uint ht_rhash(const void *key, void *unused)  
 { 
 	const uchar *p;
 	uint h = 0, g, l;
-	struct raw const *r = k;
+	struct raw const *r = key;
 
-	abort_unless(k != NULL);
+	abort_unless(key != NULL);
 
 	l = r->len;
 	p = (const uchar *)r->data;
@@ -233,9 +256,9 @@ PTRDECL uint ht_rhash(const void *k, void *unused)
 }
 
 
-PTRDECL uint ht_phash(const void *k, void *unused)  
+PTRDECL uint ht_phash(const void *key, void *unused)  
 {
-	return (uint)((ulong)k >> 2);
+	return (uint)((ulong)key >> 2);
 }
 
 

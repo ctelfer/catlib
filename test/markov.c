@@ -27,22 +27,20 @@ struct ring Buffer;
 struct htab *Table;
 
 
-void printall(struct htab *tab)
+static void print_tablist(void *nodep, void *aux)
 {
-	struct list *l, *l3, *l2, *t;
-	int i;
-	struct hnode *n;
+	struct hnode *n = nodep;
+	struct list *t, *l = n->data;
+	printf("*%s* : *%s* ", (char *)n->key, CDS_DATA(l, strent_s));
+	for ( t = l->next ; t != l ; t = t->next )
+		printf(" *%s*", CDS_DATA(t, strent_s));
+	printf("\n");
+}
 
-	for ( l = tab->tab, i=0 ; i < tab->size ; ++i, ++l ) {
-		for ( l2 = l->next ; l2 != l ; l2 = l2->next ) {
-			n = (struct hnode *)l2;
-			l3 = n->data;
-			printf("*%s* : *%s* ", (char *)n->key, CDS_DATA(l3, strent_s));
-			for ( t = l3->next ; t != l3 ; t = t->next )
-				printf(" *%s*", CDS_DATA(t, strent_s));
-			printf("\n");
-		}
-	}
+
+void printall(struct htab *t)
+{
+	ht_apply(t, print_tablist, NULL);
 }
 
 
