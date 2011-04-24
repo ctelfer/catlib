@@ -4,12 +4,6 @@
 #include <cat/cattypes.h>
 #include <cat/archops.h>
 
-#if CAT_USE_INLINE
-#define DECL static inline
-#else
-#define DECL static
-#endif
-
 uint32_t compress_l32(uint32_t x, uint32_t mask);
 uint32_t compress_r32(uint32_t x, uint32_t mask);
 uint64_t compress_l64(uint64_t x, uint64_t mask);
@@ -25,7 +19,5 @@ uint64_t permute64_SAG(uint64_t bits, uint64_t permvec[6]);
 
 uint32_t bitgather32(uint32_t bits, uint8_t pos[32]);
 uint64_t bitgather64(uint64_t bits, uint8_t pos[64]);
-
-#undef DECL
 
 #endif /* __bitops_h */
