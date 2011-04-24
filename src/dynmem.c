@@ -395,13 +395,18 @@ void tlsf_init(struct tlsf *tlsf)
 	for (i = 0; i < TLSF_NUMHEADS; i++)
 		l_init(&tlsf->tlsf_lists[i]);
 	listp = tlsf->tlsf_lists;
+
+	/* NOTE, even though we initialize them, we never use bins */
+	/* for allocations of less that TLSF_MINSZ blocks.  This will */
+	/* typically be about 3 lists wasted.  But it makes the rest */
+	/* of the code cleaner. */
 	for (i = 0; i < TLSF_NUML2; i++) {
 		tl2 = &tlsf->tlsf_l1[i];
 		tl2->tl2_blists = listp;
 		if ( i < TLSF_NUMSMALL )
-			tl2->tl2_nblists = (1 << i) * TLSF_MINBINS;
+			tl2->tl2_nblists = 1 << i;
 		else
-			tl2->tl2_nblists = 1 << TLSF_L2_LEN;
+			tl2->tl2_nblists = TLSF_FULLBLLEN;
 		listp += tl2->tl2_nblists;
 	}
 
@@ -421,7 +426,7 @@ static int calc_tlsf_indices(struct tlsf *tlsf, size_t len)
 	i = (TLSF_SZ_BITS - 1 - TLSF_LG2_UNITSIZE) - n;
 	/* subtract off the most significant bit */
 	j = len - (1 << (i + TLSF_LG2_UNITSIZE));
-	if ( len < TLSF_FULLBLLEN )
+	if ( len < (TLSF_FULLBLLEN * UNITSIZE) )
 		j /= UNITSIZE;
 	else
 		j >>= i - (TLSF_L2_LEN - TLSF_LG2_UNITSIZE);
@@ -493,7 +498,7 @@ static void tlsf_rem_blk_c(struct tlsf *tlsf, struct memblk *mb)
 }
 
 
-/* remove a block, split a block in 2 and reinset the second one, return */
+/* remove a block, split a block in 2 and reinsert the second one, return */
 /* the first block */
 static struct memblk *tlsf_split_blk(struct tlsf *tlsf, struct memblk *mb, 
 		                     size_t amt)
@@ -615,8 +620,8 @@ static struct list *tlsf_find_blk(struct tlsf *tlsf, int *idx)
 		l2 = tlsf_ntz(n);
 	} 
 
-	*idx = (l1 << 8) + l2;
 	ASSERT(l2 < tl2->tl2_nblists);
+	*idx = (l1 << 8) + l2;
 	return &tl2->tl2_blists[l2];
 }
 
@@ -649,9 +654,9 @@ void *tlsf_malloc(struct tlsf *tlsf, size_t req_size)
 	ASSERT(tlsf);
 
 	/* the first condition tests for overflow */
-	if ( amt < (TLSF_MINSZ - UNITSIZE) )
+	if ( amt < (TLSF_MINSZ - UNITSIZE) ) {
 		amt = TLSF_MINSZ;
-	else {
+	} else {
 		/* add in one UNIT and round up to UNITSIZE */
 		amt += (UNITSIZE << 1) - 1;
 		amt &= ~(UNITSIZE - 1);
