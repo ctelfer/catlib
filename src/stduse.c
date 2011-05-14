@@ -67,16 +67,6 @@ struct memmgr estdmm = {
 };
 
 
-char * estrdup(const char *s)
-{
-	char *new;
-	abort_unless(s);
-	if ( !(new = strdup(s)) )
-		errsys("estrdup: ");
-	return new;
-}
-
-
 union raw_u {
 	struct raw    raw;
 	cat_align_t   align;

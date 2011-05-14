@@ -18,7 +18,6 @@
 
 extern struct memmgr estdmm;
 
-char *estrdup(const char *s);
 struct raw *erawdup(struct raw const * const r);
 
 

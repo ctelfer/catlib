@@ -8,6 +8,7 @@ typedef void (*emalloc_abort_f)(char *s, void *omem, size_t size, size_t nmem,
 void * emalloc(size_t size);
 void * ecalloc(size_t nmemb, size_t size);
 void * erealloc(void *old, size_t size);
+char * estrdup(const char *s);
 
 /* The abort function must NOT return!  (longjmp is ok) */
 void   emalloc_set_abort(emalloc_abort_f newfunc);

@@ -47,6 +47,16 @@ void * erealloc(void *old, size_t size)
 }
 
 
+char * estrdup(const char *s)
+{
+	char *ns;
+	abort_unless(s);
+	if ( !(ns = strdup(s)) )
+		(*abort_func)("estrdup: ", NULL, strlen(s)+1, 1, 1);
+	return ns;
+}
+
+
 #else /* CAT_DEBUG_LEVEL <= 0 */
 
 
@@ -92,6 +102,20 @@ void * erealloc(void *old, size_t size)
 	if ( !(m = realloc(old, size)) && (size > 0) )
 		(*abort_func)("erealloc: ", old, size, 1, 1);
 	return m;
+}
+
+
+char * estrdup(const char *s)
+{
+	char *ns;
+
+	if ( s == NULL )
+		(*abort_func)("estrdup: null source str!", NULL, 0, 1, 0);
+
+	if ( !(ns = strdup(s)) )
+		(*abort_func)("estrdup: ", NULL, strlen(s)+1, 1, 1);
+
+	return ns;
 }
 
 #endif /* CAT_DEBUG_LEVEL <= 0 */
