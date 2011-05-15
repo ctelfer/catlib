@@ -489,7 +489,7 @@ static int initialized = 0;
 static void initmem(void)
 {
 	dynmem_init(&g_dm);
-	add_dynmempool(&g_dm, memblob, sizeof(memblob));
+	dynmem_add_pool(&g_dm, memblob, sizeof(memblob));
 }
 
 
