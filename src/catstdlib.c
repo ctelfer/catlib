@@ -146,8 +146,10 @@ size_t strspn(const char *s, const char *accept)
 	const uchar *p = (const uchar *)accept;
 	size_t spn = 0;
 
-	while ( *p != '\0' )
+	while ( *p != '\0' ) {
 		map[*p >> 3] |= 1 << (*p & 0x7);
+		++p;
+	}
 
 	p = (const char *)s;
 	while ( (map[*p >> 3] & (1 << (*p & 0x7))) != 0 ) {
@@ -168,7 +170,7 @@ size_t strcspn(const char *s, const char *reject)
 	/* we want to include the '\0' in the reject set */
 	do {
 		map[*p >> 3] |= 1 << (*p & 0x7);
-	} while ( *p != '\0' );
+	} while ( *p++ != '\0' );
 
 	p = (const char *)s;
 	while ( (map[*p >> 3] & (1 << (*p & 0x7))) == 0 ) {
