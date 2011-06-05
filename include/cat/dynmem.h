@@ -41,7 +41,7 @@ void *dynmem_malloc(struct dynmem *dm, size_t amt);
 void dynmem_free(struct dynmem *dm, void *mem);
 void *dynmem_realloc(struct dynmem *dm, void *omem, size_t newamt);
 
-void add_dynmempool(struct dynmem *dm, void *mem, size_t len);
+void dynmem_add_pool(struct dynmem *dm, void *mem, size_t len);
 /* allows walking each pool in a dynmem heap */
 void dynmem_each_pool(struct dynmem *dm, apply_f f, void *ctx);
 void dynmem_each_block(struct dynmempool *pool, apply_f f, void *ctx);
