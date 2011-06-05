@@ -126,7 +126,7 @@ void dynmem_init(struct dynmem *dm)
 
 
 static void dynmem_init_pool(struct dynmempool *pool, struct dynmem *dm,
-								             size_t tlen, size_t ulen, union align_u *start)
+			     size_t tlen, size_t ulen, union align_u *start)
 {
 	l_ins(dm->dm_pools.prev, &pool->dmp_entry);
 	pool->dmp_total_len = tlen;
