@@ -28,13 +28,38 @@ void test_regular_str()
 
 	cp = "Hello World";
 	ret = str_copy(buf1, cp, sizeof(buf1));
-	printf("src:/%s/, dst:/%s/, rv = %u\n", buf1, cp, (uint)ret);
+	printf("str_copy -- src:/%s/, dst:/%s/, rv = %u\n", cp, buf1,
+	       (uint)ret);
 	
 	cp = " World";
 	str_copy(buf1, "Hello", sizeof(buf1));
 	ret = str_cat(buf1, cp, sizeof(buf1));
-	printf("src:/%s/, dst:/%s/, rv = %u\n", buf1, cp, (uint)ret);
+	printf("str_copy -- src:/%s/, dst:/%s/, rv = %u\n", cp, buf1,
+	       (uint)ret);
 	
+	cp = "Hello World";
+	ret = str_copy_spn(buf1, cp, sizeof(buf1), 
+		     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
+	printf("str_copy_spn (alpha) -- src:/%s/, dst:/%s/, rv = %u\n", cp, 
+	       buf1, (uint)ret);
+	
+	cp = "Hello World";
+	ret = str_copy_spn(buf1, cp, sizeof(buf1), 
+		     "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+	printf("str_copy_spn (upper) -- src:/%s/, dst:/%s/, rv = %u\n", cp, 
+	       buf1, (uint)ret);
+
+	cp = "Hello World";
+	ret = str_copy_cspn(buf1, cp, sizeof(buf1), " \t\n");
+	printf("str_copy_cspn (ws) -- src:/%s/, dst:/%s/, rv = %u\n", cp, 
+	       buf1, (uint)ret);
+
+	cp = "Hello World";
+	str_copy(buf1, "pre: ", sizeof(buf1));
+	ret = str_cat_cspn(buf1, cp, sizeof(buf1), " \t\n");
+	printf("str_copy_cspn (ws) -- src:/%s/, dst:/%s/, rv = %u\n", cp, 
+	       buf1, (uint)ret);
+
 	irv = str_fmt(buf1, sizeof(buf1), "Hi! %d: %s\n", (int)ret, cp);
 	printf("formatted: /%s/ ret: /%d/\n", buf1, irv);
 

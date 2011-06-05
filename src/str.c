@@ -6,6 +6,7 @@
 #include <string.h>
 #include <ctype.h>
 
+STATIC_BUG_ON(cat_str_bad_size_char, CHAR_BIT != 8)
 
 #ifndef va_copy
 #ifndef __va_copy
@@ -36,24 +37,47 @@ const signed char utf8_lentab[256] = {
 };
 
 
+#if CAT_INLINE
+#define iNLINE inline
+#else
+#define INLINE
+#endif
+
+static INLINE void str2map(uchar map[32], const uchar *s)
+{
+	uchar c;
+	while ( (c = *s++) != '\0' )
+		map[c >> 3] |= 1 << (c & 0x7);
+
+}
+
+
+static INLINE int charin(uchar c, uchar map[32])
+{
+	return (map[c >> 3] & (1 << (c & 0x7))) != 0;
+}
+
+
+static INLINE int charnotin(uchar c, uchar map[32])
+{
+	return (map[c >> 3] & (1 << (c & 0x7))) == 0;
+}
+
+
 size_t str_copy(char *dst, const char *src, size_t dlen)
 {
 	const char *osrc = src;
 
-	while ( dlen > 0 && *src != '\0' ) {
-		*dst++ = *src++;
+	while ( dlen > 0 && ((*dst++ = *src++) != '\0') )
 		--dlen;
-	}
 
 	if ( dlen == 0 ) {
 		if ( src != osrc )
 			*(dst - 1) = '\0';
-	} else {
-		*dst = '\0';
-	}
 
-	while ( *src++ != '\0' )
-		;
+		while ( *src++ != '\0' )
+			;
+	}
 
 	return src - osrc;
 }
@@ -71,6 +95,107 @@ size_t str_cat(char *dst, const char *src, size_t dlen)
 	}
 
 	copylen = str_copy(dst, src, dlen);
+	dstoff = dst - odst;
+
+	abort_unless(copylen <= (size_t)~0 - dstoff);
+
+	return copylen + dstoff;
+}
+
+
+size_t str_copy_spn(char *dst, const char *src, size_t dlen, const char *acc)
+{
+	const char *osrc = src;
+	uchar c;
+	uchar map[32] = { 0 };
+
+	str2map(map, acc);
+
+	while ( dlen > 0 ) {
+		--dlen;
+		c = *src++;
+		if ( charnotin(c, map) ) {
+			*dst = '\0';
+			return src - osrc;
+		} else {
+			*dst++ = c;
+		}
+	}
+
+	if ( src != osrc )
+		*(dst - 1) = '\0';
+
+	c = *src++;
+	while ( charin(c, map) )
+		c = *src++;
+
+	return src - osrc;
+}
+
+
+size_t str_cat_spn(char *dst, const char *src, size_t dlen, const char *acc)
+{
+	size_t copylen;
+	size_t dstoff;
+	char *odst = dst;
+
+	while ( dlen > 0 && *dst != '\0' ) {
+		--dlen;
+		++dst;
+	}
+
+	copylen = str_copy_spn(dst, src, dlen, acc);
+	dstoff = dst - odst;
+
+	abort_unless(copylen <= (size_t)~0 - dstoff);
+
+	return copylen + dstoff;
+}
+
+
+size_t str_copy_cspn(char *dst, const char *src, size_t dlen, const char *rej)
+{
+	const char *osrc = src;
+	uchar c;
+	uchar map[32] = { 0 };
+
+	str2map(map, rej);
+	map['\0' >> 3] |= 1 << ('\0' & 0x7);
+
+	while ( dlen > 0 ) {
+		--dlen;
+		c = *src++;
+		if ( charin(c, map) ) {
+			*dst = '\0';
+			return src - osrc;
+		} else {
+			*dst++ = c;
+		}
+	}
+
+	if ( src != osrc )
+		*(dst - 1) = '\0';
+
+	c = *src++;
+	while ( charnotin(c, map) )
+		c = *src++;
+
+	return src - osrc;
+}
+
+
+size_t str_cat_cspn(char *dst, const char *src, size_t dlen, const char *rej)
+{
+	size_t copylen;
+	size_t dstoff;
+	char *odst = dst;
+
+	while ( dlen > 0 && *dst != '\0' ) {
+		--dlen;
+		++dst;
+	}
+
+	copylen = str_copy_cspn(dst, src, dlen, rej);
 	dstoff = dst - odst;
 
 	abort_unless(copylen <= (size_t)~0 - dstoff);

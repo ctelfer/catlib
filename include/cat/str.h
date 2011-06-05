@@ -8,6 +8,10 @@ uchar  chnval(char digit);
 
 size_t str_copy(char *dst, const char *src, size_t dlen);
 size_t str_cat(char *dst, const char *src, size_t dlen);
+size_t str_spn_copy(char *dst, const char *src, size_t dlen, const char *acc);
+size_t str_spn_cat(char *dst, const char *src, size_t dlen, const char *acc);
+size_t str_cspn_copy(char *dst, const char *src, size_t dlen, const char *rej);
+size_t str_cspn_cat(char *dst, const char *src, size_t dlen, const char *rej);
 int    str_fmt(char *s, size_t len, const char *fmt, ...);
 int    str_vfmt(char *s, size_t len, const char *fmt, va_list ap); 
 
