@@ -8,12 +8,37 @@ uchar  chnval(char digit);
 
 size_t str_copy(char *dst, const char *src, size_t dlen);
 size_t str_cat(char *dst, const char *src, size_t dlen);
-size_t str_spn_copy(char *dst, const char *src, size_t dlen, const char *acc);
-size_t str_spn_cat(char *dst, const char *src, size_t dlen, const char *acc);
-size_t str_cspn_copy(char *dst, const char *src, size_t dlen, const char *rej);
-size_t str_cspn_cat(char *dst, const char *src, size_t dlen, const char *rej);
 int    str_fmt(char *s, size_t len, const char *fmt, ...);
-int    str_vfmt(char *s, size_t len, const char *fmt, va_list ap); 
+int    str_vfmt(char *s, size_t len, const char *fmt, va_list ap);
+
+void   cset_clear(byte_t set[32]);
+void   cset_fill(byte_t set[32]);
+void   cset_init_accept(byte_t set[32], const char *accept);
+void   cset_init_reject(byte_t set[32], const char *reject);
+void   cset_add_char(byte_t set[32], uchar ch);
+void   cset_rem_char(byte_t set[32], uchar ch);
+int    cset_contains(byte_t set[32], uchar ch);
+
+size_t str_spn(const char *src, byte_t set[32]);
+size_t str_copy_spn(char *dst, const char *src, size_t dlen, byte_t set[32]);
+size_t str_cat_spn(char *dst, const char *src, size_t dlen, byte_t set[32]);
+
+
+struct path_walker {
+	const char *path;
+	const char *next;
+	byte_t acc[32];
+	byte_t rej[32];
+	char dsep;
+};
+
+void  pwalk_init(struct path_walker *pw, const char *path, const char *psep,
+		 char dsep);
+
+void  pwalk_reset(struct path_walker *pw);
+
+char *pwalk_next(struct path_walker *pw, const char *sfx, char *out,
+		 size_t osize);
 
 /* 
  * Useful parsing function since v6 addresses have zero-compression, etc.

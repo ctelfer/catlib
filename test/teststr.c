@@ -23,8 +23,13 @@ void print_raw_hex(void *dprm, size_t len)
 void test_regular_str()
 {
 	char buf1[8], *cp;
+	const char *path = "/usr:/usr/bin:/usr/local/bin";
+	const char *state;
+	char pbuf[64];
+	byte_t set[32];
 	size_t ret;
 	int irv;
+	struct path_walker pw;
 
 	cp = "Hello World";
 	ret = str_copy(buf1, cp, sizeof(buf1));
@@ -38,31 +43,40 @@ void test_regular_str()
 	       (uint)ret);
 	
 	cp = "Hello World";
-	ret = str_copy_spn(buf1, cp, sizeof(buf1), 
-		     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
+	cset_init_accept(set,
+			"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
+	ret = str_copy_spn(buf1, cp, sizeof(buf1), set);
 	printf("str_copy_spn (alpha) -- src:/%s/, dst:/%s/, rv = %u\n", cp, 
 	       buf1, (uint)ret);
 	
 	cp = "Hello World";
-	ret = str_copy_spn(buf1, cp, sizeof(buf1), 
-		     "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+	cset_init_accept(set, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+	ret = str_copy_spn(buf1, cp, sizeof(buf1), set);
 	printf("str_copy_spn (upper) -- src:/%s/, dst:/%s/, rv = %u\n", cp, 
 	       buf1, (uint)ret);
 
 	cp = "Hello World";
-	ret = str_copy_cspn(buf1, cp, sizeof(buf1), " \t\n");
-	printf("str_copy_cspn (ws) -- src:/%s/, dst:/%s/, rv = %u\n", cp, 
+	cset_init_reject(set, " \t\n");
+	ret = str_copy_spn(buf1, cp, sizeof(buf1), set);
+	printf("str_copy_spn (!ws) -- src:/%s/, dst:/%s/, rv = %u\n", cp, 
 	       buf1, (uint)ret);
 
 	cp = "Hello World";
 	str_copy(buf1, "pre: ", sizeof(buf1));
-	ret = str_cat_cspn(buf1, cp, sizeof(buf1), " \t\n");
-	printf("str_copy_cspn (ws) -- src:/%s/, dst:/%s/, rv = %u\n", cp, 
+	ret = str_cat_spn(buf1, cp, sizeof(buf1), set);
+	printf("str_cat_spn (!ws) -- src:/%s/, dst:/%s/, rv = %u\n", cp, 
 	       buf1, (uint)ret);
 
 	irv = str_fmt(buf1, sizeof(buf1), "Hi! %d: %s\n", (int)ret, cp);
 	printf("formatted: /%s/ ret: /%d/\n", buf1, irv);
 
+	printf("Path = 'teststr', filename = '%s', sep = ':'\n", path);
+	pwalk_init(&pw, path, ":", '/');
+	cp = pwalk_next(&pw, "teststr", pbuf, sizeof(pbuf));
+	while ( cp != NULL ) {
+		printf("Next path = '%s', state = '%s'\n", cp, pw.next);
+		cp = pwalk_next(&pw, "teststr", pbuf, sizeof(pbuf));
+	}
 }
 
 

@@ -37,30 +37,11 @@ const signed char utf8_lentab[256] = {
 };
 
 
-#if CAT_INLINE
-#define iNLINE inline
-#else
-#define INLINE
-#endif
-
-static INLINE void str2map(uchar map[32], const uchar *s)
+uchar chnval(char d)
 {
-	uchar c;
-	while ( (c = *s++) != '\0' )
-		map[c >> 3] |= 1 << (c & 0x7);
-
-}
-
-
-static INLINE int charin(uchar c, uchar map[32])
-{
-	return (map[c >> 3] & (1 << (c & 0x7))) != 0;
-}
-
-
-static INLINE int charnotin(uchar c, uchar map[32])
-{
-	return (map[c >> 3] & (1 << (c & 0x7))) == 0;
+	return isdigit(d) ? 
+		(d) - '0' : 
+		(isalpha(d) ? 10 + toupper(d) - 'A' : 0);
 }
 
 
@@ -103,107 +84,6 @@ size_t str_cat(char *dst, const char *src, size_t dlen)
 }
 
 
-size_t str_copy_spn(char *dst, const char *src, size_t dlen, const char *acc)
-{
-	const char *osrc = src;
-	uchar c;
-	uchar map[32] = { 0 };
-
-	str2map(map, acc);
-
-	while ( dlen > 0 ) {
-		--dlen;
-		c = *src++;
-		if ( charnotin(c, map) ) {
-			*dst = '\0';
-			return src - osrc;
-		} else {
-			*dst++ = c;
-		}
-	}
-
-	if ( src != osrc )
-		*(dst - 1) = '\0';
-
-	c = *src++;
-	while ( charin(c, map) )
-		c = *src++;
-
-	return src - osrc;
-}
-
-
-size_t str_cat_spn(char *dst, const char *src, size_t dlen, const char *acc)
-{
-	size_t copylen;
-	size_t dstoff;
-	char *odst = dst;
-
-	while ( dlen > 0 && *dst != '\0' ) {
-		--dlen;
-		++dst;
-	}
-
-	copylen = str_copy_spn(dst, src, dlen, acc);
-	dstoff = dst - odst;
-
-	abort_unless(copylen <= (size_t)~0 - dstoff);
-
-	return copylen + dstoff;
-}
-
-
-size_t str_copy_cspn(char *dst, const char *src, size_t dlen, const char *rej)
-{
-	const char *osrc = src;
-	uchar c;
-	uchar map[32] = { 0 };
-
-	str2map(map, rej);
-	map['\0' >> 3] |= 1 << ('\0' & 0x7);
-
-	while ( dlen > 0 ) {
-		--dlen;
-		c = *src++;
-		if ( charin(c, map) ) {
-			*dst = '\0';
-			return src - osrc;
-		} else {
-			*dst++ = c;
-		}
-	}
-
-	if ( src != osrc )
-		*(dst - 1) = '\0';
-
-	c = *src++;
-	while ( charnotin(c, map) )
-		c = *src++;
-
-	return src - osrc;
-}
-
-
-size_t str_cat_cspn(char *dst, const char *src, size_t dlen, const char *rej)
-{
-	size_t copylen;
-	size_t dstoff;
-	char *odst = dst;
-
-	while ( dlen > 0 && *dst != '\0' ) {
-		--dlen;
-		++dst;
-	}
-
-	copylen = str_copy_cspn(dst, src, dlen, rej);
-	dstoff = dst - odst;
-
-	abort_unless(copylen <= (size_t)~0 - dstoff);
-
-	return copylen + dstoff;
-}
-
-
 int str_vfmt(char *buf, size_t len, const char *fmt, va_list ap)
 {
 	struct string_emitter se;
@@ -238,12 +118,157 @@ int str_fmt(char *buf, size_t len, const char *fmt, ...)
 }
 
 
-uchar chnval(char d)
+void cset_clear(byte_t set[32])
 {
-	return isdigit(d) ? 
-		(d) - '0' : 
-		(isalpha(d) ? 10 + toupper(d) - 'A' : 0);
+	memset(set, 0, 32);
 }
+
+
+void cset_fill(byte_t set[32])
+{
+	memset(set, 0xFF, 32);
+}
+
+
+void cset_add(byte_t set[32], uchar ch)
+{
+	set[ch >> 3] |= 1 << (ch & 0x7);
+}
+
+
+void cset_rem(byte_t set[32], uchar ch)
+{
+	set[ch >> 3] &= ~(1 << (ch & 0x7));
+}
+
+
+int cset_contains(byte_t set[32], uchar ch)
+{
+	return set[ch >> 3] & (1 << (ch & 7));
+}
+
+
+void cset_init_accept(byte_t set[32], const char *accept)
+{
+	uchar ch;
+	const uchar *s = (const uchar *)accept;
+	cset_clear(set);
+	while ( (ch = *s++) != '\0' )
+		cset_add(set, ch);
+}
+
+
+void cset_init_reject(byte_t set[32], const char *reject)
+{
+	const uchar *s = (const uchar *)reject;
+	cset_fill(set);
+	do { 
+		cset_rem(set, *s);
+	} while ( *s++ != '\0' );
+}
+
+
+size_t str_spn(const char *src, byte_t set[32])
+{
+	const char *osrc = src;
+	while ( cset_contains(set, *src) )
+		++src;
+	return src - osrc;
+}
+
+
+size_t str_copy_spn(char *dst, const char *src, size_t dlen, byte_t set[32])
+{
+	const char *osrc = src;
+	uchar ch;
+
+	while ( dlen > 0 ) {
+		--dlen;
+		ch = *src++;
+		if ( cset_contains(set, ch) ) {
+			*dst++ = ch;
+		} else {
+			*dst = '\0';
+			return src - osrc;
+		}
+	}
+
+	if ( src != osrc )
+		*(dst - 1) = '\0';
+
+	ch = *src++;
+	while ( cset_contains(set, ch) )
+		ch = *src++;
+
+	return src - osrc;
+}
+
+
+size_t str_cat_spn(char *dst, const char *src, size_t dlen, byte_t set[32])
+{
+	size_t copylen;
+	size_t dstoff;
+	char *odst = dst;
+
+	while ( dlen > 0 && *dst != '\0' ) {
+		--dlen;
+		++dst;
+	}
+
+	copylen = str_copy_spn(dst, src, dlen, set);
+	dstoff = dst - odst;
+
+	abort_unless(copylen <= (size_t)~0 - dstoff);
+
+	return copylen + dstoff;
+}
+
+
+
+void  pwalk_init(struct path_walker *pw, const char *path, const char *psep,
+		 char dsep)
+{
+	pw->path = path;
+	pw->next = path;
+	cset_init_accept(pw->acc, psep);
+	cset_init_reject(pw->rej, psep);
+	pw->dsep = dsep;
+}
+
+
+void  pwalk_reset(struct path_walker *pw)
+{
+	pw->next = pw->path;
+}
+
+
+char *pwalk_next(struct path_walker *pw, const char *sfx, char *out,
+		 size_t osize)
+{
+	size_t pl;
+
+	if ( pw == NULL || sfx == NULL || osize < 1 || pw->next == NULL )
+		return NULL;
+
+	pl = str_copy_spn(out, pw->next, osize, pw->rej);
+	if ( pl > osize )
+		return NULL;
+	out[pl-1] = pw->dsep;
+	osize -= pl;
+	if ( str_copy(out + pl, sfx, osize) > osize )
+		return NULL;
+	if ( pw->next[pl-1] == '\0' ) {
+		pw->next = NULL;
+	} else {
+		pw->next += pl;
+		pw->next += str_spn(pw->next, pw->acc);
+		if ( *pw->next == '\0' )
+			pw->next = NULL;
+	}
+
+	return out;
+}
+
 
 
 int str_parse_ip6a(void *ap, const char *src)
