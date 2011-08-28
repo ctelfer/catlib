@@ -262,6 +262,22 @@ PTRDECL uint ht_phash(const void *key, void *unused)
 }
 
 
+struct hash_iter {
+	struct hnode **bucket;
+	struct hnode *node;
+};
+
+
+#define ht_for_each(n, i, t)					    \
+	for ( (i).bucket = (t).bkts; 				    \
+	      (i).bucket < (t).bkts + (t).nbkts;		    \
+	      ++(i).bucket )					    \
+		for ( (n) = *(i).bucket ;			    \
+		      (i).node = (((n) != NULL) ? (n)->next : NULL),\
+			(n) != NULL ;				    \
+		      (n) = (i).node )
+
+
 #endif /* CAT_HASH_DO_DECL */
 
 
