@@ -6,12 +6,11 @@
 int file_emit_func(struct emitter *em, const void *buf, size_t len)
 {
 	struct file_emitter *fe = (struct file_emitter *)em;
-	size_t rv;
 
 	if ( len == 0 )
 		return 0;
 
-	rv = fwrite(buf, len, 1, fe->fe_file);
+	fwrite(buf, 1, len, fe->fe_file);
 	if ( ferror(fe->fe_file) ) {
 		fe->fe_emitter.emit_state = EMIT_ERR;
 		return -1;
