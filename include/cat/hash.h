@@ -179,10 +179,12 @@ DECL void ht_rem(struct hnode *node)
 	struct hnode **prevp;
 	abort_unless(node != NULL);
 	prevp = node->prevp;
-	if ( (*prevp = node->next) != NULL )
-		(*prevp)->prevp = prevp;
+	if ( prevp != NULL ) {
+		if ( (*prevp = node->next) != NULL )
+			(*prevp)->prevp = prevp;
+		node->prevp = NULL;
+	}
 	node->next = NULL;
-	node->prevp = NULL;
 }
 
 
