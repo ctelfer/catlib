@@ -66,6 +66,10 @@ DECL void l_sort(struct list *l, cmp_f cmp);
 	for ( (node) = l_head(list) ; (node) != l_end(list) ; \
 	      (node) = (node)->next )
 
+#define l_for_each_safe(node, xtra, list) \
+	for ( (node) = l_head(list) ; \
+	      (xtra) = (node)->next, (node) != l_end(list) ; \
+	      (node) = (xtra) )
 
 #if defined(CAT_LIST_DO_DECL) && CAT_LIST_DO_DECL
 
