@@ -25,6 +25,32 @@ char num_leading_zeros_array[256] = {
 };
 
 
+uint32_t rup2_32(uint32_t x, uint lg2p)
+{
+	uint32_t p2 = ((uint32_t)1 << lg2p) - 1;
+	return (lg2p > 31) ? 0 : (x + p2) & ~p2;
+}
+
+
+uint32_t rdp2_32(uint32_t x, uint lg2p)
+{
+	return (lg2p > 31) ? 0 : (x & ~(((uint32_t)1 << lg2p) - 1));
+}
+
+
+uint64_t rup2_64(uint64_t x, uint lg2p)
+{
+	uint64_t p2 = ((uint64_t)1 << lg2p) - 1;
+	return (lg2p > 63) ? 0 : (x + p2) & ~p2;
+}
+
+
+uint64_t rdp2_64(uint64_t x, uint lg2p)
+{
+	return (lg2p > 63) ? 0 : (x & ~(((uint64_t)1 << lg2p) - 1));
+}
+
+
 uint32_t compress_l32(uint32_t x, uint32_t m)
 {
 	uint32_t t, mp, mv, mk;

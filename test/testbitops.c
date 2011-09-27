@@ -32,6 +32,51 @@ void print_bits64(uint64_t x) {
 #endif
 
 
+#define PROUND(x, p2, func) \
+	printf("0x%08lx rounded with " #func " to 2**%u is %08lx\n", \
+	       (unsigned long)x, p2, \
+	       (unsigned long)func(x, p2))
+
+#define PROUND64(x, p2, func) \
+	printf("0x%016llx rounded with " #func " to 2**%u is %016llx\n", \
+	       (unsigned long long)x, p2, \
+	       (unsigned long long)func(x, p2))
+
+
+void test_round()
+{
+	printf("Testing round to powers of 2\n");
+	PROUND(0xdeadbeef, 0, rup2_32);
+	PROUND(0xdeadbeef, 0, rdp2_32);
+	PROUND(0xdeadbeef, 4, rup2_32);
+	PROUND(0xdeadbeef, 4, rdp2_32);
+	PROUND(0xdeadbeef, 16, rup2_32);
+	PROUND(0xdeadbeef, 16, rdp2_32);
+	PROUND(0xdeadbeef, 32, rup2_32);
+	PROUND(0xdeadbeef, 32, rdp2_32);
+	PROUND(0xdeadbeef, 31, rup2_32);
+	PROUND(0xdeadbeef, 31, rdp2_32);
+	printf("\n");
+
+	PROUND64(0xdeadbeeffeedf00dllu, 0, rup2_64);
+	PROUND64(0xdeadbeeffeedf00dllu, 0, rdp2_64);
+	PROUND64(0xdeadbeeffeedf00dllu, 4, rup2_64);
+	PROUND64(0xdeadbeeffeedf00dllu, 4, rdp2_64);
+	PROUND64(0xdeadbeeffeedf00dllu, 16, rup2_64);
+	PROUND64(0xdeadbeeffeedf00dllu, 16, rdp2_64);
+	PROUND64(0xdeadbeeffeedf00dllu, 32, rup2_64);
+	PROUND64(0xdeadbeeffeedf00dllu, 32, rdp2_64);
+	PROUND64(0xdeadbeeffeedf00dllu, 31, rup2_64);
+	PROUND64(0xdeadbeeffeedf00dllu, 31, rdp2_64);
+	PROUND64(0xdeadbeeffeedf00dllu, 64, rup2_64);
+	PROUND64(0xdeadbeeffeedf00dllu, 64, rdp2_64);
+	PROUND64(0xdeadbeeffeedf00dllu, 63, rup2_64);
+	PROUND64(0xdeadbeeffeedf00dllu, 63, rdp2_64);
+	printf("\n");
+	printf("\n");
+}
+
+
 void test_compress()
 {
 	uint32_t word32 = (uint32_t)rand();
@@ -166,6 +211,7 @@ int main(int argc, char *argv[])
 #endif /* CAT_64BIT */
 
 	srand(time(NULL));
+	test_round();
 	test_compress();
 	word32 = (uint32_t)rand();
 	random_permutation(perm32, 32);

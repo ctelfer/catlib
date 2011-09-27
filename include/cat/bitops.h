@@ -4,6 +4,12 @@
 #include <cat/cattypes.h>
 #include <cat/archops.h>
 
+/* round (up|down) to a power of 2 */
+uint32_t rup2_32(uint32_t x, uint lg2p);
+uint32_t rdp2_32(uint32_t x, uint lg2p);
+uint64_t rup2_64(uint64_t x, uint lg2p);
+uint64_t rdp2_64(uint64_t x, uint lg2p);
+
 uint32_t compress_l32(uint32_t x, uint32_t mask);
 uint32_t compress_r32(uint32_t x, uint32_t mask);
 uint64_t compress_l64(uint64_t x, uint64_t mask);
