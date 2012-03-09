@@ -3,7 +3,7 @@ CFILES=	cat.c aux.c err.c cb.c grow.c io.c mem.c net.c pack.c ring.c pcache.c \
 	str.c dbgmem.c emit.c emit_format.c stdclio.c emalloc.c catstr.c \
 	bitops.c list.c hash.c avl.c heap.c dlist.c pool.c rbtree.c time.c \
 	splay.c bitset.c catstdlib.c catstdio.c pspawn.c dynmem.c lex.c sort.c \
-	optparse.c inport.c crypto.c socks5.c
+	optparse.c inport.c crypto.c socks5.c buffer.c
 
 LCATODIR=  ../obj/libcat
 LCATOF= $(LCATODIR)/cat.o \
@@ -15,6 +15,7 @@ LCATOF= $(LCATODIR)/cat.o \
 	$(LCATODIR)/mem.o  \
 	$(LCATODIR)/net.o  \
 	$(LCATODIR)/pack.o  \
+	$(LCATODIR)/buffer.o  \
 	$(LCATODIR)/ring.o  \
 	$(LCATODIR)/pcache.o  \
 	$(LCATODIR)/uevent.o  \
@@ -54,6 +55,7 @@ LCATAOF=$(LCATAODIR)/cat.o \
 	$(LCATAODIR)/mem.o  \
 	$(LCATAODIR)/net.o  \
 	$(LCATAODIR)/pack.o  \
+	$(LCATAODIR)/buffer.o  \
 	$(LCATAODIR)/ring.o  \
 	$(LCATAODIR)/pcache.o  \
 	$(LCATAODIR)/uevent.o  \
@@ -103,6 +105,7 @@ LCAT_DBG_OF=$(LCAT_DBG_ODIR)/cat.o \
 	$(LCAT_DBG_ODIR)/mem.o  \
 	$(LCAT_DBG_ODIR)/net.o  \
 	$(LCAT_DBG_ODIR)/pack.o  \
+	$(LCAT_DBG_ODIR)/buffer.o  \
 	$(LCAT_DBG_ODIR)/ring.o  \
 	$(LCAT_DBG_ODIR)/pcache.o  \
 	$(LCAT_DBG_ODIR)/uevent.o  \
@@ -154,6 +157,7 @@ LCAT_NO_LIBC_OF= \
 	$(LCAT_NO_LIBC_ODIR)/io.o  \
 	$(LCAT_NO_LIBC_ODIR)/mem.o  \
 	$(LCAT_NO_LIBC_ODIR)/pack.o  \
+	$(LCAT_NO_LIBC_ODIR)/buffer.o  \
 	$(LCAT_NO_LIBC_ODIR)/ring.o  \
 	$(LCAT_NO_LIBC_ODIR)/pcache.o  \
 	$(LCAT_NO_LIBC_ODIR)/raw.o  \
