@@ -9,16 +9,16 @@
 #define INLINE
 #endif
 
-static INLINE void bb_sanity(struct bbuf *b)
+static INLINE void dyb_sanity(struct dynbuf *b)
 {
 	abort_unless(b && b->mm != NULL &&
-		     (b->off < b->size) && 
-		     (b->size - b->off <= b->len) && 
+		     (b->off <= b->size) && 
+		     (b->size - b->off >= b->len) && 
 		     (b->data != NULL || b->size == 0));
 }
 
 
-void bb_init(struct bbuf *b, struct memmgr *mm)
+void dyb_init(struct dynbuf *b, struct memmgr *mm)
 {
 	b->size = 0;
 	b->data = NULL;
@@ -31,18 +31,18 @@ void bb_init(struct bbuf *b, struct memmgr *mm)
 }
 
 
-int bb_alloc(struct bbuf *b, size_t sz)
+int dyb_alloc(struct dynbuf *b, ulong sz)
 {
 	byte_t *p;
 
-	bb_sanity(b);
+	dyb_sanity(b);
 
 	if (sz <= b->size)
 		return 0;
 
 	/* always at least double size if possible to */
 	/* make the max # of allocations the ceiling of lg2 of SIZE_MAX */
-	if ((b->size < ((size_t)-1) / 2) && (sz < b->size * 2))
+	if ((b->size < ((ulong)-1) / 2) && (sz < b->size * 2))
 		sz = b->size * 2;
 
 	p = mem_resize(b->mm, b->data, sz);
@@ -56,18 +56,18 @@ int bb_alloc(struct bbuf *b, size_t sz)
 }
 
 
-void bb_free(struct bbuf *b)
+void dyb_free(struct dynbuf *b)
 {
-	bb_sanity(b);
+	dyb_sanity(b);
 
 	mem_free(b->mm, b->data);
-	bb_init(b, b->mm);
+	dyb_init(b, b->mm);
 }
 
 
-int bb_cat(struct bbuf *b, void *p, size_t len)
+int dyb_cat(struct dynbuf *b, void *p, ulong len)
 {
-	bb_sanity(b);
+	dyb_sanity(b);
 
 	if (b->size - b->off - b->len < len)
 		return -1;
@@ -78,14 +78,14 @@ int bb_cat(struct bbuf *b, void *p, size_t len)
 }
 
 
-int bb_cat_a(struct bbuf *b, void *p, size_t len)
+int dyb_cat_a(struct dynbuf *b, void *p, ulong len)
 {
-	bb_sanity(b);
+	dyb_sanity(b);
 
 	if (b->size - b->off - b->len < len) {
-		if (((size_t)-1) - b->off - b->len < len)
+		if (((ulong)-1) - b->off - b->len < len)
 			return -1;
-		if (bb_alloc(b, b->off + b->len + len) < 0)
+		if (dyb_alloc(b, b->off + b->len + len) < 0)
 			return -1;
 	}
 	memmove(b->data + b->off + b->len, p, len);
@@ -94,9 +94,9 @@ int bb_cat_a(struct bbuf *b, void *p, size_t len)
 }
 
 
-int bb_set(struct bbuf *b, size_t off, void *p, size_t len)
+int dyb_set(struct dynbuf *b, ulong off, void *p, ulong len)
 {
-	bb_sanity(b);
+	dyb_sanity(b);
 
 	if (b->size < off || b->size - off < len)
 		return -1;
@@ -108,18 +108,18 @@ int bb_set(struct bbuf *b, size_t off, void *p, size_t len)
 }
 
 
-int bb_set_a(struct bbuf *b, size_t off, void *p, size_t len)
+int dyb_set_a(struct dynbuf *b, ulong off, void *p, ulong len)
 {
-	size_t tlen;
+	ulong tlen;
 
-	bb_sanity(b);
+	dyb_sanity(b);
 
-	if (((size_t)-1) - off > len)
+	if (((ulong)-1) - off > len)
 		return -1;
 
 	tlen = off + len;
 	if (b->size < tlen) {
-		if (bb_alloc(b, tlen) < 0)
+		if (dyb_alloc(b, tlen) < 0)
 			return -1;
 	}
 	b->off = off;
@@ -130,12 +130,12 @@ int bb_set_a(struct bbuf *b, size_t off, void *p, size_t len)
 }
 
 
-int bb_copy(struct bbuf *db, struct bbuf *sb)
+int dyb_copy(struct dynbuf *db, struct dynbuf *sb)
 {
-	bb_sanity(db);
-	bb_sanity(sb);
+	dyb_sanity(db);
+	dyb_sanity(sb);
 
-	if (bb_alloc(db, db->size) < 0)
+	if (dyb_alloc(db, db->size) < 0)
 		return -1;
 
 
