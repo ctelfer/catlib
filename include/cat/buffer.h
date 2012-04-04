@@ -36,10 +36,16 @@ void dyb_init(struct dynbuf *b, struct memmgr *mm);
 /* ensure that the buffer has at least sz bytes */
 /* if not, try to allocate it.  Return 0 on success and */
 /* -1 if unable to allocate the space. */
-int dyb_alloc(struct dynbuf *b, ulong sz);
+int dyb_resv(struct dynbuf *b, ulong sz);
 
-/* release the memory associated with a dynbuf */
-void dyb_free(struct dynbuf *b);
+/* free the memory associated with a dynbuf and re-initialize */
+void dyb_clear(struct dynbuf *b);
+
+/* re-initialize the dynamic buffer and return the memory it held */
+void *dyb_release(struct dynbuf *b);
+
+/* reset offset and length pointers for a buffer but keep memory */
+void dyb_empty(struct dynbuf *b);
 
 /* concatenate 'len' bytes from 'p' to 'b'.  Return 0 on success or */
 /* -1 if not enough space.  */
