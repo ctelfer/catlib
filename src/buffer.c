@@ -24,7 +24,7 @@ void dyb_init(struct dynbuf *b, struct memmgr *mm)
 	b->data = NULL;
 	b->off = 0;
 	b->len = 0;
-	if (mm == NULL)
+	if ( mm == NULL )
 		b->mm = &stdmm;
 	else
 		b->mm = mm;
@@ -37,16 +37,16 @@ int dyb_resv(struct dynbuf *b, ulong sz)
 
 	dyb_sanity(b);
 
-	if (sz <= b->size)
+	if ( sz <= b->size )
 		return 0;
 
 	/* always at least double size if possible to */
 	/* make the max # of allocations the ceiling of lg2 of SIZE_MAX */
-	if ((b->size < ((ulong)-1) / 2) && (sz < b->size * 2))
+	if ( (b->size < ((ulong)-1) / 2) && (sz < b->size * 2) )
 		sz = b->size * 2;
 
 	p = mem_resize(b->mm, b->data, sz);
-	if (p == NULL)
+	if ( p == NULL )
 		return -1;
 
 	b->data = p;
@@ -91,7 +91,7 @@ int dyb_cat(struct dynbuf *b, void *p, ulong len)
 {
 	dyb_sanity(b);
 
-	if (b->size - b->off - b->len < len)
+	if ( b->size - b->off - b->len < len )
 		return -1;
 	memmove(b->data + b->off + b->len, p, len);
 	b->len += len;
@@ -104,10 +104,10 @@ int dyb_cat_a(struct dynbuf *b, void *p, ulong len)
 {
 	dyb_sanity(b);
 
-	if (b->size - b->off - b->len < len) {
-		if (((ulong)-1) - b->off - b->len < len)
+	if ( b->size - b->off - b->len < len ) {
+		if ( ((ulong)-1) - b->off - b->len < len )
 			return -1;
-		if (dyb_resv(b, b->off + b->len + len) < 0)
+		if ( dyb_resv(b, b->off + b->len + len) < 0 )
 			return -1;
 	}
 	memmove(b->data + b->off + b->len, p, len);
@@ -120,7 +120,7 @@ int dyb_set(struct dynbuf *b, ulong off, void *p, ulong len)
 {
 	dyb_sanity(b);
 
-	if (b->size < off || b->size - off < len)
+	if ( b->size < off || b->size - off < len )
 		return -1;
 	b->off = off;
 	b->len = len;
@@ -136,12 +136,12 @@ int dyb_set_a(struct dynbuf *b, ulong off, void *p, ulong len)
 
 	dyb_sanity(b);
 
-	if (((ulong)-1) - off > len)
+	if ( ((ulong)-1) - off > len )
 		return -1;
 
 	tlen = off + len;
-	if (b->size < tlen) {
-		if (dyb_resv(b, tlen) < 0)
+	if ( b->size < tlen ) {
+		if ( dyb_resv(b, tlen) < 0 )
 			return -1;
 	}
 	b->off = off;
@@ -157,7 +157,7 @@ int dyb_copy(struct dynbuf *db, struct dynbuf *sb)
 	dyb_sanity(db);
 	dyb_sanity(sb);
 
-	if (dyb_resv(db, db->size) < 0)
+	if ( dyb_resv(db, db->size) < 0 )
 		return -1;
 
 
