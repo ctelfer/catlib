@@ -31,6 +31,7 @@ struct list {
 #define l_tail(listp)	(listp)->prev
 #define l_end(listp)	(listp)
 #define l_next(entp)	(entp)->next
+#define l_prev(entp)	(entp)->prev
 
 /* basic operations */
 DECL void l_init(struct list *head);
@@ -60,8 +61,10 @@ DECL void l_sort(struct list *l, cmp_f cmp);
 
 #define l_next_obj(ptr, type, member) \
 	container((ptr)->member.next, type, member)
+
 #define l_prev_obj(ptr, type, member) \
 	container((ptr)->member.prev, type, member)
+
 #define l_for_each(node, list) \
 	for ( (node) = l_head(list) ; (node) != l_end(list) ; \
 	      (node) = (node)->next )
@@ -69,6 +72,15 @@ DECL void l_sort(struct list *l, cmp_f cmp);
 #define l_for_each_safe(node, xtra, list) \
 	for ( (node) = l_head(list) ; \
 	      (xtra) = (node)->next, (node) != l_end(list) ; \
+	      (node) = (xtra) )
+
+#define l_for_each_rev(node, list) \
+	for ( (node) = l_tail(list) ; (node) != l_end(list) ; \
+	      (node) = (node)->prev )
+
+#define l_for_each_rev_safe(node, xtra, list) \
+	for ( (node) = l_tail(list) ; \
+	      (xtra) = (node)->prev, (node) != l_end(list) ; \
 	      (node) = (xtra) )
 
 #if defined(CAT_LIST_DO_DECL) && CAT_LIST_DO_DECL
