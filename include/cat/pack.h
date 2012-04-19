@@ -18,9 +18,9 @@
 	 e - little endian
 	 E - big endian
 	 b - byte (8 bits)            -- pass in byte_t / uchar / uchar
-	 h - half-word (16 bits)      -- pass in ushort / ushort
-	 w - word (32 bits)           -- pass in ulong / ulong
-	 j - jumbo word (64 bits)     -- pass in ulonglong / ulonglong
+	 h - half-word (16 bits)      -- pass in short / ushort
+	 w - word (32 bits)           -- pass in long / ulong
+	 j - jumbo word (64 bits)     -- pass in long long / ullong
 	 B - signed 8 bit value       -- pass in signed char / schar
 	 H - signed 16 bit value      -- pass in short
 	 W - signed 32 bit value      -- pass in long

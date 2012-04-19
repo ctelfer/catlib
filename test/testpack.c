@@ -99,9 +99,9 @@ int main(int argc, char *argv[])
   printf("ntoh32(0x11223344) = %x\n", ntoh32(0x11223344));
 #if CAT_HAS_LONGLONG
   printf("ntoh64(0x1122334455667788) = %llx\n", 
-         (ulonglong)ntoh64(0x1122334455667788ll));
+         (ullong)ntoh64(0x1122334455667788ll));
   printf("hton64(0x8877665544332211) = %llx\n", 
-	 (ulonglong)ntoh64(0x8877665544332211ll));
+	 (ullong)ntoh64(0x8877665544332211ll));
 #endif /* CAT_HAS_LONGLONG */
 
   return 0;

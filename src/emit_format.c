@@ -310,7 +310,7 @@ static int fmt_str(struct emitter *em, struct format_params *fp,
 
 
 #if CAT_HAS_LONGLONG
-#define CAT_MAXUTYPE ulonglong
+#define CAT_MAXUTYPE ullong
 #define CAT_MAXSTYPE long long
 #else /* CAT_HAS_LONGLONG */
 #define CAT_MAXUTYPE ulong
@@ -334,7 +334,7 @@ static CAT_MAXUTYPE get_u_arg(struct format_params *fp, struct va_list_s *app)
 		v = va_arg(app->ap, uint);
 #if CAT_HAS_LONGLONG
 	else if ( fp->argsize == ARG_LONGLONG )
-		v = va_arg(app->ap, ulonglong);
+		v = va_arg(app->ap, ullong);
 #endif /* CAT_HAS_LONGLONG */
 	else
 		abort_unless(0);

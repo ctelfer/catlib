@@ -88,7 +88,7 @@ typedef unsigned short ushort;
 typedef unsigned int uint;
 typedef unsigned long ulong;
 #if CAT_HAS_LONGLONG
-typedef unsigned long long ulonglong;
+typedef unsigned long long ullong;
 #endif /* CAT_HAS_LONGLONG */
 #endif /* CAT_NEED_UTYPEDEFS */
 
