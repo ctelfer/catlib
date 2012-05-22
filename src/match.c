@@ -571,11 +571,21 @@ static int rex_check_repitions(struct rex_node *rxn, uchar **pp,
 }
 
 
+/* TODO: let's optimize this */
 static int span_regular(uchar *p, unsigned max)
 {
 	static const char *special = "*[](){}+?|.\\$^";
 	uchar *t = p;
-	while ( max-- > 0 && !strchr(special, *t) ) ++t;
+retry_null:
+	while ( max > 0 && !strchr(special, *t) ) {
+		--max;
+		++t;
+	}
+	if ( (max > 0) && (*t == '\0') ) { 
+		--max;
+		++t; 
+		goto retry_null;
+	}
 	return t - p;
 }
 

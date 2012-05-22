@@ -203,9 +203,9 @@ static INLINE int ntz_64(uint64_t x) {
 	int v;
 	if ( x == 0 )
 		return 64;
-	v = nlz_32(x & 0xFFFFFFFF);
+	v = ntz_32(x & 0xFFFFFFFF);
 	if ( v == 32 )
-		v += nlz_32(x >> 32);
+		v += ntz_32(x >> 32);
 	return v;
 }
 #else /* CAT_HAS_NLZ_32 */
