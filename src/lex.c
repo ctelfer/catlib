@@ -1,3 +1,12 @@
+/*
+ * lex.c -- Dumb lexical analysis.
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 -- See accompanying license
+ *
+ */
+
 #include <cat/lex.h>
 #include <cat/raw.h>
 #include <string.h>

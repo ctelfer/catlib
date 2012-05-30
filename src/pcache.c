@@ -1,3 +1,11 @@
+/*
+ * pcache.c -- Pool cache for fast allocation.
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 -- See accompanying license
+ *
+ */
 #include <cat/pcache.h>
 
 void pc_init(struct pcache *pc, size_t asiz, size_t pgsiz, uint hiwat, 

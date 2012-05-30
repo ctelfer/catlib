@@ -1,3 +1,11 @@
+/*
+ * bitops.h -- Bit manipulation operations.
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 -- See accompanying license
+ *
+ */
 #ifndef __bitops_h
 #define __bitops_h
 

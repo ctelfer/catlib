@@ -1,3 +1,11 @@
+/*
+ * stdcsv.c -- nicer way to interface with CSV files built on csv.c
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 -- See accompanying license
+ *
+ */
 #include <cat/cat.h>
 
 #if CAT_HAS_POSIX

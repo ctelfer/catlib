@@ -1,3 +1,11 @@
+/*
+ * emit.h -- generic output stream API
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 -- See accompanying license
+ *
+ */
 #ifndef __cat_emit_h
 #define __cat_emit_h
 

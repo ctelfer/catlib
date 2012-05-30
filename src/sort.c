@@ -1,3 +1,11 @@
+/*
+ * sort.c -- Sorting routines.
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 -- See accompanying license
+ *
+ */
 #include <cat/sort.h>
 #include <string.h>
 

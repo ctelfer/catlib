@@ -1,3 +1,12 @@
+/*
+ * graph.c -- generic graph data structure representation.
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 See accompanying license
+ *
+ */
+
 #include <cat/graph.h>
 
 #define CAT_GRAPH_INIT_EDGE_LEN	16

@@ -1,3 +1,11 @@
+/*
+ * stdarg.h -- variable argument macros
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 -- See accompanying license
+ *
+ */
 #ifndef __catstdarg_h
 #define __catstdarg_h
 

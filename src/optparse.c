@@ -1,3 +1,11 @@
+/*
+ * optparse.c -- Command line option parsing
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 -- See accompanying license
+ *
+ */
 #include <cat/optparse.h>
 #include <string.h>
 #include <ctype.h>

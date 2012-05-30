@@ -1,3 +1,12 @@
+/*
+ * catstdlib.c -- local implementation of standard libc functions.
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 See accompanying license
+ *
+ */
+
 #include <cat/cat.h>
 
 /* We use several functions even if we don't use the standard library */

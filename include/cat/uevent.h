@@ -1,3 +1,11 @@
+/*
+ * uevent.h -- UNIX event dispatch routines.
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 -- See accompanying license
+ *
+ */
 #ifndef __cat_uevent_h
 #define __cat_uevent_h
 

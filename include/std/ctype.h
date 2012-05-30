@@ -1,3 +1,11 @@
+/*
+ * ctype.h -- C standard ctype.h library.
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 -- See accompanying license
+ *
+ */
 #ifndef __cat_ctype_h
 #define __cat_ctype_h
 

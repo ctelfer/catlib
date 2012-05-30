@@ -3,7 +3,7 @@
  *
  * Christopher Adam Telfer
  *
- * Copyright 1999 - 2007  (see accompanying license) 
+ * Copyright 1999 - 2012 -- see accompanying license
  *
  */
 

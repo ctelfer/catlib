@@ -1,3 +1,11 @@
+/*
+ * emit_format.h -- Formatted output over the emit interface.
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 -- See accompanying license
+ *
+ */
 #ifndef __cat_emit_format_h
 #define __cat_emit_format_h
 

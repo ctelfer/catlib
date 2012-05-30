@@ -1,3 +1,11 @@
+/*
+ * limits.h -- C standard limits.h file
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 -- See accompanying license
+ *
+ */
 #ifndef __catlimits_h
 #define __catlimits_h
 

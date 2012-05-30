@@ -1,3 +1,12 @@
+/*
+ * csv.c -- functions to manipulated comma-separated value files.
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 See accompanying license
+ *
+ */
+
 #include <cat/cat.h>
 #include <cat/csv.h>
 #include <cat/grow.h>

@@ -1,3 +1,11 @@
+/*
+ * shell.c -- Dumb shell interpreter.
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 -- See accompanying license
+ *
+ */
 #include <cat/cat.h>
 #include <cat/shell.h>
 #include <cat/str.h>

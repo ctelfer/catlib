@@ -1,3 +1,12 @@
+/*
+ * inport.c -- generic API for an input stream.
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 See accompanying license
+ *
+ */
+
 #include <cat/inport.h>
 
 int readchar(struct inport *in, char *ch)

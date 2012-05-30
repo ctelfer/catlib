@@ -1,3 +1,11 @@
+/*
+ * dynmem.h -- Dynamic memory managers.
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 -- See accompanying license
+ *
+ */
 #ifndef __cat_dynmem_h
 #define __cat_dynmem_h
 #include <cat/cat.h>

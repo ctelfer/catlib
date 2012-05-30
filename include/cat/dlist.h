@@ -3,7 +3,7 @@
  *
  * by Christopher Adam Telfer
  * 
- * Copyright 2003, See accompanying license
+ * Copyright 2003-2012 -- See accompanying license
  *
  */
 #ifndef __CAT_DLIST_H

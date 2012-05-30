@@ -1,3 +1,11 @@
+/*
+ * pool.h -- fixed size element memory pools.
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 -- See accompanying license
+ *
+ */
 #ifndef __pool_h
 #define __pool_h
 

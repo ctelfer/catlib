@@ -1,3 +1,11 @@
+/*
+ * emalloc.h -- error aborting memory management operations.
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 -- See accompanying license
+ *
+ */
 #ifndef __cat_emalloc_h
 #define __cat_emalloc_h
 #include <cat/cat.h>

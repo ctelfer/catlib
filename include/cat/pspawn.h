@@ -1,3 +1,11 @@
+/*
+ * spawn.h -- Co-process spawning and management.
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 -- See accompanying license
+ *
+ */
 #ifndef __spawn_h
 #define __spawn_h
 #include <cat/cat.h>

@@ -1,3 +1,11 @@
+/*
+ * match.c -- Routines to do fast string matching.
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 -- See accompanying license
+ *
+ */
 #include <cat/cat.h>
 #include <cat/match.h>
 #include <stdlib.h>

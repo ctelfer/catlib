@@ -1,3 +1,11 @@
+/*
+ * stdclio.h -- stdio interface matched to emit API.
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 -- See accompanying license
+ *
+ */
 #ifndef __cat_stdclio_h
 #define __cat_stdclio_h
 #include <cat/cat.h>

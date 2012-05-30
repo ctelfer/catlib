@@ -1,3 +1,12 @@
+/*
+ * dbgmem.c -- memory manager instrumented for debugging.
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 See accompanying license
+ *
+ */
+
 #include <cat/cat.h>
 #include <cat/dbgmem.h>
 #include <cat/err.h>

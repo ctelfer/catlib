@@ -1,4 +1,9 @@
-
+/*
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 -- See accompanying license
+ *
+ */
 
 void l_cut(struct list *first, struct list *last, struct list *out)
 {

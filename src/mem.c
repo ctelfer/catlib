@@ -1,9 +1,9 @@
 /*
- * mem.c -- funtions needed by most or all modules
+ * mem.c -- memory management interface
  *
  * by Christopher Adam Telfer
  *
- * Copyright 2003, 2004 See accompanying license
+ * Copyright 2003-2012 -- See accompanying license
  *
  */
 

@@ -1,3 +1,9 @@
+/*
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 -- See accompanying license
+ *
+ */
 #include <cat/cat.h>
 #include <cat/str.h>
 #include <cat/aux.h>

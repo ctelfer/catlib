@@ -1,3 +1,9 @@
+/*
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 -- See accompanying license
+ *
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>

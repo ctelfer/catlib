@@ -1,3 +1,11 @@
+/*
+ * stddef.h -- C stddef.h header file
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 -- See accompanying license
+ *
+ */
 #ifndef __catstddef_h
 #define __catstddef_h
 

@@ -1,3 +1,11 @@
+/*
+ * stdcsv.h -- Nicer way to interact with CSV files.
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 -- See accompanying license
+ *
+ */
 #ifndef __stdcsv_h
 #define __stdcsv_h
 

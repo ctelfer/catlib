@@ -1,3 +1,9 @@
+/*
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 -- See accompanying license
+ *
+ */
 #ifndef __mcache_h
 #define __mcache_h
 #include <cat/pool2.h>

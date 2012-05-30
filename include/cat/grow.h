@@ -1,3 +1,11 @@
+/*
+ * grow.h -- Routines to grow dynamically allocated memory sensibly.
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 -- See accompanying license
+ *
+ */
 #ifndef __grow_h
 #define __grow_h
 #include <cat/cat.h>

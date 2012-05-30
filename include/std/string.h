@@ -1,3 +1,11 @@
+/*
+ * string.h -- C standard string manipulation routines.
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 -- See accompanying license
+ *
+ */
 #ifndef __cat_string_h
 #define __cat_string_h
 

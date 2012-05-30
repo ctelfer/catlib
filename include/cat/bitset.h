@@ -1,3 +1,11 @@
+/*
+ * bitset.h -- Bitmap routines
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 -- See accompanying license
+ *
+ */
 #ifndef __bitset_h
 #define __bitset_h
 

@@ -1,7 +1,9 @@
 /*
-	 lex.h -- Simple lexical analyzer using simple regexes
-	 Copyright 2009
-	 Christopher Telfer
+ * lex.h -- Simple lexical analyzer using simple regexes
+ *
+ * by Christopher Telfer
+ *
+ * Copyright 2012 -- See accompanying license
 */
 
 #include <cat/cat.h>

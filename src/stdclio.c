@@ -1,3 +1,11 @@
+/*
+ * stdclio.c -- standard IO implementation of emtter API.
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 -- See accompanying license
+ *
+ */
 #include <cat/cat.h>
 #include <cat/stdclio.h>
 #include <stdio.h>

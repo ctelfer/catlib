@@ -3,7 +3,7 @@
  *
  * by Christopher Adam Telfer
  *
- * Copyright 2009, See accompanying license
+ * Copyright 2009-2012 -- See accompanying license
  *
  */
 

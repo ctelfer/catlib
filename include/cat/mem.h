@@ -1,3 +1,11 @@
+/*
+ * mem.h -- memory management API
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 -- See accompanying license
+ *
+ */
 #ifndef __cat_mem_h
 #define __cat_mem_h
 #include <cat/cat.h>

@@ -1,3 +1,11 @@
+/*
+ * shell.h -- Dumb program shell.
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 -- See accompanying license
+ *
+ */
 #ifndef __shell_h
 #define __shell_h
 #include <cat/cat.h>

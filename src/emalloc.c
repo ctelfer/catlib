@@ -1,3 +1,12 @@
+/*
+ * emalloc.c -- malloc code that aborts the program when out of memory.
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 See accompanying license
+ *
+ */
+
 #include <cat/cat.h>
 #include <cat/emalloc.h>
 #include <cat/err.h>

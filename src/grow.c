@@ -1,3 +1,12 @@
+/*
+ * grow.c -- funtions to grow dynamically allocated memory
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 See accompanying license
+ *
+ */
+
 #include <cat/cat.h>
 #include <cat/mem.h>
 #include <cat/grow.h>

@@ -1,3 +1,11 @@
+/*
+ * graph.h -- Generic graph data structure.
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 -- See accompanying license
+ *
+ */
 #ifndef __graph_h
 #define __graph_h
 

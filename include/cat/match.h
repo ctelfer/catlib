@@ -1,3 +1,11 @@
+/*
+ * match.h -- fast string matching algorithms.
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 -- See accompanying license
+ *
+ */
 #ifndef __match_h
 #define __match_h
 #include <cat/cat.h>

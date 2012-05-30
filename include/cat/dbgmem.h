@@ -1,3 +1,11 @@
+/*
+ * dbgmem.h -- Memory management API instrumented for debugging.
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 -- See accompanying license
+ *
+ */
 #ifndef __dbgmem_h
 #define __dbgmem_h
 #include <cat/cat.h>

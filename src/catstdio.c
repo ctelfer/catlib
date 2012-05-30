@@ -1,3 +1,12 @@
+/*
+ * catstdio.c -- local implementation of stdio.
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 See accompanying license
+ *
+ */
+
 #include <cat/cat.h>
 #include <stdarg.h>
 #include <limits.h>

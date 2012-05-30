@@ -1,3 +1,11 @@
+/*
+ * pcache.h -- dynamically resizing memory pools.
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 -- See accompanying license
+ *
+ */
 #ifndef __pcache_h
 #define __pcache_h
 

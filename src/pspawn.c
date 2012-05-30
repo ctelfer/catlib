@@ -1,3 +1,11 @@
+/*
+ * pspawn.c -- intelligent (co-)process spawing API
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 -- See accompanying license
+ *
+ */
 #include <cat/cat.h>
 
 #if CAT_HAS_POSIX

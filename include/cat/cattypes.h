@@ -1,3 +1,11 @@
+/*
+ * cattypes.h -- type definitions that work even when stdint.h isn't present.
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 -- See accompanying license
+ *
+ */
 #ifndef __cat_cattypes_h
 #define __cat_cattypes_h
 

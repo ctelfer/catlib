@@ -1,3 +1,12 @@
+/*
+ * buffer.c -- growable data buffers.
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 See accompanying license
+ *
+ */
+
 #include "cat/buffer.h"
 #include <stdlib.h>
 #include <string.h>

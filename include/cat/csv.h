@@ -1,3 +1,11 @@
+/*
+ * csv.h -- Routines for manipulating comma separated values files.
+ *
+ * by Christopher Adam Telfer
+ *
+ * Copyright 2003-2012 -- See accompanying license
+ *
+ */
 #ifndef __cat_csv_h
 #define __cat_csv_h
 #include <cat/cat.h>
