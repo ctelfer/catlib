@@ -692,7 +692,7 @@ static int fmt_double_help(long double v, struct emitter *em,
 	int prec = 6;
 	int signlen = 0;
 	int periodlen = 0;
-	int power, opower;
+	int power;
 	int spaces = 0;
 	int tlen;
 	uchar digit;
@@ -705,7 +705,7 @@ static int fmt_double_help(long double v, struct emitter *em,
 	if ( fp->precision >= 0 )
 		prec = fp->precision;
 
-	opower = power = find_power(v);
+	power = find_power(v);
 	if ( power == INF )
 		return fmt_str_help("inf", em, fp, flen);
 	else if ( power == NEGINF )

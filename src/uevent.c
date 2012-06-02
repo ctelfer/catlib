@@ -191,7 +191,6 @@ void ue_io_init(struct ue_ioevent *io, int type, int fd, callback_f f, void *a)
 
 int ue_io_reg(struct uemux *mux, struct ue_ioevent *io)
 {
-	int wasempty = 0;
 	struct list *list;
 
 	abort_unless(mux);
@@ -201,7 +200,6 @@ int ue_io_reg(struct uemux *mux, struct ue_ioevent *io)
 	abort_unless(io->fd >= 0);
 
 	if ( (list = avl_get_dptr(mux->fdtab, &io->fd)) == NULL ) {
-		wasempty = 1;
 		list = mem_get(mux->mm, sizeof(struct list));
 		if ( list == NULL )
 			return -1;
@@ -295,7 +293,6 @@ static void ue_handler(int signum)
 
 int ue_sig_reg(struct uemux *mux, struct ue_sigevent *se)
 {
-	int wasempty = 0;
 	struct list *list;
 	sigset_t save;
 	struct sigaction sa;
@@ -318,8 +315,6 @@ int ue_sig_reg(struct uemux *mux, struct ue_sigevent *se)
 		}
 
 		/* ADD the signal to the list to watch */
-		wasempty = 1;
-
 		/* TODO: is this necessary?  Why did I put this here*/
 		memset(&sa, 0, sizeof(sa));
 		sa.sa_handler = ue_handler;

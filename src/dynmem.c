@@ -224,7 +224,6 @@ again:
 
 void dynmem_free(struct dynmem *dm, void *mem)
 {
-	int rv;
 	struct memblk *mb;
 
 	abort_unless(dm);
@@ -233,7 +232,7 @@ void dynmem_free(struct dynmem *dm, void *mem)
 
 	mb = ptr2mb(mem);
 	mark_free(mb);
-	rv = coalesce(&mb);
+	coalesce(&mb);
 	/* if the following block was "dm_current" adjust */
 	if (((char *)dm->dm_current >= (char *)mb) && 
 			((char *)dm->dm_current <  ((char *)mb + MBSIZE(mb))))

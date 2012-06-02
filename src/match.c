@@ -263,13 +263,10 @@ static struct sfxnode *newnode(struct sfxtree *sfx)
 static struct sfxnode *split(struct sfxtree *sfx, struct sfxedge *edge,
 			     long off, long index)
 {
-	long end;
 	int create;
 	struct sfxedge *e1, *e2;
 	struct sfxnode *newint, *newleaf;
 	uchar *text = (uchar *)sfx->str.data;
-
-	end = edge->end;
 
 	if ( !(newint = newnode(sfx)) )
 		return NULL;
