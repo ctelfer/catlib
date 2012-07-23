@@ -13,6 +13,7 @@
 
 #if CAT_HAS_POSIX
 
+#include <sys/types.h>
 #include <sys/socket.h>
 
 #define SOCKS5_CT_CONNECT	1

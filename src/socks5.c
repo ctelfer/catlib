@@ -65,7 +65,7 @@ int socks5_anon_probe(int fd)
 		return -1;
 	unpack(buf, 2, "bb", &v, &m);
 	if ( v != 5 ) {
-		errno = EPROTO;
+		errno = EIO;
 		return -1;
 	}
 	if ( m != 0 ) {
@@ -80,18 +80,18 @@ int socks5_anon_probe(int fd)
 static int resp_ok(int r_v, int r_rc, int r_at, int atype)
 {
 	if ( r_v != 5 ) {
-		errno = EPROTO;
+		errno = EIO;
 		return -1;
 	}
 	if ( r_at != atype ) {
 		if ( (r_at != SOCKS5_AT_IPV4) && 
 		     (r_at != SOCKS5_AT_DN) && 
 		     (r_at != SOCKS5_AT_IPV6) ) {
-			errno = EPROTO;
+			errno = EIO;
 			return -1;
 		}
 		if ( atype != SOCKS5_AT_DN ) {
-			errno = EPROTO;
+			errno = EIO;
 			return -1;
 		}
 	}
@@ -137,7 +137,7 @@ int socks5_recvresp(int fd, int cmd, int atype, struct socks5addr *outsa)
 		}
 
 		if ( len > rv - 6 ) {
-			errno = EPROTO;
+			errno = EIO;
 			return -1;
 		}
 			
