@@ -8,47 +8,90 @@
  */
 
 #include <cat/inport.h>
+#include <limits.h>
+#include <string.h>
 
-int readchar(struct inport *in, char *ch)
+/* ------ Core API ------ */
+int inp_read(struct inport *in, void *buf, int len)
 {
-	abort_unless(in && ch);
-	return (*in->read)(in, ch);
+	if ( in == NULL || in->read == NULL || buf == NULL || len <= 0 )
+		return -1;
+	return (*in->read)(in, buf, len);
 }
 
 
-static int string_inport_readchar(struct inport *in, char *ch)
+int inp_getc(struct inport *in)
 {
-	struct string_inport *sin = (struct string_inport *)in;
-	if ( sin->cur >= sin->end )
-		return READCHAR_END;
-	*ch = *sin->cur;
-	sin->cur += 1;
-	return READCHAR_CHAR;
+	char ch;
+	int rv;
+	rv = inp_read(in, &ch, 1);
+	if ( rv <= 0 )
+		return -1;
+	return ch;
 }
 
 
-void string_inport_init(struct string_inport *sin, const char *s)
+/* ------ Constant String Inport ------ */
+static int csinp_read(struct inport *in, void *buf, int len)
 {
-	abort_unless(sin && s);
-	sin->in.read = &string_inport_readchar;
-	sin->start = s;
-	sin->cur = s;
-	while ( *s != '\0' ) s++;
-	sin->end = s;
+	struct cstr_inport *csi = (struct cstr_inport *)in;
+
+	abort_unless(csi->str != NULL);
+	abort_unless(len > 0);
+
+	if ( csi->off >= csi->slen )
+		return 0;
+
+	if ( csi->slen - csi->off > len )
+		len = csi->slen - csi->off;
+
+	memcpy(buf, csi->str + csi->off, len);
+
+	return len;
 }
 
 
-void string_inport_reset(struct string_inport *sin)
+void csinp_init(struct cstr_inport *csi, const char *s)
 {
-	abort_unless(sin);
-	sin->cur = sin->start;
+	abort_unless(csi);
+
+	csi->in.read = csinp_read;
+	csi->str = s;
+	csi->slen = (s == NULL) ? 0 : strlen(s);
+	csi->off = 0;
 }
 
 
+void csinp_init_len(struct cstr_inport *csi, const char *s, size_t len)
+{
+	abort_unless(csi);
+	abort_unless((s != NULL) || (len > 0));
+
+	csi->in.read = csinp_read;
+	csi->str = s;
+	csi->slen = len;
+	csi->off = 0;
+}
+
+
+void csinp_reset(struct cstr_inport *csi)
+{
+	abort_unless(csi);
+	csi->off = 0;
+}
+
+
+void csinp_clear(struct cstr_inport *csi)
+{
+	csinp_init(csi, NULL);
+}
+
+
+/* ------ Null Inport ------ */
 void null_inport_init(struct inport *in)
 {
 }
 
 
-struct inport null_inport = { 0 };
+struct inport null_inport = { NULL };
 

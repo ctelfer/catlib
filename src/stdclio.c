@@ -58,31 +58,33 @@ int file_emitter_close(struct file_emitter *fe)
 }
 
 
-static int file_inport_readchar(struct inport *in, char *ch)
+static int finp_read(struct inport *in, void *buf, int len)
 {
 	struct file_inport *fin = (struct file_inport *)in;
-	int rch;
+	size_t nr;
+
 	abort_unless(fin->file);
-	if ( feof(fin->file) )
-		return READCHAR_END;
+
 	if ( ferror(fin->file) )
-		return READCHAR_ERROR;
-	rch = fgetc(fin->file);
-	if ( rch == EOF ) {
-		if ( feof(fin->file) )
-			return READCHAR_END;
+		return -1;
+	if ( feof(fin->file) )
+		return 0;
+
+	nr = fread(buf, len, 1, fin->file);
+	if ( nr < len ) {
 		if ( ferror(fin->file) )
-			return READCHAR_ERROR;
+			return -1;
+		len = nr;
 	}
-	*ch = rch;
-	return READCHAR_CHAR;
+
+	return nr;
 }
 
 
 void file_inport_init(struct file_inport *fin, FILE *fp)
 {
 	abort_unless(fin && fp);
-	fin->in.read = &file_inport_readchar;
+	fin->in.read = &finp_read;
 	fin->file = fp;
 }
 
@@ -127,24 +129,18 @@ void fd_emitter_init(struct fd_emitter *fde, int fd)
 }
 
 
-static int fd_inport_readchar(struct inport *in, char *ch)
+static int fdinp_read(struct inport *in, void *buf, int len)
 {
-	int rv;
 	struct fd_inport *fdin = (struct fd_inport *)in;
 	abort_unless(fdin->fd >= 0);
-	rv = read(fdin->fd, ch, 1);
-	if ( rv == 1 )
-		return READCHAR_CHAR;
-	if ( rv == 0 )
-		return READCHAR_END;
-	return READCHAR_ERROR;
+	return read(fdin->fd, buf, len);
 }
 
 
 void fd_inport_init(struct fd_inport *fdin, int fd)
 {
-	abort_unless(fdin && (fd >= 0));
-	fdin->in.read = &fd_inport_readchar;
+	abort_unless(fdin && fd >= 0);
+	fdin->in.read = &fdinp_read;
 	fdin->fd = fd;
 }
 

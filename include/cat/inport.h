@@ -10,32 +10,37 @@
 #define __cat_inport_h
 #include <cat/cat.h>
 
-#define READCHAR_CHAR      0
-#define READCHAR_NONE      1
-#define READCHAR_END       2
-#define READCHAR_ERROR     3
-
 struct inport;
-typedef int (*readchar_f)(struct inport *in, char *out);
+
+/* len must be >= 0 or returns error */
+/* returns: -1 on error, 0 on EOF, > 0 == # of bytes */
+typedef int (*inp_read_f)(struct inport *in, void *buf, int len);
 
 struct inport {
-	readchar_f            read;
+	inp_read_f		read;
 };
 
-int readchar(struct inport *in, char *ch);
 
+/* len must be less than INT_MAX or returns error */
+/* returns: -1 on err, 0 on EOF, > 0 == # of bytes */
+int inp_read(struct inport *in, void *buf, int len);
 
-struct string_inport {
-	struct inport         in;
-	const char *          start;
-	const char *          end;
-	const char *          cur;
+/* returns -1 on both end of file or error, otherwise char */
+int inp_getc(struct inport *in);
+
+struct cstr_inport {
+	struct inport		in;
+	const char *		str;
+	size_t			slen;
+	size_t			off;
 };
 
-void string_inport_init(struct string_inport *sin, const char *s);
-void string_inport_reset(struct string_inport *sin);
+void csinp_init(struct cstr_inport *csi, const char *s);
+void csinp_reset(struct cstr_inport *csi);
+void csinp_clear(struct cstr_inport *csi);
 
-void null_inport_init(struct inport *in);
+
+void ninp_init(struct inport *in);
 extern struct inport null_inport;
 
 #endif /* __cat_inport_h */

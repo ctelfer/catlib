@@ -59,7 +59,7 @@ struct file_inport {
 	FILE *			file;
 };
 
-void file_inport_init(struct file_inport *fin, FILE *fp);
+void finp_init(struct file_inport *fin, FILE *fp);
 
 
 #if CAT_HAS_POSIX
@@ -68,7 +68,7 @@ struct fd_inport {
 	int			fd;
 };
 
-void fd_inport_init(struct fd_inport *fdin, int fd);
+void fdinp_init(struct fd_inport *fdin, int fd);
 #endif /* CAT_HAS_POSIX */
 
 
