@@ -31,6 +31,16 @@ int inp_getc(struct inport *in)
 }
 
 
+int inp_close(struct inport *in)
+{
+	if ( in == NULL )
+		return -1;
+	if ( in->close == NULL )
+		return 0;
+	return (*in->close)(in);
+}
+
+
 /* ------ Constant String Inport ------ */
 static int csinp_read(struct inport *in, void *buf, int len)
 {
@@ -51,11 +61,20 @@ static int csinp_read(struct inport *in, void *buf, int len)
 }
 
 
+static int csinp_close(struct inport *in)
+{
+	struct cstr_inport *csi = (struct cstr_inport *)in;
+	csinp_clear(csi);
+	return 0;
+}
+
+
 void csinp_init(struct cstr_inport *csi, const char *s)
 {
 	abort_unless(csi);
 
 	csi->in.read = csinp_read;
+	csi->in.close = csinp_close;
 	csi->str = s;
 	csi->slen = (s == NULL) ? 0 : strlen(s);
 	csi->off = 0;
@@ -93,5 +112,5 @@ void null_inport_init(struct inport *in)
 }
 
 
-struct inport null_inport = { NULL };
+struct inport null_inport = { NULL, NULL };
 

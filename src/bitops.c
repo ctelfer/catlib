@@ -47,6 +47,7 @@ uint32_t rdp2_32(uint32_t x, uint lg2p)
 }
 
 
+#if CAT_64BIT
 uint64_t rup2_64(uint64_t x, uint lg2p)
 {
 	uint64_t p2 = ((uint64_t)1 << lg2p) - 1;
@@ -58,6 +59,7 @@ uint64_t rdp2_64(uint64_t x, uint lg2p)
 {
 	return (lg2p > 63) ? 0 : (x & ~(((uint64_t)1 << lg2p) - 1));
 }
+#endif /* CAT_64BIT */
 
 
 uint32_t compress_l32(uint32_t x, uint32_t m)
@@ -111,6 +113,7 @@ uint32_t compress_r32(uint32_t x, uint32_t m)
 }
 
 
+#if CAT_64BIT
 uint64_t compress_l64(uint64_t x, uint64_t m)
 {
 	uint64_t t, mp, mv, mk;
@@ -161,6 +164,7 @@ uint64_t compress_r64(uint64_t x, uint64_t m)
 
 	return x;
 }
+#endif /* CAT_64BIT */
 
 
 uint32_t SAG32(uint32_t x, uint32_t mask)
@@ -169,10 +173,12 @@ uint32_t SAG32(uint32_t x, uint32_t mask)
 }
 
 
+#if CAT_64BIT
 uint64_t SAG64(uint64_t x, uint64_t mask)
 {
 	return compress_l64(x, mask) | compress_r64(x, ~mask);
 }
+#endif /* CAT_64BIT */
 
 
 /* converts an array of bit positions to a permutation vector used to permute */
@@ -225,6 +231,7 @@ uint32_t permute32_SAG(uint32_t bits, uint32_t pv[5])
 }
 
 
+#if CAT_64BIT
 /* converts an array of bit positions to a permutation vector used to permute */
 /* the bits of a 64-bit word usinv the permute64() function */
 int arr_to_SAG_permvec64(uint8_t arr[64], uint64_t pv[6])
@@ -276,6 +283,7 @@ uint64_t permute64_SAG(uint64_t bits, uint64_t pv[6])
 	bits = SAG64(bits, pv[5]);
 	return bits;
 }
+#endif /* CAT_64BIT */
 
 
 uint32_t bitgather32(uint32_t bits, uint8_t pos[32])
@@ -288,6 +296,7 @@ uint32_t bitgather32(uint32_t bits, uint8_t pos[32])
 }
 
 
+#if CAT_64BIT
 uint64_t bitgather64(uint64_t bits, uint8_t pos[64])
 {
 	int i;
@@ -296,5 +305,6 @@ uint64_t bitgather64(uint64_t bits, uint8_t pos[64])
 		x |= ((bits >> (pos[i] & 0x3f)) & 1) << i;
 	return x;
 }
+#endif /* CAT_64BIT */
 
 

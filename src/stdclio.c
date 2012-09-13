@@ -81,10 +81,28 @@ static int finp_read(struct inport *in, void *buf, int len)
 }
 
 
-void file_inport_init(struct file_inport *fin, FILE *fp)
+static int finp_close(struct inport *in)
+{
+	struct file_inport *fin = (struct file_inport *)in;
+	int rv;
+
+	if ( fin->file == NULL )
+		return 0;
+
+	rv = fclose(fin->file);
+	if ( rv == 0 )
+		fin->file = NULL;
+
+	return rv;
+}
+
+
+
+void finp_init(struct file_inport *fin, FILE *fp)
 {
 	abort_unless(fin && fp);
 	fin->in.read = &finp_read;
+	fin->in.close = &finp_close;
 	fin->file = fp;
 }
 
@@ -137,10 +155,28 @@ static int fdinp_read(struct inport *in, void *buf, int len)
 }
 
 
+static int fdinp_close(struct inport *in)
+{
+	struct fd_inport *fdin = (struct fd_inport *)in;
+	int rv;
+
+	if ( fdin->fd < 0 )
+		return 0;
+
+	rv = close(fdin->fd);
+	if ( rv == 0 )
+		fdin->fd = -1;
+
+	return rv;
+}
+	
+
+
 void fd_inport_init(struct fd_inport *fdin, int fd)
 {
 	abort_unless(fdin && fd >= 0);
 	fdin->in.read = &fdinp_read;
+	fdin->in.close = &fdinp_close;
 	fdin->fd = fd;
 }
 

@@ -461,12 +461,14 @@ void ue_next(struct uemux *mux)
 	disable_signals(&save);
 	maxsig = uemux_maxsig;
 	uemux_maxsig = -1;
-	if ( maxsig >= 0 )
+	if ( maxsig >= 0 ) {
 		fired = uemux_sset;
-	restore_signals(&save);
-
-	if ( maxsig >= 0 )
+		restore_signals(&save);
 		run_sig_handlers(mux, &fired, maxsig);
+	} else {
+		restore_signals(&save);
+	}
+
 
 	/* possible if a signal fired */
 	if ( i < 0 )
