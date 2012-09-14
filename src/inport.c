@@ -52,10 +52,11 @@ static int csinp_read(struct inport *in, void *buf, int len)
 	if ( csi->off >= csi->slen )
 		return 0;
 
-	if ( csi->slen - csi->off > len )
+	if ( csi->slen - csi->off < len )
 		len = csi->slen - csi->off;
 
 	memcpy(buf, csi->str + csi->off, len);
+	csi->off += len;
 
 	return len;
 }
