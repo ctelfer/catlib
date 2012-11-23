@@ -433,7 +433,7 @@ void ue_next(struct uemux *mux)
 	struct timeval cur, delta, tv, *tvp;
 	struct ue_iorun_prm iorp;
 	struct list l;
-	struct cat_time ct;
+	cat_time_t ct;
 	sigset_t save, fired;
 
 	abort_unless(mux);
@@ -446,9 +446,9 @@ void ue_next(struct uemux *mux)
 	eset = mux->eset;
 
 	dl_first(&mux->timers, &ct);
-	if ( tm_isset(&ct) ) { 
-		delta.tv_sec  = ct.sec;
-		delta.tv_usec = ct.nsec / 1000;
+	if ( tm_gez(ct) ) {
+		delta.tv_sec  = tm_sec(ct);
+		delta.tv_usec = tm_nsec(ct) / 1000;
 		gettimeofday(&cur, NULL);
 		tvp = &delta;
 	}
@@ -482,9 +482,9 @@ void ue_next(struct uemux *mux)
 			delta.tv_sec -= 1;
 			delta.tv_usec += 1000000;
 		}
-		tm_lset(&ct, delta.tv_sec, delta.tv_usec * 1000);
+		ct = tm_lset(delta.tv_sec, delta.tv_usec * 1000);
 		l_init(&l);
-		dl_adv(&mux->timers, &ct, &l);
+		dl_adv(&mux->timers, ct, &l);
 		l_apply(&l, tdispatch, mux);
 	}
 

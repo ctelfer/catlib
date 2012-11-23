@@ -209,10 +209,4 @@ void sbs_flip(struct safebitset *set, uint index);
 void sbs_set_to(struct safebitset *set, uint index, int val);
 
 
-#if CAT_HAS_POSIX 
-#include <cat/time.h>
-struct cat_time * tm_uget(struct cat_time *t);
-#endif /* CAT_HAS_POSIX  */
-
-
 #endif /* __cat_stduse_h */

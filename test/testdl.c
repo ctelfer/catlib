@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
 {
   struct dlist *node, list, *trav;
   struct list list2;
-  struct cat_time ct;
+  cat_time_t ct;
 
   int arr1[] = { 10, 15, 5, 7, 12, 2, 7 },
       arr2[] = { 9, 1, 6, 10, 6 }, 
@@ -38,21 +38,20 @@ int main(int argc, char *argv[])
   }
 
   dl_first(&list, &ct);
-  printf("The first is at %u\n", (uint)ct.sec);
+  printf("The first is at %u\n", (uint)tm_sec(ct));
   node = dl_deq(&list);
   printf("The first was %u at %u\n\n", ptr2uint(cdl_data(node)), 
-         (uint)node->ttl.sec);
+         (uint)tm_sec(node->ttl));
   cdl_free(node);
 
   printf("Nodes from advance 10:  ");
   l_init(&list2);
-  tm_lset(&ct, 10, 0);
-  dl_adv(&list, &ct, &list2);
+  dl_adv(&list, tm_lset(10, 0), &list2);
 
   while ( ! l_isempty(&list2) )
   {
     trav = container(l_head(&list2), struct dlist, entry);
-    printf("%u/%u ", ptr2uint(cdl_data(trav)), (uint)trav->ttl.sec);
+    printf("%u/%u ", ptr2uint(cdl_data(trav)), (uint)tm_sec(trav->ttl));
     l_rem(&trav->entry);
     cdl_free(trav);
   }
@@ -69,7 +68,7 @@ int main(int argc, char *argv[])
   while ( node = dl_deq(&list) )
   {
     printf("%u/", ptr2uint(cdl_data(node)));
-    printf("%u ", (uint)node->ttl.sec);
+    printf("%u ", (uint)tm_sec(node->ttl));
     cdl_free(node);
   }
   printf("\n");

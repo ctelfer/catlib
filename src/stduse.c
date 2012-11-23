@@ -1698,24 +1698,3 @@ void sbs_set_to(struct safebitset *set, uint index, int val)
 }
 
 
-
-#if CAT_HAS_POSIX
-
-/* Get Posix system time */
-
-
-struct cat_time *tm_uget(struct cat_time *t)
-{
-	struct timeval cur;
-
-	abort_unless(t);
-
-	gettimeofday(&cur, NULL);
-	t->sec  = cur.tv_sec;
-	t->nsec = cur.tv_usec * 1000;
-
-	return t;
-}
-
-
-#endif /* CAT_HAS_POSIX */
