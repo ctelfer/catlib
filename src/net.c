@@ -397,7 +397,7 @@ char * net_tostr(struct sockaddr *sa, char *buf, size_t len)
 	abort_unless(len > 0);
 	abort_unless(buf);
 
-	switch(sa->sa_family) {
+	switch ( sa->sa_family ) {
 
 	case AF_INET : {
 		struct sockaddr_in sin;
@@ -408,8 +408,8 @@ char * net_tostr(struct sockaddr *sa, char *buf, size_t len)
 
 		sin = *(struct sockaddr_in *)sa;
 		p = (uchar *)&sin.sin_addr;
-		len = sprintf(buf, "%u.%u.%u.%u:%u", p[0], p[1], p[2], p[3],
-						ntohs(sin.sin_port));
+		len = snprintf(buf, len, "%u.%u.%u.%u:%u",
+			       p[0], p[1], p[2], p[3], ntohs(sin.sin_port));
 		return buf;
 	} break;
 
@@ -420,10 +420,10 @@ char * net_tostr(struct sockaddr *sa, char *buf, size_t len)
 		ap = (char *)&((struct sockaddr_in6 *)sa)->sin6_addr;
 		/* deliberately discard constant qualifier */
 		p = (char *)inet_ntop(sa->sa_family, ap, buf, len);
-		if (p == NULL)
+		if ( p == NULL )
 			return NULL;
 		off = p + strlen(p);
-		if ((len - (off - p)) < 6)
+		if ( (len - (off - p)) < 6 )
 			return NULL;
 		snprintf(off, len - (off - p), ".%u",
 			 ntohs(((struct sockaddr_in6 *)sa)->sin6_port));
@@ -433,9 +433,11 @@ char * net_tostr(struct sockaddr *sa, char *buf, size_t len)
 
 #ifdef AF_UNIX
 	case AF_UNIX: {
-		if (len < strlen(((struct sockaddr_un *)sa)->sun_path)+1)
+		char *path = ((struct sockaddr_un *)sa)->sun_path;
+		size_t plen = strlen(path) + 1;
+		if ( len < plen )
 			return NULL;
-		strcpy(buf, ((struct sockaddr_un *)sa)->sun_path);
+		memcpy(buf, path, plen);
 		return buf;
 	} break;
 #endif /* AF_UNIX */
