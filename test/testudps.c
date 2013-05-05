@@ -13,20 +13,20 @@ int main(int argc, char *argv[])
 { 
   int fd, n=1; 
   char recvbuf[255], aname[255]; 
-  struct sockaddr_in sin;
-  socklen_t addrsiz = 255, slen = sizeof(sin);
+  struct sockaddr_storage sas;
+  socklen_t addrsiz = 255, slen = sizeof(sas);
 
   ERRCK(fd = udp_sock(NULL, "10000"));
 
-  ERRCK(getsockname(fd, (SA *)&sin, &slen));
-  fprintf(stderr, "listening on %s\n", net_tostr((SA *)&sin, aname, 255));
+  ERRCK(getsockname(fd, (SA *)&sas, &slen));
+  fprintf(stderr, "listening on %s\n", net_tostr((SA *)&sas, aname, 255));
   
   while ( 1 ) 
   {
-    n = recvfrom(fd, recvbuf, 255, 0, (SA *)&sin, &addrsiz); 
+    n = recvfrom(fd, recvbuf, 255, 0, (SA *)&sas, &addrsiz); 
     fprintf(stderr, "Received connection from %s\n",
-	    net_tostr((SA *)&sin, aname, 255));
-    sendto(fd, recvbuf, n, 0, (SA *)&sin, addrsiz); 
+	    net_tostr((SA *)&sas, aname, 255));
+    sendto(fd, recvbuf, n, 0, (SA *)&sas, addrsiz); 
   }
 
   close(fd); 

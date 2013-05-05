@@ -16,11 +16,15 @@
 int main(int argc, char *argv[]) 
 { 
 int lfd, fd, n=1; 
-struct sockaddr_in remaddr; 
+struct sockaddr_storage remaddr; 
 socklen_t alen;
 char recvbuf[256], strbuf[256]; 
+char *host = NULL;
 
-  ERRCK(lfd = tcp_srv(NULL, "10000")); 
+  if (argc > 1)
+    host = argv[1];
+
+  ERRCK(lfd = tcp_srv(host, "10000")); 
   alen = sizeof(remaddr);
   fd = accept(lfd, (SA *)&remaddr, &alen);
 

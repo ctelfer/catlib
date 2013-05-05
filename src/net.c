@@ -21,8 +21,12 @@
 #include <errno.h>
 #include <fcntl.h>
 
+#ifndef CAT_HAS_ADDRINFO
+#define CAT_HAS_ADDRINFO 1
+#endif
 
-#ifdef CAT_HAS_ADDRINFO
+
+#if CAT_HAS_ADDRINFO
 
 
 int net_resolv(const char *host, const char *serv, const char *proto,
@@ -34,9 +38,8 @@ int net_resolv(const char *host, const char *serv, const char *proto,
 
 	if ( proto != NULL ) {
 		hintsp = &hints;
-		memcpy(hintsp, 0, sizeof(struct addrinfo));
+		memset(hintsp, 0, sizeof(struct addrinfo));
 		hintsp->ai_family = AF_UNSPEC;
-		hintsp->ai_flags = (AI_V4MAPPED | AI_ADDRCONFIG);
 		if ( strcmp(proto, "tcp") == 0 ) {
 			hintsp->ai_socktype = SOCK_STREAM;
 			hintsp->ai_protocol = IPPROTO_TCP;
@@ -94,7 +97,7 @@ nextsock:
 
 	if ( !trav )
 		return -3;
-	listen(sock, LISTENQ);
+	listen(sock, 16);
 	freeaddrinfo(res);
 
 	return sock;
@@ -182,7 +185,8 @@ nextsock:
 int tcp_cli_nb(const char *host, const char *serv)
 {
 	int r, sock;
-	struct addrinfo hints, *res, *trav;
+	int flags;
+	struct addrinfo hints, *res;
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_UNSPEC;
@@ -194,22 +198,22 @@ int tcp_cli_nb(const char *host, const char *serv)
 		      res->ai_protocol);
 	if ( sock < 0 ) {
 		r = -2;
-		goto end;
+		goto err;
 	}
 
         flags = fcntl(sock, F_GETFL);
         if ( flags < 0 ) {
                 r = -3;
-		goto end;
+		goto err;
 	}
 
         flags |= O_NONBLOCK;
 
         if ( fcntl(sock, F_SETFL, flags) < 0 ) {
-		goto end;
+		goto err;
 	}
 
-	r = connect(sock, trav->ai_addr, trav->ai_addrlen);
+	r = connect(sock, res->ai_addr, res->ai_addrlen);
 	if ( (r == -1) && (errno == EINPROGRESS) )
 		r = 0;
 
@@ -240,7 +244,7 @@ int net_resolv(const char *host, const char *serv, const char *proto,
 	/* Look up the address */
 	if ( !host || !*host )
 		sin->sin_addr.s_addr = INADDR_ANY;
-	else if ( (sin->sin_addr.s_addr = inet_addr(host)) != INADDR_NONE  )
+	else if ( inet_pton(AF_INET, host, &sin->sin_addr.s_addr) )
 		;
 	else if ( (hp = gethostbyname(host)) )
 		memcpy(&sin->sin_addr, hp->h_addr, hp->h_length);
