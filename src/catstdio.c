@@ -19,6 +19,56 @@
 #include <cat/emit.h>
 #include <cat/emit_format.h>
 
+#if CAT_HAS_POSIX
+
+#define MAXFILES		32
+#define CAT_STDIN_FILENO	0
+#define CAT_STDOUT_FILENO	1
+#define CAT_STDERR_FILENO	2
+static char Stdin_buf[BUFSIZ];
+static char Stdout_buf[BUFSIZ];
+
+#else /* CAT_HAS_POSIX */
+
+#define MAXFILES		32
+#define CAT_STDIN_FILENO	-1
+#define CAT_STDOUT_FILENO	-1
+#define CAT_STDERR_FILENO	-1
+static char Stdin_buf[65536];
+static char Stdout_buf[65536];
+static char Stderr_buf[65536];
+
+#endif /* CAT_HAS_POSIX */
+
+
+static FILE File_Table[MAXFILES] = { 
+
+	{ Stdin_buf, sizeof(Stdin_buf),
+	  0, _IOFBF|CAT_SIO_READ|CAT_SIO_BUFGIVEN, 
+	  CAT_STDIN_FILENO, 0 },
+
+	{ Stdout_buf, sizeof(Stdout_buf),
+	  0, _IOFBF|CAT_SIO_WRITE|CAT_SIO_BUFGIVEN, 
+	  CAT_STDOUT_FILENO, 0 },
+
+	{ 
+#if CAT_HAS_POSIX
+	  NULL, 0,
+#else
+	  Stderr_buf, sizeof(Stderr_buf),
+#endif
+	  0, _IONBF|CAT_SIO_WRITE|CAT_SIO_BUFGIVEN, 
+	  CAT_STDERR_FILENO, 0 },
+
+	{ 0 }
+};
+
+
+FILE *stdin  = &File_Table[0];
+FILE *stdout = &File_Table[1];
+FILE *stderr = &File_Table[2];
+
+
 /* This is the machine dependent part */
 #if CAT_HAS_POSIX
 #include <unistd.h>
@@ -26,19 +76,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-
-
-#define MAXFILES	32
-static char Stdin_buf[BUFSIZ];
-static char Stdout_buf[BUFSIZ];
-static FILE File_Table[MAXFILES] = { 
-	{ Stdin_buf, sizeof(Stdin_buf), 0, 
-	  _IOFBF|CAT_SIO_READ|CAT_SIO_BUFGIVEN, 0, 0 },
-	{ Stdout_buf, sizeof(Stdout_buf), 0, 
-	  _IOFBF|CAT_SIO_WRITE|CAT_SIO_BUFGIVEN, 1, 0 },
-	{ NULL, 0, 0, _IONBF|CAT_SIO_WRITE, 2, 0 },
-	{ 0 }
-};
 
 
 static int mode_to_flags(const char *mode, int *oflags, int *fflags)
@@ -144,16 +181,6 @@ FILE *freopen(const char *path, const char *mode, FILE *file)
 }
 
 
-static int flush_all()
-{
-	FILE *fp, *end = File_Table + MAXFILES;
-	for ( fp = File_Table ; fp < end ; ++fp )
-		if ( fflush(fp) < 0 )
-			return -1;
-	return 0;
-}
-
-
 static int writen(int fd, const char *buf, int len)
 {
 	int nwritten = 0;
@@ -250,6 +277,61 @@ static size_t do_fput_bytes(FILE* file, const char *buf, size_t len)
 }
 
 
+#else /* CAT_HAS_POSIX */
+
+
+FILE *fopen(const char *path, const char *mode)
+{
+	return NULL;
+}
+
+
+FILE *freopen(const char *path, const char *mode, FILE *file)
+{
+	if ( fflush(file) < 0 )
+		return NULL;
+
+	fclose(file);
+
+	return NULL;
+}
+
+
+static size_t do_fput_bytes(FILE* file, const char *buf, size_t len)
+{
+	if ( file == NULL ||
+	     (len > 0 && (buf == NULL || file->f_buffer == NULL)) ) {
+		if ( file != NULL )
+			file->f_flags |= CAT_SIO_ERR;
+		return 0;
+	}
+
+	abort_unless(file->f_fill <= file->f_buflen);
+
+	if ( len > file->f_buflen - file->f_fill )
+		len = file->f_buflen - file->f_fill;
+
+	memcpy(&file->f_buffer[file->f_fill], buf, len);
+	file->f_fill += len;
+	file->f_lastop = CAT_SIO_WRITE;
+
+	return len;
+}
+
+
+#endif /* CAT_HAS_POSIX */
+
+
+static int flush_all()
+{
+	FILE *fp, *end = File_Table + MAXFILES;
+	for ( fp = File_Table ; fp < end ; ++fp )
+		if ( fflush(fp) < 0 )
+			return -1;
+	return 0;
+}
+
+
 int fflush(FILE *file)
 {
 	if ( file == NULL )
@@ -273,8 +355,10 @@ int fclose(FILE *file)
 	if ( fflush(file) < 0 )
 		return -1;
 
+#if CAT_HAS_POSIX
 	if ( close(file->f_fd) < 0 )
 		return -1;
+#endif /* CAT_HAS_POSIX */
 
 	if ( file->f_buffer != NULL && 
 	     (file->f_flags & CAT_SIO_BUFGIVEN) == 0 ) {
@@ -287,43 +371,6 @@ int fclose(FILE *file)
 	return 0;
 }
 
-
-FILE *stdin  = &File_Table[0];
-FILE *stdout = &File_Table[1];
-FILE *stderr = &File_Table[2];
-
-#else /* CAT_HAS_POSIX */
-
-static FILE dummy_FILE;
-
-FILE *fopen(const char *path, const char *mode)
-{
-	return &dummy_FILE;
-}
-
-int fflush(FILE *file)
-{
-	return 0;
-}
-
-
-int fclose(FILE *file)
-{
-	return 0;
-}
-
-
-static size_t do_fput_bytes(FILE* file, const char *buf, size_t len)
-{
-	abort_unless(file && buf);
-	file->f_lastop = CAT_SIO_WRITE;
-	return len;
-}
-
-FILE *stdout = &dummy_FILE;
-FILE *stderr = &dummy_FILE;
-
-#endif /* CAT_HAS_POSIX */
 
 void clearerr(FILE *file)
 {
@@ -409,6 +456,20 @@ int putchar(int c)
 int puts(const char *s)
 {
 	return fputs(s, stdout);
+}
+
+
+size_t fread(void *ptr, size_t size, size_t nmemb, FILE *file)
+{
+	/* TODO */
+	if ( file != NULL ) {
+		if ( file->f_flags & CAT_SIO_READ )
+			file->f_flags |= CAT_SIO_EOF;
+		else
+			file->f_flags |= CAT_SIO_ERR;
+	}
+
+	return 0;
 }
 
 

@@ -40,6 +40,7 @@ typedef struct {
 
 
 FILE *fopen(const char *path, const char *mode);
+FILE *freopen(const char *path, const char *mode, FILE *file);
 int   fflush(FILE *stream);
 int   fclose(FILE *stream);
 
@@ -54,6 +55,8 @@ int   fputs(const char *s, FILE *stream);
 int   putc(int c, FILE *stream);
 int   putchar(int c);
 int   puts(const char *s);
+
+size_t fread(void *ptr, size_t size, size_t nmemb, FILE *file);
 
 void  setbuf(FILE *stream, char *buf);
 void  setbuffer(FILE *stream, char *buf, size_t size);
