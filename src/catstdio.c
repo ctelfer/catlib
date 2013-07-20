@@ -211,11 +211,14 @@ static size_t do_fput_bytes(FILE* file, const char *buf, size_t len)
 	const char *start;
 	int writeout;
 
+	if ( file == NULL || (buf == NULL && len == 0) )
+		return 0;
+
 	if ( !(file->f_flags & CAT_SIO_WRITE) || 
 			 (file->f_flags & CAT_SIO_EOF) ||
 			 (file->f_flags & CAT_SIO_ERR) )
 		return 0;
-	abort_unless(file);
+
 	abort_unless(file->f_buflen < INT_MAX);
 
 	if ( file->f_buffer == NULL && (file->f_flags & _IOBFMASK) != _IONBF ) {
@@ -334,14 +337,18 @@ static int flush_all()
 
 int fflush(FILE *file)
 {
+	size_t rv;
+
 	if ( file == NULL )
 		return flush_all();
 
 	if ( file->f_lastop == CAT_SIO_WRITE ) {
-		if ( file->f_fill > 0 && 
-		     do_fput_bytes(file, file->f_buffer, file->f_fill) < 0 )
-			return -1;
-		file->f_fill = 0;
+		if ( file->f_fill > 0 ) {
+			rv = do_fput_bytes(file, file->f_buffer, file->f_fill);
+			if ( rv < file->f_fill )
+				return -1;
+			file->f_fill = 0;
+		}
 	} else {
 		/* TODO: once we get read operations */
 	}
@@ -374,28 +381,32 @@ int fclose(FILE *file)
 
 void clearerr(FILE *file)
 {
-	abort_unless(file);
+	if ( file == NULL )
+		return;
 	file->f_flags &= ~CAT_SIO_ERR;
 }
 
 
 int feof(FILE *file)
 {
-	abort_unless(file);
+	if ( file == NULL )
+		return -1;
 	return (file->f_flags & CAT_SIO_EOF) != 0;
 }
 
 
 int ferror(FILE *file)
 {
-	abort_unless(file);
+	if ( file == NULL )
+		return -1;
 	return (file->f_flags & CAT_SIO_ERR) != 0;
 }
 
 
 int fileno(FILE *file)
 {
-	abort_unless(file);
+	if ( file == NULL )
+		return -1;
 	return file->f_fd;
 }
 
@@ -405,9 +416,10 @@ size_t fwrite(const void *ptr, size_t msiz, size_t nmem, FILE *file)
 	size_t i, rv;
 	const char *buf = ptr;
 
-	abort_unless(ptr && file);
-
 	if ( msiz == 0 || nmem == 0 )
+		return 0;
+
+	if ( ptr == NULL || file == NULL )
 		return 0;
 
 	for ( i = 0 ; i < nmem ; ++i ) {
@@ -424,7 +436,6 @@ int fputc(int c, FILE *file)
 {
 	char ch = c;
 	int rv;
-	abort_unless(file);
 	rv = do_fput_bytes(file, &ch, sizeof(ch));
 	if ( rv < 0 )
 		return EOF;
@@ -435,7 +446,6 @@ int fputc(int c, FILE *file)
 int fputs(const char *s, FILE *file)
 {
 	size_t rv;
-	abort_unless(s && file);
 	rv = do_fput_bytes(file, s, strlen(s));
 	return (rv == 0) ? -1 : 0;
 }
@@ -487,15 +497,17 @@ void setbuffer(FILE *file, char *buf, size_t size)
 
 void setlinebuf(FILE *file)
 {
-	abort_unless(file);
 	setvbuf(file, NULL, _IOLBF, 0);
 }
 
 
 int setvbuf(FILE *file, char *buf, int mode, size_t bsiz)
 {
-	abort_unless(file);
-	abort_unless(mode == _IONBF || mode == _IOLBF || mode == _IOFBF);
+	if ( file == NULL )
+		return -1;
+
+	if ( mode != _IONBF && mode != _IOLBF && mode != _IOFBF )
+		return -1;
 
 	/* enforce the rule that buffering must be performed between initial */
 	/* open and any subsequent operations */
