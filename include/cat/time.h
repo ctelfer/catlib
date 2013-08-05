@@ -50,6 +50,8 @@ DECL long	tm_nsec(cat_time_t t);
 DECL cat_time_t tm_lset(long sec, long nsec);
 DECL cat_time_t tm_dset(double d);
 
+#define TM_LONG_INITIALIZER(_sec, _nsec) { (_sec), (_nsec) }
+
 /* start = end ; returns  end - (original) start */
 DECL cat_time_t tm_mark(cat_time_t *start, cat_time_t end);
 
@@ -73,6 +75,7 @@ cat_time_t tm_zero = { 0, 0 };
 
 LDECL void tm_normalize(cat_time_t *t)
 {
+	(void)tm_zero;
 	abort_unless(t);
 
 	while ( t->nsec > 1000000000L || (t->sec < 0 && t->nsec > 0) ) {
