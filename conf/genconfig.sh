@@ -24,7 +24,8 @@ cat > is64.c <<IS64
 #include <stdio.h>
 int main() { 
   printf("#ifndef CAT_64BIT\n");
-  printf("#define CAT_64BIT %d\n", sizeof(long) >= 8); 
+  printf("#define CAT_64BIT %d\n", 
+	 sizeof(size_t) >= 8 || sizeof(long) >= 8);
   printf("#endif\n");
   return 0; 
 }

@@ -15,9 +15,6 @@
 union align_u {
 	long		l;
 	size_t		sz;
-#if CAT_HAS_LONGLONG
-	long long	ll;
-#endif
 };
 #define UNITSIZE	sizeof(union align_u)
 
