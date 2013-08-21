@@ -448,12 +448,12 @@ void cdl_set(struct dlist *nodep, void *data)
 }
 
 
-struct dlist * cdl_new(long sec, long nsec, void *data)
+struct dlist * cdl_new(cat_time_t t, void *data)
 {
 	struct cdlist *node;
 
 	node = emalloc(sizeof(*node));
-	dl_init(&node->entry, sec, nsec);
+	dl_init(&node->entry, t);
 	node->data = data;
 
 	return &node->entry;

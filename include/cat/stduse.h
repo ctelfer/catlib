@@ -98,7 +98,7 @@ struct cdlist {
 
 void *    	cdl_data(struct dlist *node);
 void      	cdl_set(struct dlist *node, void *data);
-struct dlist * 	cdl_new(long sec, long nsec, void *data);
+struct dlist * 	cdl_new(cat_time_t t, void *data);
 void *	       	cdl_free(struct dlist *node);
 
 

@@ -79,7 +79,7 @@ void ue_init(struct uemux *mux, struct memmgr *mm)
 	mux->done = 0;
 	mux->maxfd = -1;
 	mux->fdtab = avl_new(mm, CAT_KT_NUM, 0, 0);
-	dl_init(&mux->timers, -1, -1);
+	dl_init(&mux->timers, tm_zero);
 	l_init(&mux->iolist);
 	FD_ZERO(&mux->rset);
 	FD_ZERO(&mux->wset);
@@ -131,13 +131,15 @@ static void tdispatch(void *lp, void *muxp)
 	struct list *l = lp;
 	struct uemux *m = muxp;
 	struct ue_timer *t;
+	cat_time_t tout;
 
 	if ( m->done )
 		return;
 	l_rem(l);
 	t = container(container(l, struct dlist, entry), struct ue_timer,entry);
 	if ( t->flags & UE_PERIODIC ) {
-		dl_init(&t->entry, t->orig / 1000, (t->orig % 1000) * 1000000);
+		tout = tm_lset(t->orig / 1000, (t->orig % 1000) * 1000000);
+		dl_init(&t->entry, tout);
 		dl_ins(&m->timers, &t->entry);
 	}
 	cb_call(&t->cb, NULL);
@@ -147,12 +149,14 @@ static void tdispatch(void *lp, void *muxp)
 void ue_tm_init(struct ue_timer *t, int flags, ulong ttl, callback_f func, 
 		void *ctx)
 {
+	cat_time_t tout;
 	abort_unless(t);
 	abort_unless(func);
 	t->flags = flags;
 	t->orig  = ttl;
 	cb_init(&t->cb, func, ctx);
-	dl_init(&t->entry, t->orig / 1000, (t->orig % 1000) * 1000000);
+	tout = tm_lset(t->orig / 1000, (t->orig % 1000) * 1000000);
+	dl_init(&t->entry, tout);
 	t->mm = NULL;
 }
 

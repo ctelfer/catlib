@@ -29,11 +29,11 @@ int main(int argc, char *argv[])
   printf("\n");
 
   j=0;
-  dl_init(&list, -1, -1);
+  dl_init(&list, tm_zero);
   for ( i = 0 ; i < s1 ; ++i )
   {
     ++j;
-    node = cdl_new(arr1[i], 0, int2ptr(j));
+    node = cdl_new(tm_lset(arr1[i], 0), int2ptr(j));
     dl_ins(&list, node);
   }
 
@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
   for ( i = 0 ; i < s2 ; ++i ) 
   {
     ++j;
-    node = cdl_new(arr2[i], 0, int2ptr(j));
+    node = cdl_new(tm_lset(arr2[i], 0), int2ptr(j));
     dl_ins(&list, node);
   }
 

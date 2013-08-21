@@ -25,13 +25,15 @@ struct dlist {
 	cat_time_t		ttl;
 };
 
-DECL void           dl_init(struct dlist *node, long sec, long nsec);
+DECL void           dl_init(struct dlist *node, cat_time_t ttl);
 DECL void           dl_ins(struct dlist *list, struct dlist *node);
 DECL void	    dl_first(struct dlist *list, cat_time_t *next);
 DECL struct dlist * dl_deq(struct dlist *list);
 DECL void           dl_adv(struct dlist *list, cat_time_t amt, 
 		           struct list *out);
 DECL void           dl_rem(struct dlist *elem);
+DECL void	    dl_update(struct dlist *list, struct dlist *elem,
+			      cat_time_t ttl);
 
 #define l_to_dl(le)	container(le, struct dlist, entry)
 #define dl_head(list)	l_to_dl(((list)->entry.next))
@@ -42,13 +44,13 @@ DECL void           dl_rem(struct dlist *elem);
 #if defined(CAT_DLIST_DO_DECL) && CAT_DLIST_DO_DECL
 
 
-DECL void dl_init(struct dlist *node, long sec, long nsec)
+DECL void dl_init(struct dlist *node, cat_time_t ttl)
 {
 	abort_unless(node);
 	l_init(&node->entry);
-	node->ttl = tm_lset(sec, nsec);
-	if ( tm_cmp(node->ttl, tm_zero) < 0 )
-		node->ttl = tm_lset(-1, -1);
+	node->ttl = ttl;
+	if ( tm_ltz(node->ttl) )
+		node->ttl = tm_zero;
 }
 
 
@@ -118,6 +120,7 @@ DECL void dl_adv(struct dlist *dlist, cat_time_t delta,
 	abort_unless(dlist);
 	abort_unless(out);
 
+	l_init(out);
 	list = &dlist->entry;
 
 	if ( l_isempty(list) )
@@ -160,6 +163,15 @@ DECL void dl_rem(struct dlist *elem)
 	}
 }
 
+
+DECL void dl_update(struct dlist *list, struct dlist *elem, cat_time_t ttl)
+{
+	dl_rem(elem);
+	elem->ttl = ttl;
+	if ( tm_ltz(elem->ttl) )
+		elem->ttl = tm_zero;
+	dl_ins(list, elem);
+}
 
 #endif /* CAT_DLIST_DO_DECL */
 
