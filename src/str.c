@@ -286,11 +286,17 @@ int str_parse_ip6a(void *ap, const char *src)
 	int plen = 0;
 	int slen = 0; 
 	int zcomp = 0;
-	const char *nxt, *p = src;
+	const char *p = src;
 	byte_t *addr = ap;
 	byte_t suffix[16];
+	byte_t ip6a_set[32];
+	byte_t hex_set[32];
 
-	spn = strspn(p, ":abcdefABCDEF0123456789");
+	cset_init_accept(hex_set, "abcdefABCDEF0123456789");
+	memcpy(ip6a_set, hex_set, sizeof(hex_set));
+	cset_add(ip6a_set, ':');
+
+	spn = str_spn(p, ip6a_set);
 	if ( spn < 2 || spn > 39 || src[spn] != '\0' )
 		return -1;
 	if ( src[0] == ':' && src[1] != ':' )
@@ -298,10 +304,10 @@ int str_parse_ip6a(void *ap, const char *src)
 
 	memset(ap, 0, 16);
 
-	while ( (nxt = strchr(p, ':')) && (nxt != p) ) {
+	while ( (spn = str_spn(p, hex_set)) > 0) {
 		if ( plen >= 16 )
 			return -1;
-		switch (nxt - p) {
+		switch (spn) {
 		case 1: addr[plen+1] = chnval(p[0]);
 			break;
 		case 2: addr[plen+1] = chnval(p[0]) << 4 | chnval(p[1]);
@@ -316,7 +322,13 @@ int str_parse_ip6a(void *ap, const char *src)
 			return -1;
 		}
 		plen += 2;
-		p = nxt + 1;
+		if ( p[spn] == ':' ) {
+			p += spn + 1;
+		} else {
+			abort_unless(p[spn] == '\0');
+			p += spn;
+			break;
+		}
 	}
 
 	if ( *p != '\0' ) {
@@ -326,14 +338,15 @@ int str_parse_ip6a(void *ap, const char *src)
 		zcomp = 2;
 	}
 
-	while ( (nxt = strchr(p, ':')) && (nxt != p) ) {
+	while ( (spn = str_spn(p, hex_set)) > 0 ) {
 		if ( plen + zcomp + slen >= 16 )
 			return -1;
-		suffix[slen] = 0;
-		switch (nxt - p) {
-		case 1: suffix[slen+1] = chnval(p[0]);
+		switch (spn) {
+		case 1: suffix[slen] = 0;
+			suffix[slen+1] = chnval(p[0]);
 			break;
-		case 2: suffix[slen+1] = chnval(p[0]) << 4 | chnval(p[1]);
+		case 2: suffix[slen] = 0;
+			suffix[slen+1] = chnval(p[0]) << 4 | chnval(p[1]);
 			break;
 		case 3: suffix[slen] = chnval(p[0]);
 			suffix[slen+1] = chnval(p[1]) << 4 | chnval(p[2]);
@@ -344,14 +357,24 @@ int str_parse_ip6a(void *ap, const char *src)
 		default:
 			return -1;
 		}
+
 		slen += 2;
-		p = nxt + 1;
+		if ( p[spn] == ':' ) {
+			p += spn + 1;
+		} else {
+			abort_unless(p[spn] == '\0');
+			p += spn;
+			break;
+		}
 	}
 
-	for ( i = 16 - slen ; i < 16 ; ++i )
-		addr[i] = suffix[i-slen];
+	abort_unless(slen >= 0 && slen <= 14);
+	for ( i = 0 ; i < slen ; ++i )
+		addr[16 - slen + i] = suffix[i];
 
-	return (int)(p - src);  /* 2 <= len <= 39 */
+	i = (int)(p - src);
+	abort_unless(2 <= i && i <= 39);
+	return i;
 }
 
 
