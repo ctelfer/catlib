@@ -76,7 +76,7 @@ void test_regular_str()
 	irv = str_fmt(buf1, sizeof(buf1), "Hi! %d: %s\n", (int)ret, cp);
 	printf("formatted: /%s/ ret: /%d/\n", buf1, irv);
 
-	printf("Path = 'teststr', filename = '%s', sep = ':'\n", path);
+	printf("Filename = 'teststr', Path = '%s', sep = ':'\n", path);
 	pwalk_init(&pw, path, ":", '/');
 	cp = pwalk_next(&pw, "teststr", pbuf, sizeof(pbuf));
 	while ( cp != NULL ) {

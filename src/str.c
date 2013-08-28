@@ -57,15 +57,15 @@ size_t str_copy(char *dst, const char *src, size_t dlen)
 {
 	const char *osrc = src;
 
-	while ( dlen > 0 && ((*dst++ = *src++) != '\0') )
+	while ( dlen > 0 && ((*dst = *src) != '\0') ) {
 		--dlen;
+		++src;
+		++dst;
+	}
 
 	if ( dlen == 0 ) {
-		if ( src != osrc )
-			*(dst - 1) = '\0';
-
-		while ( *src++ != '\0' )
-			;
+		if ( src != osrc ) *(dst - 1) = '\0';
+		while ( *src != '\0' ) src++;
 	}
 
 	return src - osrc;
@@ -192,21 +192,21 @@ size_t str_copy_spn(char *dst, const char *src, size_t dlen, byte_t set[32])
 
 	while ( dlen > 0 ) {
 		--dlen;
-		ch = *src++;
+		ch = *src;
 		if ( cset_contains(set, ch) ) {
 			*dst++ = ch;
 		} else {
 			*dst = '\0';
 			return src - osrc;
 		}
+		++src;
 	}
 
 	if ( src != osrc )
 		*(dst - 1) = '\0';
 
-	ch = *src++;
-	while ( cset_contains(set, ch) )
-		ch = *src++;
+	while ( cset_contains(set, *src) )
+		src++;
 
 	return src - osrc;
 }
@@ -259,16 +259,16 @@ char *pwalk_next(struct path_walker *pw, const char *sfx, char *out,
 		return NULL;
 
 	pl = str_copy_spn(out, pw->next, osize, pw->rej);
-	if ( pl > osize )
+	if ( pl >= osize )
 		return NULL;
-	out[pl-1] = pw->dsep;
-	osize -= pl;
-	if ( str_copy(out + pl, sfx, osize) > osize )
+	out[pl] = pw->dsep;
+	osize -= pl + 1;
+	if ( str_copy(out + pl + 1, sfx, osize) >= osize )
 		return NULL;
-	if ( pw->next[pl-1] == '\0' ) {
+	if ( pw->next[pl] == '\0' ) {
 		pw->next = NULL;
 	} else {
-		pw->next += pl;
+		pw->next += pl + 1;
 		pw->next += str_spn(pw->next, pw->acc);
 		if ( *pw->next == '\0' )
 			pw->next = NULL;
