@@ -28,11 +28,22 @@ struct clopt {
 	int		type;
 	char 		ch;
 	const char *	str;
+	const char *	argnam;
 	const char *	desc;
 	attrib_t	val;
 };
 
-#define CLOPT_INIT(type, ch, str, desc) { type, ch, str, desc, {0} }
+#define CLOPT_INIT(type, ch, str, desc) { type, ch, str, NULL, desc, {0} }
+#define CLOPT_I_NOARG(ch, str, desc) \
+	{ CLOPT_NOARG, (ch), (str), NULL, (desc), {0} }
+#define CLOPT_I_STRING(ch, str, name, desc) \
+	{ CLOPT_STRING, (ch), (str), (name), (desc), {0} }
+#define CLOPT_I_INT(ch, str, name, desc) \
+	{ CLOPT_INT, (ch), (str), (name), (desc), {0} }
+#define CLOPT_I_UINT(ch, str, name, desc) \
+	{ CLOPT_UINT, (ch), (str), (name), (desc), {0} }
+#define CLOPT_I_DOUBLE(ch, str, name, desc) \
+	{ CLOPT_DOUBLE, (ch), (str), (name), (desc), {0} }
 
 struct clopt_parser {
 	struct clopt *	options;

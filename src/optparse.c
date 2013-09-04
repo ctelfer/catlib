@@ -305,6 +305,10 @@ void optparse_print(struct clopt_parser *clp, char *str, size_t ssize)
 			fsz = (size_t)snprintf(cp, ssize, "%s", opt->str);
 			adj_str(&cp, &ssize, &lsz, fsz);
 		}
+		if ( opt->argnam != NULL ) {
+			fsz = (size_t)snprintf(cp, ssize, " %s", opt->argnam);
+			adj_str(&cp, &ssize, &lsz, fsz);
+		}
 		if ( lsz < 40 ) {
 			memset(pad, ' ', 40-lsz);
 			pad[40-lsz] = '\0';
