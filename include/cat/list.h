@@ -313,20 +313,36 @@ DECL void l_sort(struct list *l, cmp_f cmp)
 
 	for ( i = 0; i < array_length(arr); ++i )
 		l_init(&arr[i]);
+
 	while ( !l_isempty(l) ) {
 		l_rem(node = l_head(l));
-		l_ins(&arr[0], node);
+		wasempty = l_isempty(&arr[0]);
+		if ( wasempty ) {
+			l_ins(&arr[0], node);
+		} else {
+			if ( (*cmp)(node, l_head(&arr[0])) < 0 )
+				l_ins(&arr[0], node);
+			else
+				l_ins(l_head(&arr[0]), node);
+
+		}
 		for ( i = 1 ; i < array_length(arr) && !wasempty ; ++i ) {
 			wasempty = l_isempty(&arr[i]);
-			l_merge(&arr[i], &arr[i-1], cmp);
+			if ( wasempty ) {
+				l_move(&arr[i-1], &arr[i]);
+			} else {
+				l_merge(&arr[i], &arr[i-1], cmp);
+			}
 		}
 	}
-	for ( i = 1 ; i < array_length(arr); i++ ) {
+
+	for ( i = 1 ; i < array_length(arr); ++i ) {
 		if ( !l_isempty(&arr[i]) ) {
 			l_merge(&arr[i], &arr[last_non_empty], cmp);
 			last_non_empty = i;
 		}
 	}
+
 	l_move(&arr[last_non_empty], l);
 }
 
