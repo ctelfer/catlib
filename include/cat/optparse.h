@@ -57,8 +57,11 @@ struct clopt_parser {
 	char 		errbuf[128];
 };
 
-#define CLOPTPARSER_INIT(optarr, arrlen) \
-	{ optarr, arrlen, 0, NULL, 0, 0, 0, NULL, { 0 } }
+#define CLOPTPARSER_INIT(_optarr, _arrlen) \
+	{ (_optarr), (_arrlen), 0, NULL, 0, 0, 0, NULL, { 0 } }
+
+#define CLOPTPARSER_INIT_ARR(_optarr) \
+	CLOPTPARSER_INIT((_optarr), array_length(_optarr))
 
 /* returns 0 if the parser, argc, and argv are well formatted */
 int optparse_reset(struct clopt_parser *clp, int argc, char *argv[]);
