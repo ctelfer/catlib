@@ -64,6 +64,7 @@ void test_round()
 	PROUND(0xdeadbeef, 31, rdp2_32);
 	printf("\n");
 
+#if CAT_64BIT
 	PROUND64(0xdeadbeeffeedf00dllu, 0, rup2_64);
 	PROUND64(0xdeadbeeffeedf00dllu, 0, rdp2_64);
 	PROUND64(0xdeadbeeffeedf00dllu, 4, rup2_64);
@@ -80,6 +81,7 @@ void test_round()
 	PROUND64(0xdeadbeeffeedf00dllu, 63, rdp2_64);
 	printf("\n");
 	printf("\n");
+#endif
 }
 
 
