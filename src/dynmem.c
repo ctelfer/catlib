@@ -389,7 +389,7 @@ void tlsf_init(struct tlsf *tlsf)
 	abort_unless((1 << TLSF_LG2_UNITSIZE) == UNITSIZE);
 	abort_unless(tlsf);
 
-	memset(tlsf, 0, sizeof(tlsf));
+	memset(tlsf, 0, sizeof(*tlsf));
 	l_init(&tlsf->tlsf_pools);
 	for (i = 0; i < TLSF_NUMHEADS; i++)
 		l_init(&tlsf->tlsf_lists[i]);
