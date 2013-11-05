@@ -5,7 +5,7 @@ CFILES=	cat.c aux.c err.c cb.c grow.c io.c mem.c net.c pack.c ring.c pcache.c \
 	splay.c bitset.c catstdlib.c catstdio.c pspawn.c dynmem.c lex.c sort.c \
 	optparse.c inport.c crypto.c socks5.c buffer.c
 
-LCATODIR=  ../obj/libcat
+LCATODIR=  ../build/libcat
 LCATOF= $(LCATODIR)/cat.o \
 	$(LCATODIR)/aux.o  \
 	$(LCATODIR)/err.o  \
@@ -45,7 +45,7 @@ LCATOF= $(LCATODIR)/cat.o \
 
 
 
-LCATAODIR=  ../obj/libcata
+LCATAODIR=  ../build/libcata
 LCATAOF=$(LCATAODIR)/cat.o \
 	$(LCATAODIR)/aux.o  \
 	$(LCATAODIR)/err.o  \
@@ -95,7 +95,7 @@ LCATAOF=$(LCATAODIR)/cat.o \
 	$(LCATAODIR)/socks5.o 
 
 
-LCAT_DBG_ODIR= ../obj/libcat_dbg
+LCAT_DBG_ODIR= ../build/libcat_dbg
 LCAT_DBG_OF=$(LCAT_DBG_ODIR)/cat.o \
 	$(LCAT_DBG_ODIR)/aux.o  \
 	$(LCAT_DBG_ODIR)/err.o  \
@@ -145,7 +145,7 @@ LCAT_DBG_OF=$(LCAT_DBG_ODIR)/cat.o \
 	$(LCAT_DBG_ODIR)/socks5.o 
 	
 
-LCAT_NO_LIBC_ODIR=  ../obj/libcat_nolibc
+LCAT_NO_LIBC_ODIR=  ../build/libcat_nolibc
 LCAT_NO_LIBC_OF= \
 	$(LCAT_NO_LIBC_ODIR)/catstdio.o \
 	$(LCAT_NO_LIBC_ODIR)/catstdlib.o \
@@ -259,15 +259,15 @@ veryclean:
 		$(LCAT_DBG_OF) \
 		../lib/libcat.a ../lib/libcata.a ../lib/libcat_nolibc.a \
 		../lib/libcat_dbg.a .depend ../include/config.h
-	rm -f Makefile
+	rm -f makefile
 	@echo "**** Makefile Destroyed ****"
 	@echo "**** Run buildmake.sh to regenerate it ****"
 
 depend: .depend
 
-.depend: Makefile.tmpl
+.depend: makefile.tmpl
 	cp ../conf/build_system.conf .tmp.makefile
-	sed -e '/^#---- DO NOT DELETE ----/,$$ d' Makefile.tmpl >> .tmp.makefile
+	sed -e '/^#---- DO NOT DELETE ----/,$$ d' makefile.tmpl >> .tmp.makefile
 	echo '#---- DO NOT DELETE ----' >> .tmp.makefile
 	for i in $(CFILES) ; do \
 		$(CC) $(IFLAGS) $(DEFS) -M $$i > .dep; \
@@ -308,7 +308,7 @@ depend: .depend
 		echo >> .tmp.makefile; \
 		rm .dep; \
 	done
-	mv .tmp.makefile Makefile
+	mv .tmp.makefile makefile
 	echo > .depend
 
 #---- DO NOT DELETE ----
