@@ -2,48 +2,47 @@
 
 . ./build_system.conf
 
-
-TESTS=is64
+rm -f config.h platform.conf
 
 
 cleanup() {
 	ECODE=$1
-	for t in $TESTS
-	do
-		rm -f $t $t.c
-	done
 	if [ $ECODE -ne 0 ]
 	then
-		rm config.h
+		rm -f config.h
+		rm -f platform.conf 
+	else
+		rm -f simple.c 
+		rm -f is64.c
+		rm -f stdlib.c 
 	fi
 	exit $ECODE
 }
 
 
-cat > is64.c <<IS64
-#include <stdio.h>
+cat > simple.c <<SIMPLE
+#include <stddef.h>
 int main() { 
-  printf("#ifndef CAT_64BIT\n");
-  printf("#define CAT_64BIT %d\n", 
-	 sizeof(size_t) >= 8 || sizeof(long) >= 8);
-  printf("#endif\n");
-  return 0; 
+  return 0;
+}
+SIMPLE
+
+cat > is64.c <<IS64
+#include <stddef.h>
+enum { FOO = 1 / (sizeof(size_t) >= 8 || sizeof(long) >= 8) };
+int main() { 
+  return 0;
 }
 IS64
 
 
-# -- Build Tests -- 
-
-for t in $TESTS
-do
-	$CC -o $t $t.c 
-	if [ $? -ne 0 ]
-	then 
-		echo Unable to compile "'$t.c'"
-		cleanup 1
-	fi
-done
-
+cat > stdlib.c <<SIMPLE
+#include <stdio.h>
+int main() { 
+  printf("Hello World!\n");
+  return 0;
+}
+SIMPLE
 
 # -- Generate header -- 
 
@@ -63,21 +62,40 @@ fi
 
 # -- Run tests -- 
 
-echo "Config tests: $TESTS"
-for t in $TESTS
-do
-	echo Running ./$t
-	./$t >> config.h
-	if [ $? -ne 0 ]
-	then
-		echo Error running $t >&2
-		cleanup 1
-	fi
-	echo >> config.h
-done
+
+if ! $CC -o /dev/null $NOSTD simple.c > /dev/null 2>&1 
+then
+	echo "unable to build simple.c"
+	cleanup 1
+fi
+
+
+echo "#ifndef CAT_64BIT" >> config.h
+if $CC -o /dev/null $NOSTD is64.c > /dev/null 2>&1
+then
+	echo "#define CAT_64BIT 1" >> config.h
+else
+	echo "#define CAT_64BIT 0" >> config.h
+fi
+echo "#endif /* CAT_64BIT*/" >> config.h
+
 
 echo "#endif /* __config_h */" >> config.h
 
-echo Successfully built config.h: cleaning up
+
+echo > platform.conf
+if $CC -o /dev/null stdlib.c > /dev/null 2>&1 
+then
+	echo "TARGETS=../lib/libcat.a \\" >> platform.conf
+	echo "	../lib/libcata.a \\" >> platform.conf
+	echo "	../lib/libcat_dbg.a \\" >> platform.conf
+	echo "	../lib/libcat_nolibc.a">> platform.conf
+	echo >> platform.conf
+else
+	echo "TARGETS=../lib/libcat_nolibc.a" >> platform.conf
+fi
+echo "" >> platform.conf
+
+echo Successfully built config.h and platform.conf: cleaning up
 
 cleanup 0

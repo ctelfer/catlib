@@ -190,7 +190,9 @@ LCAT_NO_LIBC_OF= \
 	$(LCAT_NO_LIBC_ODIR)/inport.o \
 	$(LCAT_NO_LIBC_ODIR)/crypto.o \
 	$(LCAT_NO_LIBC_ODIR)/bitops.o \
-	$(LCAT_NO_LIBC_ODIR)/socks5.o 
+	$(LCAT_NO_LIBC_ODIR)/socks5.o \
+	$(LCAT_NO_LIBC_ODIR)/catstdlib.o \
+	$(LCAT_NO_LIBC_ODIR)/catstdio.o \
 
 ICOMMON=$(ISYSTEM) -I../include
 
@@ -208,14 +210,6 @@ ADEFS= -DCAT_USE_INLINE=0 -DCAT_ANSI89=1 -DCAT_HAS_LONGLONG=0 -D_BSD_SOURCE \
 ACFLAGS= -Wall -ansi -pedantic -Wno-sign-compare -Wno-pointer-sign $(ADEFS)
 AIFLAGS= $(ICOMMON)
 
-# Option 2: ANSI compliant + no libc
-#CFILES += catstdlib.c catstdio.c
-#OFILES += catstdlib.o catstdio.o
-#ACFLAGS= -O3 -Wall -ansi -pedantic -DCAT_USE_INLINE=0 -DCAT_HAS_LONGLONG=0 \
-#	-DCAT_USE_STDLIB=0 -DCAT_HAS_POSIX=0 \
-#	-D_POSIX_C_SOURCE=200112L -D_BSD_SOURCE 
-#	-D_POSIX_C_SOURCE=200112L -D_XOPEN_SOURCE=600
-
 # Compile for debugging and profiling
 DBG_DEFS= -DCAT_USE_INLINE=0 -DCAT_HAS_LONGLONG=1 -DCAT_DEBUG_LEVEL=1
 DBG_CFLAGS= -Wall -g -pg -Wno-sign-compare -Wno-pointer-sign $(DBG_DEFS)
@@ -223,29 +217,30 @@ DBG_IFLAGS= $(ICOMMON)
 
 # Compile without libc
 NOLIBC_DEFS=-DCAT_HAS_POSIX=0 -DCAT_USE_STDLIB=0 -DCAT_HAS_LONGLONG=0
-NOLIBC_CFLAGS=-Wall -pedantic -Wno-sign-compare -Wno-pointer-sign $(NOLIBC_DEFS)
+NOLIBC_CFLAGS=-Wall -pedantic -Wno-sign-compare -Wno-pointer-sign $(NOSTD) \
+	$(NOLIBC_DEFS)
 NOLIBC_IFLAGS= -isystem ../include/std $(ICOMMON)
 
-all: ../lib/libcat.a ../lib/libcata.a ../lib/libcat_dbg.a ../lib/libcat_nolibc.a
+all: $(TARGETS)
 
 ../lib/libcat.a: $(LCATOF)
-	ar rv libcat.a $(LCATOF)
-	ranlib libcat.a
+	$(AR) rv libcat.a $(LCATOF)
+	$(RANLIB) libcat.a
 	mv libcat.a ../lib
 
 ../lib/libcata.a: $(LCATAOF) 
-	ar rv libcata.a $(LCATAOF)
-	ranlib libcata.a
+	$(AR) rv libcata.a $(LCATAOF)
+	$(RANLIB) libcata.a
 	mv libcata.a ../lib
 
 ../lib/libcat_dbg.a: $(LCAT_DBG_OF) 
-	ar rv libcat_dbg.a $(LCAT_DBG_OF)
-	ranlib libcat_dbg.a
+	$(AR) rv libcat_dbg.a $(LCAT_DBG_OF)
+	$(RANLIB) libcat_dbg.a
 	mv libcat_dbg.a ../lib
 
 ../lib/libcat_nolibc.a: $(LCAT_NO_LIBC_OF) 
-	ar rv libcat_nolibc.a $(LCAT_NO_LIBC_OF)
-	ranlib libcat_nolibc.a
+	$(AR) rv libcat_nolibc.a $(LCAT_NO_LIBC_OF)
+	$(RANLIB) libcat_nolibc.a
 	mv libcat_nolibc.a ../lib
 
 clean:
@@ -258,15 +253,16 @@ veryclean:
 	rm -f $(LCATODIR)/*.o $(LCATAODIR)/*.o $(LCAT_NO_LIBC_ODIR)/*.o \
 		$(LCAT_DBG_OF) \
 		../lib/libcat.a ../lib/libcata.a ../lib/libcat_nolibc.a \
-		../lib/libcat_dbg.a .depend ../include/config.h
+		../lib/libcat_dbg.a .depend ../include/cat/config.h
 	rm -f makefile
 	@echo "**** Makefile Destroyed ****"
 	@echo "**** Run buildmake.sh to regenerate it ****"
 
 depend: .depend
 
-.depend: makefile.tmpl
+.depend: makefile.tmpl ../conf/build_system.conf ../conf/platform.conf
 	cp ../conf/build_system.conf .tmp.makefile
+	cat ../conf/platform.conf >> .tmp.makefile
 	sed -e '/^#---- DO NOT DELETE ----/,$$ d' makefile.tmpl >> .tmp.makefile
 	echo '#---- DO NOT DELETE ----' >> .tmp.makefile
 	for i in $(CFILES) ; do \
