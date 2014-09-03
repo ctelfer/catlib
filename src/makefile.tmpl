@@ -194,7 +194,7 @@ LCAT_NO_LIBC_OF= \
 	$(LCAT_NO_LIBC_ODIR)/catstdlib.o \
 	$(LCAT_NO_LIBC_ODIR)/catstdio.o \
 
-ICOMMON=$(ISYSTEM) -I../include
+ICOMMON=-I../include
 
 # Flags for libcat
 DEFS=
@@ -219,7 +219,7 @@ DBG_IFLAGS= $(ICOMMON)
 NOLIBC_DEFS=-DCAT_HAS_POSIX=0 -DCAT_USE_STDLIB=0 -DCAT_HAS_LONGLONG=0
 NOLIBC_CFLAGS=-Wall -pedantic -Wno-sign-compare -Wno-pointer-sign $(NOSTD) \
 	$(NOLIBC_DEFS)
-NOLIBC_IFLAGS= -isystem ../include/std $(ICOMMON)
+NOLIBC_IFLAGS= -isystem ../include/std $(ISYSTEM) $(ICOMMON)
 
 all: $(TARGETS)
 
