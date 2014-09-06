@@ -32,6 +32,14 @@
 #define CAT_HAS_LONGLONG	1
 #endif
 
+#ifndef CAT_HAS_DIV
+#define CAT_HAS_DIV		1
+#endif /* CAT_HAS_DIV */
+
+#ifndef CAT_HAS_FLOAT
+#define CAT_HAS_FLOAT		1
+#endif /* CAT_HAS_FLOAT */
+
 #ifndef CAT_64BIT
 #define CAT_64BIT		0
 #endif

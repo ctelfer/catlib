@@ -3,18 +3,19 @@
  *
  * by Christopher Adam Telfer
  *
- * Copyright 2003-2012 See accompanying license
+ * Copyright 2003-2014 See accompanying license
  *
  */
 
-#include <cat/cat.h>
-#include <stdarg.h>
-#include <limits.h>
-#include <cat/emit.h>
-#include <cat/emit_format.h>
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
+#include <stdarg.h>
+#include <limits.h>
+
+#include <cat/cat.h>
+#include <cat/emit.h>
+#include <cat/emit_format.h>
 
 
 enum {
@@ -457,14 +458,61 @@ static int fmt_int(struct emitter *em, struct format_params *fp,
 }
 
 
+static void divmod(CAT_MAXUTYPE v, uint radix, CAT_MAXUTYPE *q, uint *r)
+{
+#if CAT_HAS_DIV
+	*q = v / radix;
+	*r = v % radix;
+#else /* CAT_HAS_DIV */
+	switch (radix) {
+	case 2:
+		*q = v >> 1;
+		*r = v & 1;
+		break;
+	case 8:
+		*q = v >> 3;
+		*r = v & 7;
+		break;
+	case 10:
+		/* Multiply v by 8/10 = .11001100... */
+		*q = (v >> 1) + (v >> 2);
+		*q = *q + (*q >> 4);
+		*q = *q + (*q >> 8);
+		*q = *q + (*q >> 16);
+		if ( sizeof(v) > 4 )
+			*q = *q + (*q >> 32);
+		/* Divide by 8 to get 1/10 */
+		*q >>= 3;
+		/* compute the remainder, may have an error of up to 10 */
+		*r = v - *q * 10;
+		*q = *q + ((*r + 6) >> 4);
+		/* compute the remainder */
+		*r = v - *q * 10;
+		break;
+	case 16:
+		*q = v >> 4;
+		*r = v & 0xF;
+		break;
+	}
+#endif /* CAT_HAS_DIV */
+}
+
+
 static int fmt_u(struct emitter *em, struct format_params *fp, int *flen, 
 		 int radix, char *apfx, CAT_MAXUTYPE v)
 {
 	char buf[sizeof(v) * 8 + 1] = { 0 };
 	int i, ndigits, tnlen, plen = 0;
+	uint xd;
+	CAT_MAXUTYPE q;
 
 	abort_unless(em && fp && flen && apfx);
 	abort_unless(radix >= 2 && radix <= 36);
+
+#if !CAT_HAS_DIV
+	if ( radix != 2 && radix != 8 && radix != 10 && radix != 16 )
+		return -1;
+#endif /* CAT_HAS_DIV */
 
 	/* compute the alternate prefix length */
 	if ( fp->alternate && (fp->fmtchar != 'p' || v != 0) ) 
@@ -474,14 +522,14 @@ static int fmt_u(struct emitter *em, struct format_params *fp, int *flen,
 		buf[0] = '0';
 	i = 0;
 	while ( v > 0 ) {
-		int xd = v % radix;
+		divmod(v, radix, &q, &xd);
 		if ( xd < 10 )
 			buf[i++] = xd + '0';
 		else if ( fp->capver )
 			buf[i++] = xd - 10 + 'A';
 		else
 			buf[i++] = xd - 10 + 'a';
-		v /= radix;
+		v = q;
 	}
 	if ( i == 0 )
 		i = 1;
@@ -491,8 +539,8 @@ static int fmt_u(struct emitter *em, struct format_params *fp, int *flen,
 	if ( fp->precision >= 0 && fp->precision > ndigits )
 		ndigits = fp->precision;
 	if ( fp->minwidth >= 0 && 
-			 fp->minwidth > ndigits + (fp->alternate ? plen : 0) &&
-			 fp->zerofill )
+	     fp->minwidth > ndigits + (fp->alternate ? plen : 0) &&
+	     fp->zerofill )
 		ndigits = fp->minwidth - (fp->alternate ? plen : 0);
 	tnlen = ndigits + (fp->alternate ? plen : 0);
 
@@ -560,6 +608,7 @@ static int fmt_binary(struct emitter *em, struct format_params *fp,
 }
 
 
+#if CAT_HAS_FLOAT
 static int get_double_arg(struct format_params *fp, struct va_list_s *app, 
 		          long double *rv)
 {
@@ -790,18 +839,6 @@ static int fmt_double_help(long double v, struct emitter *em,
 }
 
 
-static int fmt_double(struct emitter *em, struct format_params *fp,
-		      struct va_list_s *app, int *flen)
-{
-	long double v;
-	abort_unless(em && fp && app && flen);
-	if ( get_double_arg(fp, app, &v) < 0 )
-		return -1;
-	return fmt_double_help(v, em, fp, flen);
-
-}
-
-
 static int fmt_exp_double_help(long double v, struct emitter *em, 
 		               struct format_params *fp, int *flen)
 {
@@ -919,23 +956,44 @@ static int fmt_exp_double_help(long double v, struct emitter *em,
 
 	return 0;
 }
+#endif /* CAT_HAS_FLOAT */
+
+
+static int fmt_double(struct emitter *em, struct format_params *fp,
+		      struct va_list_s *app, int *flen)
+{
+#if CAT_HAS_FLOAT
+	long double v;
+	abort_unless(em && fp && app && flen);
+	if ( get_double_arg(fp, app, &v) < 0 )
+		return -1;
+	return fmt_double_help(v, em, fp, flen);
+#else /* CAT_HAS_FLOAT */
+	return -1;
+#endif /* CAT_HAS_FLOAT */
+
+}
 
 
 static int fmt_exp_double(struct emitter *em, struct format_params *fp,
 		          struct va_list_s *app, int *flen)
 {
+#if CAT_HAS_FLOAT
 	long double v;
 	abort_unless(em && fp && app && flen);
 	if ( get_double_arg(fp, app, &v) < 0 )
 		return -1;
 	return fmt_exp_double_help(v, em, fp, flen);
-
+#else /* CAT_HAS_FLOAT */
+	return -1;
+#endif /* CAT_HAS_FLOAT */
 }
 
 
 static int fmt_variable_double(struct emitter *em, struct format_params *fp,
 		               struct va_list_s *app, int *flen)
 {
+#if CAT_HAS_FLOAT
 	long double v;
 	int power;
 	int prec = 6;
@@ -952,6 +1010,9 @@ static int fmt_variable_double(struct emitter *em, struct format_params *fp,
 		return fmt_exp_double_help(v, em, fp, flen);
 	else 
 		return fmt_double_help(v, em, fp, flen);
+#else /* CAT_HAS_FLOAT */
+	return -1;
+#endif /* CAT_HAS_FLOAT */
 }
 
 
@@ -1045,11 +1106,13 @@ static int emit_format_help(struct emitter *em, const char **fmtp,
 		EMIT_CHAR(em, '%');
 		*flen = 1;
 		return 0;
-	} else if ( fp.fmtchar == '\0' )
+	} else if ( fp.fmtchar == '\0' ) {
 		return -1;
+	}
 
-	if ( (formatter = find_formatter(&fp)) == NULL )
+	if ( (formatter = find_formatter(&fp)) == NULL ) {
 		return -1;
+	}
 
 	return (*formatter)(em, &fp, app, flen);
 }

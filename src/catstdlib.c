@@ -3,7 +3,7 @@
  *
  * by Christopher Adam Telfer
  *
- * Copyright 2003-2012 See accompanying license
+ * Copyright 2003-2014 See accompanying license
  *
  */
 
@@ -247,13 +247,13 @@ int isupper(int c)
 
 int toupper(int c)
 {
-	return (c >= 'a' && c <= 'z') ? c + ('a' - 'A') : c;
+	return (c >= 'a' && c <= 'z') ? c - ('a' - 'A') : c;
 }
 
 
 int tolower(int c)
 {
-	return (c >= 'A' && c <= 'Z') ? c - ('a' - 'A') : c;
+	return (c >= 'A' && c <= 'Z') ? c + ('a' - 'A') : c;
 }
 
 
@@ -403,6 +403,7 @@ ulong strtoul(const char *start, char **cpp, int base)
 /* TODO Range checking */
 double strtod(const char *start, char **cpp)
 {
+#if CAT_HAS_FLOAT
 	double v = 0.0, e;
 	int negate = 0;
 	char *cp;
@@ -477,6 +478,9 @@ double strtod(const char *start, char **cpp)
 	}
 
 	return v;
+#else /* CAT_HAS_FLOAT */
+	return 0.0;
+#endif /* CAT_HAS_FLOAT */
 }
 
 
@@ -527,8 +531,13 @@ void *calloc(size_t nmem, size_t osiz)
 
 	if ( nmem == 0 )
 		return NULL;
+#if CAT_HAS_DIV
 	if ( osiz > (size_t)~0 / nmem )
 		return NULL;
+#else
+	if ( nmem > 0xFFFF || osiz > 0xFFFF )
+		return NULL;
+#endif
 	len = osiz * nmem;
 	m = malloc(len);
 	if ( m )
@@ -561,8 +570,11 @@ void abort(void)
 
 	/* Actions that tend to cause aborts in compiler implementations */
 	a = *(char *)0;  /* Null pointer dereference */
+
+#if CAT_HAS_DIV
 	/* Divide by 0: convludted to shut up compiler */
 	a = 1; while ( a > 0 ) --a; a = 100 / a;
+#endif /* CAT_HAS_DIV */
 
 	/* worst case scenario: endless loop */
 	for (;;) ;
