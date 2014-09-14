@@ -122,6 +122,7 @@ void dynmem_init(struct dynmem *dm)
 	l_init(&dm->dm_blocks);
 	dm->dm_current = &dm->dm_blocks;
 	dm->add_mem_func = NULL;
+	dm->dm_init = 1;
 }
 
 
@@ -171,7 +172,7 @@ void *dynmem_malloc(struct dynmem *dm, size_t amt)
 
 	/* the first condition tests for overflow */
 	amt += UNITSIZE;
-	if ( amt < UNITSIZE || amt > MAX_ALLOC )
+	if ( !dm->dm_init || amt < UNITSIZE || amt > MAX_ALLOC )
 		return NULL;
 
 	if ( amt < MINSZ )
@@ -227,7 +228,7 @@ void dynmem_free(struct dynmem *dm, void *mem)
 	struct memblk *mb;
 
 	abort_unless(dm);
-	if ( mem == NULL )
+	if ( !dm->dm_init || mem == NULL )
 		return;
 
 	mb = ptr2mb(mem);
@@ -253,7 +254,7 @@ static void shrink_alloc_block(struct dynmem *dm, struct memblk *mb, size_t sz)
 	/* caller should assure that sz is a multiple of UNITSIZE */
 	abort_unless(sz % UNITSIZE == 0);
 	nbsz = MBSIZE(mb) - sz;
-	if ( nbsz < MINSZ )
+	if ( !dm->dm_init || nbsz < MINSZ )
 		return;
 
 	unitp = PTR2U(mb, MBSIZE(mb));

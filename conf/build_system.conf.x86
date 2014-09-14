@@ -1,7 +1,7 @@
 CC=gcc
 AR=ar
 RANLIB=ranlib
-ISYSTEM=-isystem /usr/include
+ISYSTEM="-isystem /usr/include"
 NOSTD=-nostdlib
 
 #CC=pcc 

@@ -24,6 +24,7 @@ struct memblk {
 };
 
 struct dynmem { 
+	int			dm_init;
 	struct list		dm_pools;
 	struct list		dm_blocks;
 	struct list *		dm_current;

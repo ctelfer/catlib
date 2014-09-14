@@ -1,5 +1,5 @@
 /*
- * catstdlib.c -- local implementation of standard libc functions.
+ * catlibc.c -- local implementation of standard libc functions.
  *
  * by Christopher Adam Telfer
  *
@@ -8,13 +8,21 @@
  */
 
 #include <cat/cat.h>
+#include <cat/catlibc.h>
 
 /* We use several functions even if we don't use the standard library */
 #if !CAT_USE_STDLIB
+#include <stdarg.h>
+#include <limits.h>
 #include <stdlib.h>	/* should be my copy */
 #include <string.h>	/* should be my copy */
 #include <ctype.h>	/* should be my copy */
 #include <limits.h>	/* should be my copy */
+#include <stdio.h>	/* should be my copy */
+
+#include <cat/emit.h>
+#include <cat/emit_format.h>
+
 
 
 STATIC_BUG_ON(strspn_bad_size_char, CHAR_BIT != 8)
@@ -30,7 +38,7 @@ int memcmp(const void *b1p, const void *b2p, size_t len)
 		len--;
 	}
 	if ( len )
-		return b1 - b2;
+		return (int)*b1 - (int)*b2;
 	else
 		return 0;
 }
@@ -65,10 +73,7 @@ void *memmove(void *dst, const void *src, size_t len)
 void *memset(void *dst, int c, size_t len)
 {
 	uchar *p = dst;
-	while ( len > 0 ) {
-		*p = c;
-		--len;
-	}
+	while ( len-- ) *p = c;
 	return dst;
 }
 
@@ -96,7 +101,7 @@ int strcmp(const char *c1, const char *c2)
 	else if ( *c2 == '\0' )
 		return 1;
 	else
-		return *(uchar *)c1 - *(uchar *)c2;
+		return (int)*(uchar *)c1 - (int)*(uchar *)c2;
 }
 
 
@@ -115,7 +120,7 @@ int strncmp(const char *c1, const char *c2, size_t n)
 	else if ( *c2 == '\0' )
 		return 1;
 	else
-		return *(uchar *)c1 - *(uchar *)c2;
+		return (int)*(uchar *)c1 - (int)*(uchar *)c2;
 }
 
 
@@ -133,7 +138,6 @@ char *strchr(const char *s, int ch)
 char *strrchr(const char *s, int ch)
 {
 	const char *last = NULL;
-
 	while ( *s != '\0' )
 		if ( *s == ch )
 			last = s;
@@ -143,9 +147,11 @@ char *strrchr(const char *s, int ch)
 
 char *strcpy(char *dst, const char *src)
 {
-	while ( *src == '\0' )
-		*dst++ = *src++;
-	return dst;
+	char *dsave = dst;
+	do {
+		*dst++ = *src;
+	} while ( *src++ != '\0' );
+	return dsave;
 }
 
 
@@ -489,38 +495,18 @@ double strtod(const char *start, char **cpp)
 
 #include <cat/dynmem.h>
 
-/* global data structures including ~2 million ulong of memory */
-/* this number is obviously configurable */
-#ifndef CAT_MALLOC_MEM
-#define CAT_MALLOC_MEM	(2ul * 1024 * 1024)
-#endif /* CAT_MALLOC_MEM */
-
-/* global data structures */
-static ulong memblob[CAT_MALLOC_MEM];
-static struct dynmem g_dm;
-static int initialized = 0;
-
-
-static void initmem(void)
-{
-	dynmem_init(&g_dm);
-	dynmem_add_pool(&g_dm, memblob, sizeof(memblob));
-}
+static struct dynmem dmheap;
 
 
 void *malloc(size_t amt)
 {
-	if (!initialized)
-		initmem();
-	return dynmem_malloc(&g_dm, amt);
+	return dynmem_malloc(&dmheap, amt);
 }
 
 
 void free(void *mem)
 {
-	if (!initialized)
-		initmem();
-	dynmem_free(&g_dm, mem);
+	dynmem_free(&dmheap, mem);
 }
 
 
@@ -548,9 +534,7 @@ void *calloc(size_t nmem, size_t osiz)
 
 void *realloc(void *omem, size_t newamt)
 {
-	if (!initialized)
-		initmem();
-	return dynmem_realloc(&g_dm, omem, newamt);
+	return dynmem_realloc(&dmheap, omem, newamt);
 }
 
 
@@ -580,5 +564,450 @@ void abort(void)
 	for (;;) ;
 }
 
+
+#define MAXFILES		32
+#define CAT_STDIN_FILENO	0
+#define CAT_STDOUT_FILENO	1
+#define CAT_STDERR_FILENO	2
+
+static char Stdin_buf[BUFSIZ];
+static char Stdout_buf[BUFSIZ];
+static char Stderr_buf[BUFSIZ];
+
+static FILE File_table[MAXFILES] = { 
+
+	{ Stdin_buf, sizeof(Stdin_buf),
+	  0, _IOFBF|CAT_SIO_READ|CAT_SIO_BUFGIVEN, 
+	  CAT_STDIN_FILENO, 0 },
+
+	{ Stdout_buf, sizeof(Stdout_buf),
+	  0, _IOFBF|CAT_SIO_WRITE|CAT_SIO_BUFGIVEN, 
+	  CAT_STDOUT_FILENO, 0 },
+
+	{ 
+	  Stderr_buf, sizeof(Stderr_buf),
+	  0, _IONBF|CAT_SIO_WRITE|CAT_SIO_BUFGIVEN, 
+	  CAT_STDERR_FILENO, 0 },
+
+	{ 0 }
+};
+
+
+FILE *stdin  = &File_table[0];
+FILE *stdout = &File_table[1];
+FILE *stderr = &File_table[2];
+
+
+FILE *fopen(const char *path, const char *mode)
+{
+	return NULL;
+}
+
+
+FILE *freopen(const char *path, const char *mode, FILE *file)
+{
+	if ( fflush(file) < 0 )
+		return NULL;
+
+	fclose(file);
+
+	return NULL;
+}
+
+
+static size_t do_fput_bytes(FILE* file, const char *buf, size_t len)
+{
+	if ( file == NULL ||
+	     (len > 0 && (buf == NULL || file->f_buffer == NULL)) ) {
+		if ( file != NULL )
+			file->f_flags |= CAT_SIO_ERR;
+		return 0;
+	}
+
+	abort_unless(file->f_fill <= file->f_buflen);
+
+	if ( len > file->f_buflen - file->f_fill )
+		len = file->f_buflen - file->f_fill;
+
+	memcpy(&file->f_buffer[file->f_fill], buf, len);
+	file->f_fill += len;
+	file->f_lastop = CAT_SIO_WRITE;
+
+	return len;
+}
+
+
+static int flush_all()
+{
+	FILE *fp, *end = File_table + MAXFILES;
+	for ( fp = File_table ; fp < end ; ++fp )
+		if ( fflush(fp) < 0 )
+			return -1;
+	return 0;
+}
+
+
+int fflush(FILE *file)
+{
+	size_t rv;
+
+	if ( file == NULL )
+		return flush_all();
+
+	if ( file->f_lastop == CAT_SIO_WRITE ) {
+		if ( file->f_fill > 0 ) {
+			rv = do_fput_bytes(file, file->f_buffer, file->f_fill);
+			if ( rv < file->f_fill )
+				return -1;
+			file->f_fill = 0;
+		}
+	} else {
+		/* TODO: once we get read operations */
+	}
+
+	return 0;
+}
+
+
+int fclose(FILE *file)
+{
+	if ( fflush(file) < 0 )
+		return -1;
+
+#if CAT_HAS_POSIX
+	if ( close(file->f_fd) < 0 )
+		return -1;
+#endif /* CAT_HAS_POSIX */
+
+	if ( file->f_buffer != NULL && 
+	     (file->f_flags & CAT_SIO_BUFGIVEN) == 0 ) {
+		free(file->f_buffer);
+	}
+	file->f_buffer = NULL;
+	file->f_buflen = 0;
+	file->f_flags = _IOUNUSED;
+
+	return 0;
+}
+
+
+void clearerr(FILE *file)
+{
+	if ( file == NULL )
+		return;
+	file->f_flags &= ~CAT_SIO_ERR;
+}
+
+
+int feof(FILE *file)
+{
+	if ( file == NULL )
+		return -1;
+	return (file->f_flags & CAT_SIO_EOF) != 0;
+}
+
+
+int ferror(FILE *file)
+{
+	if ( file == NULL )
+		return -1;
+	return (file->f_flags & CAT_SIO_ERR) != 0;
+}
+
+
+int fileno(FILE *file)
+{
+	if ( file == NULL )
+		return -1;
+	return file->f_fd;
+}
+
+
+size_t fwrite(const void *ptr, size_t msiz, size_t nmem, FILE *file)
+{
+	size_t i, rv;
+	const char *buf = ptr;
+
+	if ( msiz == 0 || nmem == 0 )
+		return 0;
+
+	if ( ptr == NULL || file == NULL )
+		return 0;
+
+	for ( i = 0 ; i < nmem ; ++i ) {
+		rv = do_fput_bytes(file, buf, msiz);
+		if ( rv == 0 )
+			return i;
+		buf += msiz;
+	}
+	return i;
+}
+
+
+int fputc(int c, FILE *file)
+{
+	char ch = c;
+	int rv;
+	rv = do_fput_bytes(file, &ch, sizeof(ch));
+	if ( rv < 0 )
+		return EOF;
+	return c;
+}
+
+
+int fputs(const char *s, FILE *file)
+{
+	size_t rv;
+	rv = do_fput_bytes(file, s, strlen(s));
+	return (rv == 0) ? -1 : 0;
+}
+
+
+int putc(int c, FILE *file)
+{
+	return fputc(c, file);
+}
+
+
+int putchar(int c)
+{
+	return fputc(c, stdout);
+}
+
+
+int puts(const char *s)
+{
+	return fputs(s, stdout);
+}
+
+
+size_t fread(void *ptr, size_t size, size_t nmemb, FILE *file)
+{
+	/* TODO */
+	if ( file != NULL ) {
+		if ( file->f_flags & CAT_SIO_READ )
+			file->f_flags |= CAT_SIO_EOF;
+		else
+			file->f_flags |= CAT_SIO_ERR;
+	}
+
+	return 0;
+}
+
+
+void setbuf(FILE *file, char *buf)
+{
+	setvbuf(file, buf, buf ? _IOFBF : _IONBF, BUFSIZ);
+}
+
+
+void setbuffer(FILE *file, char *buf, size_t size)
+{
+	setvbuf(file, buf, buf ? _IOFBF : _IONBF, size);
+}
+
+
+void setlinebuf(FILE *file)
+{
+	setvbuf(file, NULL, _IOLBF, 0);
+}
+
+
+int setvbuf(FILE *file, char *buf, int mode, size_t bsiz)
+{
+	if ( file == NULL )
+		return -1;
+
+	if ( mode != _IONBF && mode != _IOLBF && mode != _IOFBF )
+		return -1;
+
+	/* enforce the rule that buffering must be performed between initial */
+	/* open and any subsequent operations */
+	if ( file->f_lastop )
+		return -1;
+
+	if ( file->f_fill > 0 && fflush(file) < 0 )
+		return -1;
+
+	if ( bsiz > INT_MAX )
+		return -1;
+
+	file->f_flags &= _IOBFMASK;
+	file->f_flags |= mode;
+
+	if ( buf != NULL ) {
+		abort_unless(bsiz > 0);
+		file->f_flags = CAT_SIO_BUFGIVEN;
+		file->f_buffer = buf;
+		file->f_buflen = bsiz;
+	}
+
+	return 0;
+}
+
+
+int printf(const char *fmt, ...)
+{
+	va_list ap;
+	int rv;
+	va_start(ap, fmt);
+	rv = vfprintf(stdout, fmt, ap);
+	va_end(ap);
+	return rv;
+}
+
+
+int fprintf(FILE *file, const char *fmt, ...)
+{
+	va_list ap;
+	int rv;
+	va_start(ap, fmt);
+	rv = vfprintf(file, fmt, ap);
+	va_end(ap);
+	return rv;
+}
+
+
+int vprintf(const char *fmt, va_list ap)
+{
+	return vfprintf(stdout, fmt, ap);
+}
+
+
+struct file_emitter {
+	struct emitter	emitter;
+	FILE *		file;
+};
+
+
+int file_emit_func(struct emitter *e, const void *buf, size_t len)
+{
+	size_t rv;
+	struct file_emitter *fe = (struct file_emitter *)e;
+	abort_unless(e && buf);
+	if ( (rv = do_fput_bytes(fe->file, buf, len)) == 0 ) {
+		e->emit_state = EMIT_ERR;
+		return -1;
+	}
+	return rv;
+}
+
+
+int vfprintf(FILE *file, const char *fmt, va_list ap)
+{
+	struct file_emitter e = { {EMIT_OK, file_emit_func}, NULL };
+	abort_unless(file && fmt);
+	e.file = file;
+	return emit_vformat(&e.emitter, fmt, ap);
+}
+
+
+int vsnprintf(char *buf, size_t len, const char *fmt, va_list ap)
+{
+	int rlen;
+	struct string_emitter se;
+	char tbuf[1] = { '\0' };
+
+	abort_unless(buf && fmt);
+	if ( len <= 1 )
+		return 0;
+
+	if ( buf )
+		string_emitter_init(&se, buf, len);
+	else
+		string_emitter_init(&se, tbuf, 1);
+	rlen = emit_vformat(&se.se_emitter, fmt, ap);
+	string_emitter_terminate(&se);
+	
+	return rlen;
+}
+
+
+int vsprintf(char *buf, const char *fmt, va_list ap)
+{
+	return vsnprintf(buf, (size_t)~0, fmt, ap);
+}
+
+
+int snprintf(char *buf, size_t len, const char *fmt, ...)
+{
+	struct string_emitter se;
+	va_list ap;
+	int rlen;
+	
+	abort_unless(buf && fmt);
+	if ( len <= 1 )
+		return 0;
+
+	va_start(ap, fmt);
+	string_emitter_init(&se, buf, len);
+	rlen = emit_vformat(&se.se_emitter, fmt, ap);
+	string_emitter_terminate(&se);
+	va_end(ap);
+
+	return rlen;
+}
+
+
+int sprintf(char *buf, const char *fmt, ...)
+{
+	int rlen;
+	va_list ap;
+
+	va_start(ap, fmt);
+	rlen = vsprintf(buf, fmt, ap);
+	va_end(ap);
+
+	return rlen;
+}
+
+
+int fgetc(FILE *file)
+{
+	/* TODO: not yet implemented */
+	return EOF;
+}
+
+
+/* --------- initialize all cat standard library manually -------- */
+
+void catlibc_reset(struct catlibc_cfg *cprm)
+{
+	if ( cprm->heap_base != NULL && cprm->heap_sz > 0 ) {
+		dynmem_init(&dmheap);
+		dynmem_add_pool(&dmheap, cprm->heap_base, cprm->heap_sz);
+	} else {
+		dmheap.dm_init = 0;
+	}
+
+	exit_status = 0;
+
+	stdin = &File_table[0];
+	stdin->f_buffer = cprm->stdin_buf;
+	stdin->f_buflen = cprm->stdin_bufsz;
+	stdin->f_fill = 0;
+	stdin->f_flags = _IOFBF|CAT_SIO_READ|CAT_SIO_BUFGIVEN;
+	stdin->f_fd = CAT_STDIN_FILENO;
+	stdin->f_lastop = 0;
+
+	stdout = &File_table[1];
+	stdout->f_buffer = cprm->stdout_buf;
+	stdout->f_buflen = cprm->stdout_bufsz;
+	stdout->f_fill = 0;
+	stdout->f_flags =_IOFBF|CAT_SIO_WRITE|CAT_SIO_BUFGIVEN;
+	stdout->f_fd = CAT_STDOUT_FILENO;
+	stdout->f_lastop = 0;
+
+	stderr = &File_table[2];
+	stderr->f_buffer = cprm->stderr_buf;
+	stderr->f_buflen = cprm->stderr_bufsz;
+	stderr->f_fill = 0;
+	stderr->f_flags =_IONBF|CAT_SIO_WRITE|CAT_SIO_BUFGIVEN;
+	stderr->f_fd = CAT_STDERR_FILENO;
+	stderr->f_lastop = 0;
+
+	if ( MAXFILES > 3 )
+		memset(&File_table[3], 0, sizeof(FILE) * (MAXFILES - 3));
+}
 
 #endif /* !CAT_USE_STDLIB */
