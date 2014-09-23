@@ -521,7 +521,7 @@ void *calloc(size_t nmem, size_t osiz)
 	if ( osiz > (size_t)~0 / nmem )
 		return NULL;
 #else
-	if ( nmem > 0xFFFF || osiz > 0xFFFF )
+	if ( osiz > uldivmod((size_t)~0, nmem, 1) )
 		return NULL;
 #endif
 	len = osiz * nmem;

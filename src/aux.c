@@ -3,7 +3,7 @@
  *
  * by Christopher Adam Telfer
  *
- * Copyright 2003-2012 See accompanying license
+ * Copyright 2003-2014 See accompanying license
  *
  */
 
@@ -38,3 +38,47 @@ int cmp_raw(const void *k1p, const void *k2p)
 	else 
 		return memcmp(k1->data, k2->data, k1->len);
 }
+
+
+ulong uldivmod(ulong dend, ulong dsor, int div)
+{
+	ulong r = 0;
+	int i;
+
+	if ( dsor == 0 )
+		return 0xFFFFFFFFul;
+
+	for ( i = 0; i < 32; ++i ) {
+		r = (r << 1) | (dend >> 31);
+		dend = dend << 1;
+		if ( r >= dsor ) {
+			r -= dsor;
+			dend += 1;
+		}
+	}
+
+	return div ? dend : r;
+}
+
+
+#if CAT_HAS_LONGLONG
+ullong ulldivmod(ullong dend, ullong dsor, int div)
+{
+	ullong r = 0;
+	int i;
+
+	if ( dsor == 0 )
+		return 0xFFFFFFFFFFFFFFFFull;
+
+	for ( i = 0; i < 64; ++i ) {
+		r = (r << 1) | (dend >> 63);
+		dend = dend << 1;
+		if ( r >= dsor ) {
+			r -= dsor;
+			dend += 1;
+		}
+	}
+
+	return div ? dend : r;
+}
+#endif /* CAT_HAS_LONGLONG */

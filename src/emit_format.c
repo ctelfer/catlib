@@ -14,6 +14,7 @@
 #include <limits.h>
 
 #include <cat/cat.h>
+#include <cat/aux.h>
 #include <cat/emit.h>
 #include <cat/emit_format.h>
 
@@ -493,6 +494,15 @@ static void divmod(CAT_MAXUTYPE v, uint radix, CAT_MAXUTYPE *q, uint *r)
 		*q = v >> 4;
 		*r = v & 0xF;
 		break;
+	default:
+#if CAT_HAS_LONGLONG
+		*q = ulldivmod(v, radix, 1);
+		*r = ulldivmod(v, radix, 0);
+#else
+		*q = uldivmod(v, radix, 1);
+		*r = uldivmod(v, radix, 0);
+#endif
+		break;
 	}
 #endif /* CAT_HAS_DIV */
 }
@@ -508,11 +518,6 @@ static int fmt_u(struct emitter *em, struct format_params *fp, int *flen,
 
 	abort_unless(em && fp && flen && apfx);
 	abort_unless(radix >= 2 && radix <= 36);
-
-#if !CAT_HAS_DIV
-	if ( radix != 2 && radix != 8 && radix != 10 && radix != 16 )
-		return -1;
-#endif /* CAT_HAS_DIV */
 
 	/* compute the alternate prefix length */
 	if ( fp->alternate && (fp->fmtchar != 'p' || v != 0) ) 

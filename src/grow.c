@@ -8,6 +8,7 @@
  */
 
 #include <cat/cat.h>
+#include <cat/aux.h>
 #include <cat/mem.h>
 #include <cat/grow.h>
 #include <stdlib.h>
@@ -44,7 +45,11 @@ int agrow(void **ptr, size_t ilen, size_t *lenp, size_t min)
 	abort_unless(ilen > 0);
 	abort_unless(lenp);
 
+#if CAT_HAS_DIV
 	maxmem /= ilen;
+#else
+	maxmem = uldivmod(maxmem, ilen, 1);
+#endif
 	len = *lenp;
 	abort_unless((len > 0) || (*ptr == NULL));
 	abort_unless(len <= maxmem);
@@ -107,7 +112,11 @@ int mm_agrow(struct memmgr *mm, void **ptr, size_t ilen, size_t *lenp,
 	abort_unless(ilen > 0);
 	abort_unless(lenp);
 
+#if CAT_HAS_DIV
 	maxmem /= ilen;
+#else
+	maxmem = uldivmod(maxmem, ilen, 1);
+#endif
 	len = *lenp;
 	abort_unless((len > 0) || (*ptr == NULL));
 	abort_unless(len <= maxmem);

@@ -2,4 +2,4 @@ CC=arm-none-eabi-gcc
 AR=arm-none-eabi-ar
 RANLIB=arm-none-eabi-ranlib
 NOSTD=-nostdlib
-ISYSTEM=-isystem /opt/gnuarm/lib/gcc/arm-none-eabi/4.8.3/include 
+ISYSTEM="-isystem /opt/gnuarm/lib/gcc/arm-none-eabi/4.8.3/include"
