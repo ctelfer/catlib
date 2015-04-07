@@ -3,7 +3,7 @@ TESTS=	testlist testhash testtcpc testtcps testudpc testudps testpool \
 	testpcache testuemux testrb markov markov2 testmatch \
 	testsplay testcsv testbitset testshell testgraph testprintf teststr \
 	testbitops testpspawn testdynmem testtlsf testmalloc testregex \
-	testlex testsort testoptparse testcatstr testcrypto testsocks5
+	testlex testsort testoptparse testcatstr testcrypto testsocks5 testcrc
 	
 CFILES= testlist.c testhash.c testtcpc.c testtcps.c testudpc.c testudps.c \
 	testpool.c testmem.c testheap.c testhw.c testtime.c testavl.c \
@@ -11,7 +11,7 @@ CFILES= testlist.c testhash.c testtcpc.c testtcps.c testudpc.c testudps.c \
 	markov2.c testmatch.c testsplay.c testcsv.c testbitset.c \
 	testshell.c testgraph.c testprintf.c teststr.c testbitops.c \
 	testdynmem.c testtlsf.c testmalloc.c testregex.c testlex.c testsort.c \
-	testoptparse.c testcatstr.c testcrypto.c testsocks5.c
+	testoptparse.c testcatstr.c testcrypto.c testsocks5.c testcrc.c
 
 CC=gcc
 
@@ -164,3 +164,6 @@ testcrypto: testcrypto.c $(CAT_DBG_LIBDEP)
 
 testsocks5: testsocks5.c $(CAT_DBG_LIBDEP)
 	$(CC) $(CAT_DBG_CF) -o testsocks5 testsocks5.c $(INC) $(CAT_DBG_LIB)
+
+testcrc: testcrc.c $(CAT_DBG_LIBDEP)
+	$(CC) $(CAT_DBG_CF) -o testcrc testcrc.c $(INC) $(CAT_DBG_LIB)

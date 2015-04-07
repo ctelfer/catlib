@@ -1,8 +1,8 @@
-CFILES=	cat.c aux.c err.c cb.c grow.c io.c mem.c net.c pack.c ring.c pcache.c \
-	uevent.c raw.c match.c csv.c stduse.c stdcsv.c graph.c shell.c \
-	str.c dbgmem.c emit.c emit_format.c stdclio.c emalloc.c catstr.c \
-	bitops.c list.c hash.c avl.c heap.c dlist.c pool.c rbtree.c time.c \
-	splay.c bitset.c catlibc.c pspawn.c dynmem.c lex.c sort.c \
+CFILES=	cat.c aux.c err.c cb.c crc.c grow.c io.c mem.c net.c pack.c ring.c \
+	pcache.c uevent.c raw.c match.c csv.c stduse.c stdcsv.c graph.c \
+	shell.c str.c dbgmem.c emit.c emit_format.c stdclio.c emalloc.c \
+	catstr.c bitops.c list.c hash.c avl.c heap.c dlist.c pool.c rbtree.c \
+	time.c splay.c bitset.c catlibc.c pspawn.c dynmem.c lex.c sort.c \
 	optparse.c inport.c crypto.c socks5.c buffer.c
 
 LCATODIR=  ../build/libcat
@@ -10,6 +10,7 @@ LCATOF= $(LCATODIR)/cat.o \
 	$(LCATODIR)/aux.o  \
 	$(LCATODIR)/err.o  \
 	$(LCATODIR)/cb.o  \
+	$(LCATODIR)/crc.o  \
 	$(LCATODIR)/grow.o  \
 	$(LCATODIR)/io.o  \
 	$(LCATODIR)/mem.o  \
@@ -50,6 +51,7 @@ LCATAOF=$(LCATAODIR)/cat.o \
 	$(LCATAODIR)/aux.o  \
 	$(LCATAODIR)/err.o  \
 	$(LCATAODIR)/cb.o  \
+	$(LCATAODIR)/crc.o  \
 	$(LCATAODIR)/grow.o  \
 	$(LCATAODIR)/io.o  \
 	$(LCATAODIR)/mem.o  \
@@ -100,6 +102,7 @@ LCAT_DBG_OF=$(LCAT_DBG_ODIR)/cat.o \
 	$(LCAT_DBG_ODIR)/aux.o  \
 	$(LCAT_DBG_ODIR)/err.o  \
 	$(LCAT_DBG_ODIR)/cb.o  \
+	$(LCAT_DBG_ODIR)/crc.o  \
 	$(LCAT_DBG_ODIR)/grow.o  \
 	$(LCAT_DBG_ODIR)/io.o  \
 	$(LCAT_DBG_ODIR)/mem.o  \
@@ -152,6 +155,7 @@ LCAT_NO_LIBC_OF= \
 	$(LCAT_NO_LIBC_ODIR)/aux.o  \
 	$(LCAT_NO_LIBC_ODIR)/err.o  \
 	$(LCAT_NO_LIBC_ODIR)/cb.o  \
+	$(LCAT_NO_LIBC_ODIR)/crc.o  \
 	$(LCAT_NO_LIBC_ODIR)/grow.o  \
 	$(LCAT_NO_LIBC_ODIR)/io.o  \
 	$(LCAT_NO_LIBC_ODIR)/mem.o  \
