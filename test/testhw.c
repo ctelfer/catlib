@@ -20,8 +20,11 @@ int nreps = NREPS;
 	  double usec, nspo;			\
 	  int i;				\
 						\
+	  a = (a + 1) % NREPS;			\
+	  b = (b + 1) % NREPS;			\
+	  c = ((c + 1) % NREPS) + 1;		\
 	  gettimeofday(&start, NULL);		\
-	  for ( i = 0 ; i < nreps; ++i )	\
+	  for ( i = 1 ; i <= nreps; ++i )	\
 	    { op; }				\
 	  gettimeofday(&stop, NULL);		\
 	  usec = (stop.tv_sec - start.tv_sec) * 1000000 + \
@@ -54,7 +57,7 @@ int main(int argc, char *argv[])
   volatile double d1, d2, d3 = 1;
   volatile struct { int a, b; char c; double d; } st, *stp = &st;
   volatile struct obj obj = { op }, *objp = &obj;
-  volatile int arr[50];
+  volatile int arr[NREPS*2];
 
   st.b = 1;
 
@@ -79,42 +82,42 @@ int main(int argc, char *argv[])
   HEAD
   TEST({})
   TEST(a = 1)
-  TEST(a = b + c)
-  TEST(a = b - c)
-  TEST(a = b * c)
-  TEST(a = b / c)
-  TEST(a = b % c)
-  TEST(a = b << c)
-  TEST(a = b >> c)
-  TEST(a = b & c)
-  TEST(a = b | c)
-  TEST(a = b ^ c)
-  TEST(a = ~b)
-  TEST(a = !b)
+  TEST(a = a + i)
+  TEST(a = a - i)
+  TEST(a = a * i)
+  TEST(a = a / i)
+  TEST(a = a % i)
+  TEST(a = a << i)
+  TEST(a = a >> i)
+  TEST(a = a & i)
+  TEST(a = a | i)
+  TEST(a = a ^ i)
+  TEST(a = ~i)
+  TEST(a = !i)
 
   printf("\nFloating point operations\n");
   HEAD
   TEST(f1 = 1)
-  TEST(f1 = f2 + f3)
-  TEST(f1 = f2 - f3)
-  TEST(f1 = f2 * f3)
-  TEST(f1 = f2 / f3)
+  TEST(f1 = f2 + (float)i)
+  TEST(f1 = f2 - (float)i)
+  TEST(f1 = f2 * (float)i)
+  TEST(f1 = f2 / (float)i)
 
   printf("\nDouble precision floating point operations\n");
   HEAD
   TEST(d1 = 1)
-  TEST(d1 = d2 + d3)
-  TEST(d1 = d2 - d3)
-  TEST(d1 = d2 * d3)
-  TEST(d1 = d2 / d3)
+  TEST(d1 = d2 + (double)i)
+  TEST(d1 = d2 - (double)i)
+  TEST(d1 = d2 * (double)i)
+  TEST(d1 = d2 / (double)i)
 
   printf("\nArray operations\n");
   HEAD
   TEST(arr[0] = 1)
   TEST(arr[c] = 1)
-  TEST(a = arr[c] + b)
-  TEST(a = b + arr[c])
-  TEST(a = arr[b] + arr[c])
+  TEST(a = arr[i] + a)
+  TEST(a = a + arr[i])
+  TEST(arr[i] = arr[i] + arr[i>>1])
 
   printf("\nPointers\n");
   HEAD
