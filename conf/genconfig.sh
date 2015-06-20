@@ -1,6 +1,83 @@
 #!/bin/sh
 
+set -e 
+
+if ! which echo >/dev/null ; then exit 2 ; fi
+if ! which rm >/dev/null ; then echo "'rm' not found in path!" >&2 ; exit 1 ; fi
+if ! which cp >/dev/null ; then echo "'cp' not found in path!" >&2 ; exit 1 ; fi
+if ! which mv >/dev/null ; then echo "'mv' not found in path!" >&2 ; exit 1 ; fi
+if ! which sed >/dev/null ; then echo "'sed' not found in path!" >&2 ; exit 1 ; fi
+
+rm -f build_system.conf
+
+if [ -f build_system_override.conf ]
+then
+	cp build_system_master.conf build_system.conf
+else
+	echo "# Generated build configuration" > build_system.conf
+
+	if which cc >/dev/null ; then
+		# maybe pcc
+		echo "CC="`which cc` >> build_system.conf
+		echo "ISYSTEM=\"-isystem /usr/include\"" >> build_system.conf
+		echo "NOSTD=-nostdlib" >> build_system.conf
+		if which ar >/dev/null ; then
+			echo "AR="`which ar` >> build_system.conf
+		else
+			echo "Couldn't find 'ar'!  Aboring..." >&2
+			exit 1
+		fi
+		if which ranlib >/dev/null ; then
+			echo "RANLIB="`which ranlib` >> build_system.conf
+		else
+			echo "Couldn't find 'ranlib'!  Aboring..." >&2
+			exit 1
+		fi
+
+	elif which gcc >/dev/null ; then
+		# gcc
+		echo "CC="`which gcc` >> build_system.conf
+		echo "ISYSTEM=\"-isystem /usr/include\"" >> build_system.conf
+		echo "NOSTD=-nostdlib" >> build_system.conf
+		if which ar ; then
+			echo "AR="`which ar` >> build_system.conf
+		else
+			echo "Couldn't find 'ar'!  Aboring..." >&2
+			exit 1
+		fi
+		if which ranlib ; then
+			echo "RANLIB="`which ranlib` >> build_system.conf
+		else
+			echo "Couldn't find 'ranlib'!  Aboring..." >&2
+			exit 1
+		fi
+	elif which clang >/dev/null ; then
+		# clang
+		echo "CC="`which clang` >> build_system.conf
+		echo "ISYSTEM=" >> build_system.conf
+		echo "NOSTD=" >> build_system.conf
+		if which llvm-ar ; then
+			echo "AR="`which llvm-ar` >> build_system.conf
+		else
+			echo "Couldn't find 'llvm-ar'!  Aboring..." >&2
+			exit 1
+		fi
+		if which llvm-ranlib ; then
+			echo "RANLIB="`which llvm-ranlib` >> build_system.conf
+		else
+			echo "Couldn't find 'llvm-ranlib'!  Aboring..." >&2
+			exit 1
+		fi
+
+	else
+		echo "Couldn't find C compiler!  Aboring..." >&2
+		exit 1
+	fi
+
+fi
+
 . ./build_system.conf
+
 
 rm -f config.h platform.conf
 
