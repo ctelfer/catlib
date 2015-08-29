@@ -43,7 +43,7 @@ static INLINE uint32_t ilog2_32(uint32_t x) {
 	if ( x == 0 ) {
 		return -1;
 	} else {
-					int r;
+		int r;
 		asm("bsr %1, %%eax\n"
 		    "mov %%eax, %0\n"
 		    : "=r" (r)
@@ -58,7 +58,7 @@ static INLINE uint32_t nlz_32(uint32_t x) {
 	if ( x == 0 ) {
 		return 32;
 	} else {
-					int r;
+		int r;
 		asm("bsr %1, %%eax\n"
 		    "mov %%eax, %0\n"
 		    : "=r" (r)

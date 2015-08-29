@@ -12,7 +12,7 @@ rm -f build_system.conf
 
 if [ -f build_system_override.conf ]
 then
-	cp build_system_master.conf build_system.conf
+	cp build_system_override.conf build_system.conf
 else
 	echo "# Generated build configuration" > build_system.conf
 
@@ -113,13 +113,13 @@ int main() {
 IS64
 
 
-cat > stdlib.c <<SIMPLE
+cat > stdlib.c <<STDLIB
 #include <stdio.h>
 int main() { 
   printf("Hello World!\n");
   return 0;
 }
-SIMPLE
+STDLIB
 
 # -- Generate header -- 
 
