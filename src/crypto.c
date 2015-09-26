@@ -393,6 +393,10 @@ static int siphash_add_bytes(struct siphashctx *shc, const byte_t **bp,
 		return 1;
 	} else {
 		/* slow path */
+		if ( off == 0 ) {
+			shc->state[0] = 0;
+			shc->state[1] = 0;
+		}
 		toadd = 8 - off;
 		if ( toadd > *amt )
 			toadd = *amt;
