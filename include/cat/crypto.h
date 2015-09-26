@@ -3,7 +3,7 @@
  *
  * by Christopher Adam Telfer
  *
- * Copyright 2009-2012 -- See accompanying license
+ * Copyright 2009-2015 -- See accompanying license
  *
  */
 
@@ -38,5 +38,31 @@ void sha256_init(struct sha256ctx *s);
 void sha256_add(struct sha256ctx *s, void *p, ulong len);
 void sha256_fini(struct sha256ctx *s, byte_t hash[32]);
 void sha256(void *in, ulong len, byte_t hash[32]);
+
+
+/* SipHash hash function */
+
+/* Each ulong[2] array is a little-endian 64-bit word */
+struct siphashctx {
+	uint nbytes;
+	ulong state[2];
+	ulong v0[2];
+	ulong v1[2];
+	ulong v2[2];
+	ulong v3[2];
+};
+
+void siphash_init(struct siphashctx *shc, ulong key[4]);
+void siphash24_add(struct siphashctx *shc, const void *p, ulong len);
+void siphash24_fini(struct siphashctx *shc, byte_t hash[8]);
+void siphash24(ulong key[4], const void *p, ulong len, byte_t hash[8]);
+
+struct ht_sh24_ctx {
+	ulong key[4];
+};
+
+void ht_sh24_init(struct ht_sh24_ctx *hsc, const void *k, ulong len);
+uint ht_sh24_shash(const void *p, void *hsc);
+uint ht_sh24_rhash(const void *p, void *hsc);
 
 #endif /* __cat_crypto_h */

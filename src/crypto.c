@@ -3,7 +3,7 @@
  *
  * by Christopher Adam Telfer
  *
- * Copyright 2009-2013 See accompanying license
+ * Copyright 2009-2015 See accompanying license
  *
  */
 
@@ -298,3 +298,206 @@ void sha256(void *in, ulong len, byte_t hash[32])
 	sha256_add(&s, in, len);
 	sha256_fini(&s, hash);
 }
+
+
+void siphash_init(struct siphashctx *shc, ulong key[4])
+{
+	shc->nbytes = 0;
+	shc->state[0] = 0;
+	shc->state[1] = 0;
+	shc->v0[0] = 0x70736575ul ^ key[0];
+	shc->v0[1] = 0x736f6d65ul ^ key[1];
+	shc->v1[0] = 0x6e646f6dul ^ key[2];
+	shc->v1[1] = 0x646f7261ul ^ key[3];
+	shc->v2[0] = 0x6e657261ul ^ key[0];
+	shc->v2[1] = 0x6c796765ul ^ key[1];
+	shc->v3[0] = 0x79746573ul ^ key[2];
+	shc->v3[1] = 0x74656462ul ^ key[3];
+}
+
+
+#define ADD64(_v0, _v1) 						\
+	do {								\
+		ulong _ov00 = (_v0)[0];					\
+		(_v0)[0] += (_v1)[0];					\
+		(_v0)[0] &= 0xFFFFFFFF;					\
+		(_v0)[1] += (_v1)[1] + ((_v0)[0] < _ov00);		\
+		(_v0)[1] &= 0xFFFFFFFF;					\
+	} while (0)
+
+#define ROTL64(_v, _amt)						\
+	do {								\
+		ulong out0 = (_v)[0] >> (32 - (_amt));			\
+		ulong out1 = (_v)[1] >> (32 - (_amt));			\
+		(_v)[0] = (((_v)[0] << (_amt)) | out1) & 0xFFFFFFFF;	\
+		(_v)[1] = (((_v)[1] << (_amt)) | out0) & 0xFFFFFFFF;	\
+	} while (0)
+
+#define ROTL64_32(_v)							\
+	do {								\
+		ulong t = (_v)[0];					\
+		(_v)[0] = (_v)[1];					\
+		(_v)[1] = t;						\
+	} while (0)
+
+#define XOR64(_v0, _v1)							\
+	do {								\
+		(_v0)[0] ^= (_v1)[0];					\
+		(_v0)[1] ^= (_v1)[1];					\
+	} while (0)
+
+static void siphash_round(struct siphashctx *shc)
+{
+	ADD64(shc->v0, shc->v1);
+	ADD64(shc->v2, shc->v3);
+	ROTL64(shc->v1, 13);
+	ROTL64(shc->v3, 16);
+	XOR64(shc->v1, shc->v0);
+	XOR64(shc->v3, shc->v2);
+	ROTL64_32(shc->v0);
+	ADD64(shc->v2, shc->v1);
+	ADD64(shc->v0, shc->v3);
+	ROTL64(shc->v1, 17);
+	ROTL64(shc->v3, 21);
+	XOR64(shc->v1, shc->v2);
+	XOR64(shc->v3, shc->v0);
+	ROTL64_32(shc->v2);
+}
+
+#undef ADD64
+#undef XOR64
+#undef ROTL64
+#undef ROTL64_32
+
+
+static int siphash_add_bytes(struct siphashctx *shc, const byte_t **bp,
+			     ulong *amt)
+{
+	uint off = shc->nbytes % 8;
+	uint toadd;
+	uint i;
+
+	if ( off == 0 && *amt >= 8 ) {
+		/* fast path */
+		shc->state[0] = (*bp)[0] |
+				(*bp)[1] << 8 |
+				(*bp)[2] << 16 |
+			        (*bp)[3] << 24;
+		shc->state[1] = (*bp)[4] |
+				(*bp)[5] << 8 |
+				(*bp)[6] << 16 |
+			        (*bp)[7] << 24;
+		shc->nbytes += 8;
+		*amt -= 8;
+		*bp += 8;
+		return 1;
+	} else {
+		/* slow path */
+		toadd = 8 - off;
+		if ( toadd > *amt )
+			toadd = *amt;
+		for ( i = 0; i < toadd; ++i, ++*bp ) {
+			if ( off < 4 ) {
+				shc->state[0] |= **bp << (8 * off);
+			} else {
+				shc->state[1] |= **bp << (8 * (off - 4));
+			}
+		}
+		shc->nbytes += toadd;
+		*amt -= toadd;
+		return shc->nbytes % 8 == 0;
+	}
+}
+
+
+void siphash24_add(struct siphashctx *shc, const void *p, ulong len)
+{
+	const byte_t *bp = p;
+	while ( len > 0 ) {
+		if ( siphash_add_bytes(shc, &bp, &len) ) {
+			shc->v3[0] ^= shc->state[0];
+			shc->v3[1] ^= shc->state[1];
+			siphash_round(shc);
+			siphash_round(shc);
+			shc->v0[0] ^= shc->state[0];
+			shc->v0[1] ^= shc->state[1];
+		}
+	}
+}
+
+
+void siphash24_fini(struct siphashctx *shc, byte_t hash[8])
+{
+	byte_t pad[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+	uint r;
+
+	/* add in final padding */
+ 	r = 8 - (shc->nbytes % 8);
+	pad[r-1] = shc->nbytes % 256;
+	siphash24_add(shc, &pad, r);
+
+	/* finalize hash */
+	shc->v2[0] ^= 0xff;
+	siphash_round(shc);
+	siphash_round(shc);
+	siphash_round(shc);
+	siphash_round(shc);
+	shc->state[0] = shc->v0[0] ^ shc->v1[0] ^ shc->v2[0] ^ shc->v3[0];
+	shc->state[1] = shc->v0[1] ^ shc->v1[1] ^ shc->v2[1] ^ shc->v3[1];
+
+	/* copy out result */
+	hash[0] = shc->state[0] & 0xff;
+	hash[1] = (shc->state[0] >> 8) & 0xff;
+	hash[2] = (shc->state[0] >> 16) & 0xff;
+	hash[3] = (shc->state[0] >> 24) & 0xff;
+	hash[4] = shc->state[1] & 0xff;
+	hash[5] = (shc->state[1] >> 8) & 0xff;
+	hash[6] = (shc->state[1] >> 16) & 0xff;
+	hash[7] = (shc->state[1] >> 24) & 0xff;
+
+	/* clean up state for safety */
+	memset(shc, 0, sizeof(*shc));
+}
+
+
+void siphash24(ulong key[4], const void *p, ulong len, byte_t hash[8])
+{
+	struct siphashctx shc;
+	siphash_init(&shc, key);
+	siphash24_add(&shc, p, len);
+	siphash24_fini(&shc, hash);
+}
+
+
+void ht_sh24_init(struct ht_sh24_ctx *hsc, const void *k, ulong len)
+{
+	const byte_t *p = k;
+	ulong i;
+	memset(hsc, 0, sizeof(*hsc));
+	for ( i = 0; i < len; ++i, ++p )
+		hsc->key[(i / 4) % 4] ^= *p << (8 * (i % 4));
+}
+
+
+uint ht_sh24_shash(const void *sp, void *hscp)
+{
+	const char *s = sp;
+	struct ht_sh24_ctx *hsc = hscp;
+	byte_t hash[8];
+	ulong len = 0;
+
+	while ( *s++ != '\0' ) ++len;
+	siphash24(hsc->key, sp, len, hash);
+	return hash[0] | hash[1] << 8 | hash[2] << 16 | hash[3] << 24;
+}
+
+
+uint ht_sh24_rhash(const void *rp, void *hscp)
+{
+	const struct raw *r = rp;
+	struct ht_sh24_ctx *hsc = hscp;
+	byte_t hash[8];
+	siphash24(hsc->key, r->data, r->len, hash);
+	return hash[0] | hash[1] << 8 | hash[2] << 16 | hash[3] << 24;
+}
+
