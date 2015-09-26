@@ -432,13 +432,17 @@ void siphash24_add(struct siphashctx *shc, const void *p, ulong len)
 
 void siphash24_fini(struct siphashctx *shc, byte_t hash[8])
 {
-	byte_t pad[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
-	uint r;
-
-	/* add in final padding */
- 	r = 8 - (shc->nbytes % 8);
-	pad[r-1] = shc->nbytes % 256;
-	siphash24_add(shc, &pad, r);
+	if ( shc->nbytes % 8 == 0 ) {
+		shc->state[0] = 0;
+		shc->state[1] = 0;
+	}
+	shc->state[1] |= (shc->nbytes % 256) << 24;
+	shc->v3[0] ^= shc->state[0];
+	shc->v3[1] ^= shc->state[1];
+	siphash_round(shc);
+	siphash_round(shc);
+	shc->v0[0] ^= shc->state[0];
+	shc->v0[1] ^= shc->state[1];
 
 	/* finalize hash */
 	shc->v2[0] ^= 0xff;
