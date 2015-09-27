@@ -11,11 +11,11 @@
 
 #include <string.h>
 
-void arc4_init(struct arc4ctx *arc4, void *key, ulong len)
+void arc4_init(struct arc4ctx *arc4, const void *key, ulong len)
 {
 	int i, j;
 	byte_t b;
-	byte_t *keyp = key;
+	const byte_t *keyp = key;
 	abort_unless(arc4 != NULL && (key != NULL || len == 0));
 
 	 for ( i = 0; i < 256 ; ++i )
@@ -58,11 +58,12 @@ void arc4_gen(struct arc4ctx *arc4, void *out, ulong len)
 }
 
 
-void arc4_encrypt(struct arc4ctx *arc4, void *in, void *out, ulong len)
+void arc4_encrypt(struct arc4ctx *arc4, const void *in, void *out, ulong len)
 {
 	int i, j;
 	byte_t b1, b2;
-	byte_t *inp = in, *outp = out;
+	const byte_t *inp = in;
+	byte_t *outp = out;
 
 	abort_unless(arc4 != NULL && 
 		     ((in != NULL && out != NULL) || len == 0));

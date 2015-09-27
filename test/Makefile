@@ -160,8 +160,8 @@ testsort: testsort.c $(CAT_LIBDEP)
 testcatstr: testcatstr.c $(CAT_DBG_LIBDEP)
 	$(CC) $(CAT_DBG_CF) -o testcatstr testcatstr.c $(INC) $(CAT_DBG_LIB)
 
-testcrypto: testcrypto.c $(CAT_DBG_LIBDEP)
-	$(CC) $(CAT_DBG_CF) -o testcrypto testcrypto.c $(INC) $(CAT_DBG_LIB)
+testcrypto: testcrypto.c $(CAT_LIBDEP)
+	$(CC) $(CAT_CF) -o testcrypto testcrypto.c $(INC) $(CAT_LIB)
 
 testsocks5: testsocks5.c $(CAT_DBG_LIBDEP)
 	$(CC) $(CAT_DBG_CF) -o testsocks5 testsocks5.c $(INC) $(CAT_DBG_LIB)

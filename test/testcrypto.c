@@ -8,6 +8,23 @@
 #include <string.h>
 
 #include <cat/crypto.h>
+#include <cat/time.h>
+
+#define NITER 100000
+#define DLEN 256
+
+uchar rand_data[DLEN]; 
+ulong sipkey[4];
+
+void init_data()
+{
+  const char seed[] = "Hi world!";
+  struct arc4ctx arc4;
+  arc4_init(&arc4, seed, sizeof(seed));
+  arc4_gen(&arc4, rand_data, sizeof(rand_data));
+  arc4_gen(&arc4, sipkey, sizeof(sipkey));
+}
+
 
 void test_arc4()
 {
@@ -39,6 +56,25 @@ void test_arc4()
 }
 
 
+void perf_arc4()
+{
+  int i;
+  cat_time_t start, diff;
+  const char key[] = "hey there RC4!";
+  struct arc4ctx arc4;
+
+  arc4_init(&arc4, key, sizeof(key));
+  start = tm_uget();
+  for ( i = 0; i < NITER; ++i )
+    arc4_encrypt(&arc4, rand_data, rand_data, sizeof(rand_data));
+  diff = tm_sub(tm_uget(), start);
+  printf("%lf seconds to run %d ARC4 encryptions on %d-byte data\n",
+         tm_2dbl(diff), NITER, DLEN);
+  printf("%lf ns per byte\n", (tm_2dbl(diff) * 1e9 / (DLEN * NITER)));
+  fflush(stdout);
+}
+
+
 void test_sha256()
 {
   struct sha256ctx s256;
@@ -63,9 +99,9 @@ void test_sha256()
     printf("%02x", res1[i]);
   printf("\n");
   if (memcmp(out, res1, 32))
-	  printf("FAILURE!\n");
+    printf("FAILURE!\n");
   else
-	  printf("SUCCESS\n");
+    printf("SUCCESS\n");
   printf("\n");
 
   sha256(str2, sizeof(str2)-1, out);
@@ -78,14 +114,56 @@ void test_sha256()
     printf("%02x", res2[i]);
   printf("\n");
   if (memcmp(out, res2, 32))
-	  printf("FAILURE!\n");
+    printf("FAILURE!\n");
   else
-	  printf("SUCCESS\n");
+    printf("SUCCESS\n");
+}
+
+
+void perf_sha256()
+{
+  int i;
+  cat_time_t start, diff;
+
+  start = tm_uget();
+  for ( i = 0; i < NITER; ++i )
+    sha256(rand_data, sizeof(rand_data), rand_data); 
+  diff = tm_sub(tm_uget(), start);
+  printf("%lf seconds to run %d SHA256 hashes on %d-byte data\n",
+         tm_2dbl(diff), NITER, DLEN);
+  printf("%lf ns per byte\n", (tm_2dbl(diff) * 1e9 / (DLEN * NITER)));
+  fflush(stdout);
+}
+
+
+void test_siphash24()
+{
+}
+
+
+void perf_siphash24()
+{
+  int i;
+  cat_time_t start, diff;
+
+  start = tm_uget();
+  for ( i = 0; i < NITER; ++i )
+    siphash24(sipkey, rand_data, sizeof(rand_data), rand_data); 
+  diff = tm_sub(tm_uget(), start);
+  printf("%lf seconds to run %d SipHash-2-4 hashes on %d-byte data\n",
+         tm_2dbl(diff), NITER, DLEN);
+  printf("%lf ns per byte\n", (tm_2dbl(diff) * 1e9 / (DLEN * NITER)));
+  fflush(stdout);
 }
 
 int main(int argc, char *argv[])
 {
+  init_data();
   test_arc4();
+  perf_arc4();
   test_sha256();
+  perf_sha256();
+  test_siphash24();
+  perf_siphash24();
   return 0;
 }

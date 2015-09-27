@@ -19,9 +19,9 @@ struct arc4ctx {
 	byte_t		s[256];
 };
 
-void arc4_init(struct arc4ctx *arc4, void *key, ulong len);
+void arc4_init(struct arc4ctx *arc4, const void *key, ulong len);
 void arc4_gen(struct arc4ctx *arc4, void *out, ulong len);
-void arc4_encrypt(struct arc4ctx *arc4, void *in, void *out, ulong len);
+void arc4_encrypt(struct arc4ctx *arc4, const void *in, void *out, ulong len);
 
 
 /* SHA-2 256 hash function */
