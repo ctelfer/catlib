@@ -45,6 +45,21 @@ void tmatch(char *pat, char *str)
 	rex_free(&rp);
 }
 
+
+void tfail(char *pat)
+{
+	struct rex_pat rp;
+	struct raw r;
+	int e;
+
+	if ( rex_init(&rp, str_to_raw(&r, pat, 0), &estdmm, &e) < 0 )
+		printf("Pattern /%s/ correctly failed at position %d.\n", 
+		       pat, e+1);
+	else
+		printf("ERROR: /%s/ -- should have failed to compile.\n", pat);
+}
+
+
 int main(int argc, char *argv[])
 {
 	tmatch("a", "bad");
@@ -52,6 +67,7 @@ int main(int argc, char *argv[])
 	tmatch("z?", "bad");
 	tmatch("a?", "bad");
 	tmatch("a+", "bad");
+	tmatch("a+", "baaaad");
 	tmatch("a+", "bonk");
 	tmatch("a*", "bonk");
 	tmatch(".", "bonk");
@@ -119,10 +135,28 @@ int main(int argc, char *argv[])
 	tmatch("[a-zA-Z_0-9]{1,}", "bababcccaxx");
 	tmatch("[a-zA-Z_0-9]{,5}", "999");
 	tmatch("[a-zA-Z_0-9]{,5}", "999a");
-	tmatch("[a-zA-Z_0-9]{1,0}", "ERROR");
-	tmatch("[a-zA-Z_0-9]{5,2}", "ERROR");
-	tmatch("a{1000}", "ERROR:2");
-	tmatch("a{1000,1000}", "ERROR:2");
-	tmatch("a{,1000}", "ERROR:3");
+
+	tfail("(abc");
+	tfail("abc)");
+	tfail("(abc)(*");
+	tfail("(a(bc)");
+	tfail("(a(b*c)");
+	tfail("(a(bc)))");
+	tfail("(a(bc*)))");
+	tfail("[abc");
+	tfail("abc]");
+	tfail("*");
+	tfail("*abc");
+	tfail("?abc");
+	tfail("+abc");
+	tfail("abc??");
+	tfail("abc**");
+	tfail("abc++");
+	tfail("[a-zA-Z_0-9]{1,0}");
+	tfail("[a-zA-Z_0-9]{5,2}");
+	tfail("a{1000}");
+	tfail("a{1000,1000}");
+	tfail("a{,1000}");
+
 	return 0;
 }
