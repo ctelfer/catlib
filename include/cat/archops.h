@@ -5,13 +5,12 @@
  *
  * by Christopher Adam Telfer
  *
- * Copyright 2008-2012 -- See accompanying license
+ * Copyright 2008-2015 -- See accompanying license
  *
  */
 #ifndef __cat_archops_h
 #define __cat_archops_h
 #include <cat/cat.h>
-#include <cat/cattypes.h>
 
 extern char num_bits_array[];
 extern char num_leading_zeros_array[];
@@ -171,7 +170,7 @@ static INLINE int ilog2_64(uint64_t x) {
 
 #if !CAT_HAS_POP_64
 #if CAT_HAS_POP_32
-static INLINE int nlz_64(uint64_t x) {
+static INLINE int pop_64(uint64_t x) {
 	return pop_32(x >> 32) + pop_32(x & 0xFFFFFFFF);
 }
 #else /* CAT_HAS_POP_32 */

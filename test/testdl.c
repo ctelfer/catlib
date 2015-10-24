@@ -1,7 +1,7 @@
 /*
  * by Christopher Adam Telfer
  *
- * Copyright 2003-2012 -- See accompanying license
+ * Copyright 2003-2015 -- See accompanying license
  *
  */
 #include <cat/dlist.h>
@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
   dl_first(&list, &ct);
   printf("The first is at %u\n", (uint)tm_sec(ct));
   node = dl_deq(&list);
-  printf("The first was %u at %u\n\n", ptr2uint(cdl_data(node)), 
+  printf("The first was %u at %u\n\n", (uint)ptr2uint(cdl_data(node)),
          (uint)tm_sec(node->ttl));
   cdl_free(node);
 
@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
   while ( ! l_isempty(&list2) )
   {
     trav = container(l_head(&list2), struct dlist, entry);
-    printf("%u/%u ", ptr2uint(cdl_data(trav)), (uint)tm_sec(trav->ttl));
+    printf("%u/%u ", (uint)ptr2uint(cdl_data(trav)), (uint)tm_sec(trav->ttl));
     l_rem(&trav->entry);
     cdl_free(trav);
   }
@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
   printf("After inserting arr2 array is :\n\t");
   while ( node = dl_deq(&list) )
   {
-    printf("%u/", ptr2uint(cdl_data(node)));
+    printf("%u/", (uint)ptr2uint(cdl_data(node)));
     printf("%u ", (uint)tm_sec(node->ttl));
     cdl_free(node);
   }

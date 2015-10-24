@@ -1,7 +1,7 @@
 /*
  * by Christopher Adam Telfer
  *
- * Copyright 2003-2012 -- See accompanying license
+ * Copyright 2003-2015 -- See accompanying license
  *
  */
 #include <stdio.h>
@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
 
   printf("current heap: ");
   for ( i = 0 ; i < num ; ++i ) 
-    printf("%d ", ptr2int(hp->elem[i]));
+    printf("%d ", (int)ptr2int(hp->elem[i]));
   printf("\n");
 
 

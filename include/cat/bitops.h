@@ -3,13 +3,13 @@
  *
  * by Christopher Adam Telfer
  *
- * Copyright 2003-2012 -- See accompanying license
+ * Copyright 2003-2015 -- See accompanying license
  *
  */
 #ifndef __bitops_h
 #define __bitops_h
 
-#include <cat/cattypes.h>
+#include <cat/cat.h>
 #include <cat/archops.h>
 
 uint32_t rup2_32(uint32_t x, uint lg2p);

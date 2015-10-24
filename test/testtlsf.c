@@ -1,20 +1,10 @@
 /*
  * by Christopher Adam Telfer
  *
- * Copyright 2003-2012 -- See accompanying license
+ * Copyright 2003-2015 -- See accompanying license
  *
  */
 #include <cat/cat.h>
-
-#if !CAT_HAS_FIXED_WIDTH
-#include <stdio.h>
-int main(int argc, char *argv[]) { 
-	printf("No fixed width integers on this platform\n");
-	return 0;
-}
-
-#else /* !CAT_HAS_FIXED_WIDTH */
-
 #include <cat/dynmem.h>
 #include <cat/err.h>
 #include <stdio.h>
@@ -214,4 +204,3 @@ int main(int argc, char *argv[])
 	return 0;
 } 
 
-#endif /* !CAT_HAS_FIXED_WIDTH */

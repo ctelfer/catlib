@@ -1,7 +1,7 @@
 /*
  * by Christopher Adam Telfer
  *
- * Copyright 2003-2012 -- See accompanying license
+ * Copyright 2003-2015 -- See accompanying license
  *
  */
 #include <stdio.h>
@@ -170,8 +170,7 @@ struct rbnode *np;
   {
     rb_put(t, strs[i][0], strs[i][1]);
     np = rb_lkup(t, strs[i][0], 0);
-    printf("Put (%s) at key (%s): %x\n", strs[i][1], strs[i][0],
-           ptr2uint(np));
+    printf("Put (%s) at key (%s): %p\n", strs[i][1], strs[i][0], np);
     fflush(stdout);
   }
 
@@ -181,17 +180,17 @@ struct rbnode *np;
 
   s = rb_get_dptr(t, strs[1][0]);
   printf("Under key %s is the string %s\n", strs[1][0], s);
-  printf("address is %x\n\n", ptr2uint(s)); 
+  printf("address is %p\n\n", s); 
   fflush(stdout);
 
   s = rb_get_dptr(t, strs[2][0]);
   printf("Under key %s is the string %s\n", strs[2][0], s);
-  printf("address is %x\n\n", ptr2uint(s)); 
+  printf("address is %p\n\n", s); 
   fflush(stdout);
 
   s = rb_get_dptr(t, strs[0][0]);
   printf("Under key %s is the string %s\n", strs[0][0], s); 
-  printf("address is %x\n\n", ptr2uint(s)); 
+  printf("address is %p\n\n", s); 
   fflush(stdout);
 
   printrbt(t);
@@ -200,7 +199,7 @@ struct rbnode *np;
   s = rb_get_dptr(t, strs[1][0]);
   rb_clr(t, strs[1][0]);
   printf("Deleted %s\n", s); 
-  printf("address is %x\n\n", ptr2uint(s)); 
+  printf("address is %p\n\n", s); 
   fflush(stdout);
 
   np = rb_lkup(t, strs[2][0], NULL);
@@ -208,11 +207,12 @@ struct rbnode *np;
   rb_rem(np);
   free(np);
   printf("Deleted %s\n", s); 
-  printf("address is %x\n\n", ptr2uint(s)); 
+  printf("address is %p\n\n", s); 
   fflush(stdout);
 
   if (rb_get_dptr(t, strs[1][0]))
-    printf("Error!  Thing not deleted! : %s\n", (char *)rb_get_dptr(t, strs[1][0]));
+    printf("Error!  Thing not deleted! : %s\n", 
+	   (char *)rb_get_dptr(t, strs[1][0]));
   fflush(stdout);
 
   printrbt(t);

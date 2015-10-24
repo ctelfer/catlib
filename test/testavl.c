@@ -1,7 +1,7 @@
 /*
  * by Christopher Adam Telfer
  *
- * Copyright 2003-2012 -- See accompanying license
+ * Copyright 2003-2015 -- See accompanying license
  *
  */
 #include <stdio.h>
@@ -170,8 +170,7 @@ struct anode *anp;
   {
     avl_put(avl, strs[i][0], strs[i][1]);
     anp = avl_lkup(avl, strs[i][0], 0);
-    printf("Put (%s) at key (%s): %x\n", strs[i][1], strs[i][0],
-           ptr2uint(anp));
+    printf("Put (%s) at key (%s): %p\n", strs[i][1], strs[i][0], anp);
     fflush(stdout);
   }
 
@@ -181,17 +180,17 @@ struct anode *anp;
 
   s = avl_get_dptr(avl, strs[1][0]);
   printf("Under key %s is the string %s\n", strs[1][0], s);
-  printf("address is %x\n\n", ptr2uint(s)); 
+  printf("address is %p\n\n", s); 
   fflush(stdout);
 
   s = avl_get_dptr(avl, strs[2][0]);
   printf("Under key %s is the string %s\n", strs[2][0], s);
-  printf("address is %x\n\n", ptr2uint(s)); 
+  printf("address is %p\n\n", s); 
   fflush(stdout);
 
   s = avl_get_dptr(avl, strs[0][0]);
   printf("Under key %s is the string %s\n", strs[0][0], s); 
-  printf("address is %x\n\n", ptr2uint(s)); 
+  printf("address is %p\n\n", s); 
   fflush(stdout);
 
   printavl(avl);
@@ -200,7 +199,7 @@ struct anode *anp;
   s = avl_get_dptr(avl, strs[1][0]);
   avl_clr(avl, strs[1][0]);
   printf("Deleted %s\n", s); 
-  printf("address is %x\n\n", ptr2uint(s)); 
+  printf("address is %p\n\n", s); 
   fflush(stdout);
 
   anp = avl_lkup(avl, strs[2][0], NULL);
@@ -208,7 +207,7 @@ struct anode *anp;
   avl_rem(anp);
   free(anp);
   printf("Deleted %s\n", s); 
-  printf("address is %x\n\n", ptr2uint(s)); 
+  printf("address is %p\n\n", s); 
   fflush(stdout);
 
   if (avl_get_dptr(avl, strs[1][0]))

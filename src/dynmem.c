@@ -3,7 +3,7 @@
  *
  * by Christopher Adam Telfer
  *
- * Copyright 2008-2012 See accompanying license
+ * Copyright 2008-2015 See accompanying license
  *
  */
 
@@ -363,7 +363,6 @@ void dynmem_each_block(struct dynmempool *pool, apply_f f, void *ctx)
 
 /* ----------------- Two-Layer Segregated Fit ----------------- */
 
-#if CAT_HAS_FIXED_WIDTH
 
 STATIC_BUG_ON(bad_lg2_unitsize, ((1 << TLSF_LG2_UNITSIZE) != UNITSIZE))
 
@@ -825,4 +824,3 @@ void tlsf_each_block(struct tlsfpool *pool, apply_f f, void *ctx)
 	}
 }
 
-#endif /* CAT_HAS_FIXED_WIDTH */

@@ -195,11 +195,11 @@ LCAT_NO_LIBC_OF= \
 	$(LCAT_NO_LIBC_ODIR)/bitops.o \
 	$(LCAT_NO_LIBC_ODIR)/socks5.o
 
-ICOMMON=-I../include
+ICOMMON=-I../include $(CCXFLAGS)
 
 # Flags for libcat
 DEFS=
-CFLAGS= -O3 -Wall -Wno-sign-compare -Wno-pointer-sign $(DEFS)
+CFLAGS= -O3 -Wall -Wno-sign-compare -Wno-pointer-sign $(DEFS) $(CCXFLAGS)
 IFLAGS= $(ICOMMON)
 
 # Choose one option from the next two for libcata
@@ -217,10 +217,11 @@ DBG_CFLAGS= -Wall -g -pg -Wno-sign-compare -Wno-pointer-sign $(DBG_DEFS)
 DBG_IFLAGS= $(ICOMMON)
 
 # Compile without libc
+ISYS=$(ISYSTEM)
 NOLIBC_DEFS=-DCAT_HAS_POSIX=0 -DCAT_USE_STDLIB=0 -DCAT_HAS_LONGLONG=0
 NOLIBC_CFLAGS=-Wall -pedantic -Wno-sign-compare -Wno-pointer-sign $(NOSTD) \
 	$(NOLIBC_DEFS)
-NOLIBC_IFLAGS= -isystem ../include/std $(ISYSTEM) $(ICOMMON)
+NOLIBC_IFLAGS= -isystem ../include/std $(ISYS) $(ICOMMON)
 
 all: $(TARGETS)
 

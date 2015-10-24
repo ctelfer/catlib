@@ -3,7 +3,7 @@
  *
  * by Christopher Adam Telfer
  *
- * Copyright 2003-2012 See accompanying license
+ * Copyright 2003-2015 See accompanying license
  *
  */
 
@@ -47,9 +47,6 @@ size_t packlen(const char *fmt, ... );
 #endif /* CAT_PSIZ_MAX */
 
 
-#if CAT_HAS_FIXED_WIDTH
-#include <cat/cattypes.h>
-
 #if CAT_USE_INLINE
 #define DECL static inline
 #else /* CAT_USE_INLINE */
@@ -58,47 +55,47 @@ size_t packlen(const char *fmt, ... );
 
 /* These functions all assume that CHAR_BIT == 8 */
 DECL uint16_t ntoh16(uint16_t v) {
-	register byte_t *p = (byte_t*)&v;
+	byte_t *p = (byte_t*)&v;
 	return (p[0] << 8) | p[1];
 }
 
 DECL uint16_t ntoh16x(void *pp) {
-	register byte_t *p = pp;
+	byte_t *p = pp;
 	return ((uint16_t)p[0] << 8) |
 		(uint16_t)p[1];
 }
 
-DECL uint16_t hton16(register uint16_t v) {
+DECL uint16_t hton16(uint16_t v) {
 	uint16_t ov = 0;
-	register byte_t *p = (byte_t*)&ov;
+	byte_t *p = (byte_t*)&ov;
 	*p++ = v >> 8;
 	*p = v;
 	return ov;
 }
 
-DECL void hton16i(register uint16_t v, void *pp) {
-	register byte_t *p = (byte_t*)pp;
+DECL void hton16i(uint16_t v, void *pp) {
+	byte_t *p = (byte_t*)pp;
 	*p++ = v >> 8;
 	*p = v;
 }
 
 DECL uint32_t ntoh32(uint32_t v) {
-	register byte_t *p = (byte_t*)&v;
+	byte_t *p = (byte_t*)&v;
 	return ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16) | 
 		((uint32_t)p[2] << 8) | (uint32_t)p[3];
 }
 
 DECL uint32_t ntoh32x(void *pp) {
-	register byte_t *p = pp;
+	byte_t *p = pp;
 	return  ((uint32_t)p[0] << 24) |
 		((uint32_t)p[1] << 16) |
 		((uint32_t)p[2] << 8)  | 
 		(uint32_t)p[3];
 }
 
-DECL uint32_t hton32(register uint32_t v) {
+DECL uint32_t hton32(uint32_t v) {
 	uint32_t ov = 0;
-	register byte_t *p = (byte_t*)&ov;
+	byte_t *p = (byte_t*)&ov;
 	*p++ = v >> 24;
 	*p++ = v >> 16;
 	*p++ = v >> 8;
@@ -106,17 +103,17 @@ DECL uint32_t hton32(register uint32_t v) {
 	return ov;
 }
 
-DECL void hton32i(register uint32_t v, void *pp) {
-	register byte_t *p = (byte_t*)pp;
+DECL void hton32i(uint32_t v, void *pp) {
+	byte_t *p = (byte_t*)pp;
 	*p++ = v >> 24;
 	*p++ = v >> 16;
 	*p++ = v >> 8;
 	*p = v;
 }
 
-#if CAT_HAS_LONGLONG
+#if CAT_64BIT
 DECL uint64_t ntoh64(uint64_t v) {
-	register byte_t *p = (byte_t*)&v;
+	byte_t *p = (byte_t*)&v;
 	return ((uint64_t)p[0] << 56) | ((uint64_t)p[1] << 48) | 
 		((uint64_t)p[2] << 40) | ((uint64_t)p[3] << 32) | 
 		((uint64_t)p[4] << 24) | ((uint64_t)p[5] << 16) | 
@@ -124,7 +121,7 @@ DECL uint64_t ntoh64(uint64_t v) {
 }
 
 DECL uint64_t ntoh64x(void *pp) {
-	register byte_t *p = pp;
+	byte_t *p = pp;
 	return  ((uint64_t)p[0] << 56) |
 		((uint64_t)p[1] << 48) |
 		((uint64_t)p[2] << 40) | 
@@ -135,9 +132,9 @@ DECL uint64_t ntoh64x(void *pp) {
 		(uint64_t)p[7];
 }
 
-DECL uint64_t hton64(register uint64_t v) {
+DECL uint64_t hton64(uint64_t v) {
 	uint64_t ov = 0;
-	register byte_t *p = (byte_t*)&ov;
+	byte_t *p = (byte_t*)&ov;
 	*p++ = v >> 56;
 	*p++ = v >> 48;
 	*p++ = v >> 40;
@@ -149,8 +146,8 @@ DECL uint64_t hton64(register uint64_t v) {
 	return ov;
 }
 
-DECL void hton64i(register uint64_t v, void *pp) {
-	register byte_t *p = (byte_t*)pp;
+DECL void hton64i(uint64_t v, void *pp) {
+	byte_t *p = (byte_t*)pp;
 	*p++ = v >> 56;
 	*p++ = v >> 48;
 	*p++ = v >> 40;
@@ -161,8 +158,6 @@ DECL void hton64i(register uint64_t v, void *pp) {
 	*p = v;
 }
 
-#endif /* CAT_HAS_LONGLONG */
-
-#endif /* CAT_HAS_FIXED_WIDTH */
+#endif /* CAT_64BIT */
 
 #endif /* __cat_pack_h */

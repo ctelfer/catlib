@@ -3,7 +3,7 @@
  *
  * by Christopher Adam Telfer
  *
- * Copyright 2007-2012 -- See accompanying license
+ * Copyright 2007-2015 -- See accompanying license
  *
  */
 
@@ -14,11 +14,11 @@
 
 #ifndef CAT_USE_STDLIB
 #define CAT_USE_STDLIB		1
-#endif
+#endif /* CAT_USE_STDLIB */
 
 #ifndef CAT_HAS_POSIX
 #define CAT_HAS_POSIX		1
-#endif
+#endif /* CAT_HAS_POSIX */
 
 #ifndef CAT_ANSI89
 #define CAT_ANSI89		0
@@ -26,11 +26,11 @@
 
 #ifndef CAT_USE_INLINE
 #define CAT_USE_INLINE		1
-#endif
+#endif /* CAT_USE_INLINE */
 
 #ifndef CAT_HAS_LONGLONG
-#define CAT_HAS_LONGLONG	1
-#endif
+#define CAT_HAS_LONGLONG	0
+#endif /* CAT_HAS_LONGLONG */
 
 #ifndef CAT_HAS_DIV
 #define CAT_HAS_DIV		1
@@ -42,15 +42,26 @@
 
 #ifndef CAT_64BIT
 #define CAT_64BIT		0
-#endif
+#endif /* CAT_64BIT */
 
 #ifndef CAT_DIE_DUMP
 #define CAT_DIE_DUMP		0
-#endif 
+#endif /* CAT_DIE_DUMP */
 
 #ifndef CAT_DEBUG_LEVEL
 #define CAT_DEBUG_LEVEL		0
-#endif
+#endif /* CAT_DEBUG_LEVEL */
+
+#if CAT_USE_STDLIB
+#define CAT_USE_STDINT_TYPES	1
+#endif /* CAT_USE_STDLIB */
+
+
+/* Compile time assertions */
+#define __STATIC_BUGNAME(name, line) __bug_on_##name##_##line
+#define STATIC_BUGNAME(name, line) __STATIC_BUGNAME(name, line)
+#define STATIC_BUG_ON(name, test) \
+	enum { STATIC_BUGNAME(name, __LINE__) = 1 / !(test) };
 
 /* CAT_ALIGN is a union representing the most restrictive alignment type */
 #ifndef CAT_ALIGN
@@ -85,6 +96,9 @@ typedef CAT_ALIGN	cat_align_t;
 
 typedef unsigned char byte_t;
 typedef signed char schar;
+#if CAT_HAS_LONGLONG
+typedef long long llong;
+#endif /* CAT_HAS_LONGLONG */
 
 #ifndef CAT_NEED_UTYPEDEFS
 #define CAT_NEED_UTYPEDEFS 1
@@ -100,23 +114,109 @@ typedef unsigned long long ullong;
 #endif /* CAT_HAS_LONGLONG */
 #endif /* CAT_NEED_UTYPEDEFS */
 
-#if CAT_USE_STDLIB
-
-#define CAT_USE_SYS_STDDEF
-#ifndef CAT_HAS_FIXED_WIDTH
-#define CAT_HAS_FIXED_WIDTH 1
-#define CAT_USE_STDINT_TYPES 1
-#endif /* CAT_HAS_FIXED_WIDTH */
-
-#else /* CAT_USE_STDLIB */
-
-#ifndef CAT_HAS_FIXED_WIDTH
-#define CAT_HAS_FIXED_WIDTH 1
-#endif /* CAT_HAS_FIXED_WIDTH */
-
-#endif /* CAT_USE_STDLIB */
-
 #include <stddef.h>
+
+#ifdef CAT_USE_STDINT_TYPES
+#include <stdint.h>
+#elif CAT_USE_POSIX_TYPES
+#include <sys/types.h>
+#else /* no defined headers: take guess */
+
+/* Reasonable guesses for a 8, 16, 32 or some 64 bit architectures. */
+/* While these will always be at least wide enough, they may be too wide. */
+
+/* Allow overrides during compilation */
+#ifndef CAT_S8_T
+#define CAT_S8_T signed char
+#endif /* CAT_S8_T */
+#ifndef CAT_U8_T
+#define CAT_U8_T unsigned char
+#endif /* CAT_U8_T */
+#ifndef CAT_S16_T
+#define CAT_S16_T short
+#endif /* CAT_S16_T */
+#ifndef CAT_U16_T
+#define CAT_U16_T unsigned short
+#endif /* CAT_U16_T */
+#ifndef CAT_S32_T
+#define CAT_S32_T long
+#endif /* CAT_S32_T */
+#ifndef CAT_U32_T
+#define CAT_U32_T unsigned long
+#endif /* CAT_U32_T */
+
+/* 
+ * Define 64-bit types --
+ *  If CAT_64BIT is true, that means our compiler supports some 64-bit type.
+ *  It _could_ be "long" or even "char".  If CAT_HAS_LONGLONG is set, then
+ *  it is safe to set the 64-bit type to 'long long'.  But if this isn't
+ *  set then set it to 'long'.  The problem being that ANSI 89 compilers
+ *  don't need to support 'long long', but do need to support 'long'.
+ */ 
+#if CAT_64BIT
+#if CAT_HAS_LONGLONG
+
+#ifndef CAT_U64_T
+#define CAT_U64_T unsigned long long
+#endif /* CAT_U64_T */
+#ifndef CAT_S64_T
+#define CAT_S64_T long long
+#endif /* CAT_S64_T */
+
+#else /* CAT_HAS_LONGLONG */
+
+#ifndef CAT_U64_T
+#define CAT_U64_T unsigned long
+#endif /* CAT_U64_T */
+#ifndef CAT_S64_T
+#define CAT_S64_T long
+#endif /* CAT_S64_T */
+
+#endif /* CAT_HAS_LONGLONG */
+#endif /* CAT_64BIT */
+
+
+typedef CAT_S8_T	int8_t;
+typedef CAT_U8_T	uint8_t;
+typedef CAT_S16_T	int16_t;
+typedef CAT_U16_T	uint16_t;
+typedef CAT_S32_T	int32_t;
+typedef CAT_U32_T	uint32_t;
+#if CAT_64BIT
+typedef CAT_S64_T	int64_t;
+typedef CAT_U64_T	uint64_t;
+#endif /* CAT_64BIT */
+
+#endif /* no defined headers: take guess */
+
+#if !CAT_HAS_INTPTR_T || (!CAT_USE_STDINT_TYPES && !CAT_USE_POSIX_TYPES)
+#if CAT_64BIT
+typedef CAT_S64_T intptr_t;
+#else /* CAT_64BIT */
+typedef CAT_S32_T intptr_t;
+#endif /* CAT_64BIT */
+#endif /* !CAT_HAS_INTPTR_T */
+
+#if !CAT_HAS_UINTPTR_T || (!CAT_USE_STDINT_TYPES && !CAT_USE_POSIX_TYPES)
+#if CAT_64BIT
+typedef CAT_U64_T uintptr_t;
+#else /* CAT_64BIT */
+typedef CAT_U32_T uintptr_t;
+#endif /* CAT_64BIT */
+#endif /* !CAT_HAS_UINTPTR_T */
+
+STATIC_BUG_ON(int8_t_size_not_equal_to_1, sizeof(int8_t) != 1)
+STATIC_BUG_ON(uint8_t_size_not_equal_to_1, sizeof(uint8_t) != 1)
+STATIC_BUG_ON(int16_t_size_not_equal_to_2, sizeof(int16_t) != 2)
+STATIC_BUG_ON(uint16_t_size_not_equal_to_2, sizeof(uint16_t) != 2)
+STATIC_BUG_ON(int32_t_size_not_equal_to_4, sizeof(int32_t) != 4)
+STATIC_BUG_ON(uint32_t_size_not_equal_to_4, sizeof(uint32_t) != 4)
+#if CAT_64BIT
+STATIC_BUG_ON(int64_t_size_not_equal_to_8, sizeof(int64_t) != 8)
+STATIC_BUG_ON(uint64_t_size_not_equal_to_8, sizeof(uint64_t) != 8)
+#endif /* CAT_64BIT */
+STATIC_BUG_ON(intptr_t_lt_sizeof_voidptr, sizeof(intptr_t) < sizeof(void *))
+STATIC_BUG_ON(uintptr_t_lt_sizeof_voidptr, sizeof(uintptr_t) < sizeof(void *))
 
 
 /* We redefined this here because we might be including a c89 stddef.h */
@@ -127,9 +227,9 @@ typedef unsigned long long ullong;
 	((type *)((char*)(ptr)-offsetof(type,field)))
 #define array_length(arr) (sizeof(arr) / sizeof(arr[0]))
 
-#define ptr2int(p)	((int)(ptrdiff_t)(p))
-#define ptr2uint(p)	((uint)(ptrdiff_t)(p))
-#define int2ptr(i)	((void *)(ptrdiff_t)(i))
+#define ptr2int(p)	((intptr_t)(void *)(p))
+#define ptr2uint(p)	((uintptr_t)(void *)(p))
+#define int2ptr(i)	((void *)(uintptr_t)(i))
 
 /* generic binary data container */
 struct raw {
@@ -176,10 +276,5 @@ extern void cat_abort(const char *fn, unsigned ln, const char *expr);
 #define abort_unless(x) \
 	do { if (!(x)) { cat_abort(__FILE__, __LINE__, #x); } } while (0)
 
-
-#define __STATIC_BUGNAME(name, line) __bug_on_##name##_##line
-#define STATIC_BUGNAME(name, line) __STATIC_BUGNAME(name, line)
-#define STATIC_BUG_ON(name, test) \
-	enum { STATIC_BUGNAME(name, __LINE__) = 1 / !(test) };
 
 #endif /* __cat_cat_h */

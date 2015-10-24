@@ -3,7 +3,7 @@
  *
  * by Christopher Adam Telfer
  *
- * Copyright 2003-2012 -- See accompanying license
+ * Copyright 2003-2015 -- See accompanying license
  *
  */
 #ifndef __cat_dynmem_h
@@ -56,24 +56,13 @@ void dynmem_each_pool(struct dynmem *dm, apply_f f, void *ctx);
 void dynmem_each_block(struct dynmempool *pool, apply_f f, void *ctx);
 
 
-#if CAT_HAS_FIXED_WIDTH
-/* unsupported on platforms without fixed width integers */
-
-#include <cat/cattypes.h>
 #if CAT_64BIT
 
 #ifndef TLSF_LG2_ALIM
 #define TLSF_LG2_ALIM 63
 #endif /* TLSF_LG2_ALIM */
 
-#if CAT_HAS_LONGLONG
-#define TLSF_ALIM (1LL << TLSF_LG2_ALIM)
 typedef uint64_t tlsf_sz_t;
-#else /* CAT_HAS_LONGLONG */
-#define TLSF_ALIM (1L << TLSF_LG2_ALIM)
-typedef ulong tlsf_sz_t;
-#endif /* CAT_HAS_LONGLONG */
-
 #define TLSF_SZ_BITS 64
 #define TLSF_LG2_UNITSIZE 3 /* guess: verify by assert */
 
@@ -92,9 +81,9 @@ typedef ulong tlsf_sz_t;
 #ifndef TLSF_LG2_ALIM
 #define TLSF_LG2_ALIM 31
 #endif /* TLSF_LG2_ALIM */
-#define TLSF_ALIM (1L << TLSF_LG2_ALIM)
 
 typedef uint32_t tlsf_sz_t;
+
 #define TLSF_SZ_BITS 32
 #define TLSF_LG2_UNITSIZE 2 /* guess: verify by assert */
 
@@ -110,6 +99,7 @@ typedef uint32_t tlsf_sz_t;
 
 #endif /* CAT_64BIT */
 
+#define TLSF_ALIM	((tlsf_sz_t)1 << TLSF_LG2_ALIM)
 #define TLSF_MINNU 	((sizeof(struct memblk)+2*UNITSIZE-1)/UNITSIZE)
 #define TLSF_MINSZ	(MINNU * UNITSIZE)
 #define TLSF_MINPOOL	((MINNU + 2) * UNITSIZE)
@@ -162,7 +152,5 @@ void tlsf_free(struct tlsf *tlsf, void *mem);
 void *tlsf_realloc(struct tlsf *tlsf, void *omem, size_t newamt);
 void tlsf_each_pool(struct tlsf *tlsf, apply_f f, void *ctx);
 void tlsf_each_block(struct tlsfpool *pool, apply_f f, void *ctx);
-
-#endif /* CAT_HAS_FIXED_WIDTH */
 
 #endif /* __cat_dynmem_h */

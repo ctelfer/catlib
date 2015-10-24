@@ -1,7 +1,7 @@
 /*
  * by Christopher Adam Telfer
  *
- * Copyright 2003-2012 -- See accompanying license
+ * Copyright 2003-2015 -- See accompanying license
  *
  */
 #include <stdio.h>
@@ -122,8 +122,7 @@ int main()
   for (i = 0; i < NUMSTR; i++) {
     ht_put(table, strs[i][0], strs[i][1]);
     hnp = ht_lkup(table, strs[i][0], 0);
-    printf("Put (%s) at key (%s): %x\n", strs[i][1], strs[i][0],
-           ptr2uint(hnp));
+    printf("Put (%s) at key (%s): %p\n", strs[i][1], strs[i][0], hnp);
   }
 
   if (ht_get_dptr(table, "bye")) 
@@ -131,20 +130,20 @@ int main()
 
   s = ht_get_dptr(table, strs[1][0]);
   printf("Under key %s is the string %s\n", strs[1][0], s);
-  printf("address is %x\n\n", ptr2uint(s)); 
+  printf("address is %p\n\n", s); 
 
   s = ht_get_dptr(table, strs[2][0]);
   printf("Under key %s is the string %s\n", strs[2][0], s);
-  printf("address is %x\n\n", ptr2uint(s)); 
+  printf("address is %p\n\n", s); 
 
   s = ht_get_dptr(table, strs[0][0]);
   printf("Under key %s is the string %s\n", strs[0][0], s); 
-  printf("address is %x\n\n", ptr2uint(s)); 
+  printf("address is %p\n\n", s); 
 
   s = ht_get_dptr(table, strs[1][0]);
   ht_clr(table, strs[1][0]);
   printf("Deleted %s\n", s); 
-  printf("address is %x\n\n", ptr2uint(s)); 
+  printf("address is %p\n\n", s); 
 
 
   hnp = ht_lkup(table, strs[2][0], NULL);
@@ -152,7 +151,7 @@ int main()
   ht_rem(hnp);
   free(hnp);
   printf("Deleted %s\n", s); 
-  printf("address is %x\n\n", ptr2uint(s)); 
+  printf("address is %p\n\n", s); 
 
   if (ht_get_dptr(table, strs[1][0]))
     printf("Error!  Thing not deleted! : %s\n",
