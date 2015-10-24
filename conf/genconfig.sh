@@ -280,10 +280,6 @@ IS64
 if [ $HAS_LONG_LONG -eq 1 ] || 
    $CC -o /dev/null $NOSTD is64.c $CCXFLAGS > /dev/null 2>&1
 then
-	echo "#ifndef CAT_64BIT" >> config.h
-	echo "#define CAT_64BIT 1" >> config.h
-	echo "#endif /* CAT_64BIT */" >> config.h
-
 	# Find 64-bit integer types
 cat > long_size_8.c <<LONGSIZE8
 enum { FOO = 1 / (sizeof(long) == 8) };
@@ -291,6 +287,9 @@ int main() { return 0; }
 LONGSIZE8
 	if $CC -o /dev/null long_size_8.c $NOSTD $CCXFLAGS > /dev/null 2>&1 
 	then
+		echo "#ifndef CAT_64BIT" >> config.h
+		echo "#define CAT_64BIT 1" >> config.h
+		echo "#endif /* CAT_64BIT */" >> config.h
 		echo "#ifndef CAT_S64_T" >> config.h
 		echo "#define CAT_S64_T long" >> config.h
 		echo "#endif /* CAT_S64_T */" >> config.h
@@ -306,12 +305,20 @@ LLONGSIZE8
 		if [ $HAS_LONG_LONG -eq 1 ] &&
 		   $CC -o /dev/null llong_size_8.c $NOSTD $CCXFLAGS > /dev/null 2>&1 
 		then
+			# CAT_64BIT is conditional on not having long long
+			# This test is needed for ANSI-89 builds where long
+			# is not 8-bytes wide.
+			echo "#if CAT_HAS_LONGLONG" >> config.h
+			echo "#ifndef CAT_64BIT" >> config.h
+			echo "#define CAT_64BIT 1" >> config.h
+			echo "#endif /* CAT_64BIT */" >> config.h
 			echo "#ifndef CAT_S64_T" >> config.h
 			echo "#define CAT_S64_T long long" >> config.h
 			echo "#endif /* CAT_S64_T */" >> config.h
 			echo "#ifndef CAT_U64_T" >> config.h
 			echo "#define CAT_U64_T unsigned long long" >> config.h
 			echo "#endif /* CAT_U64_T */" >> config.h
+			echo "#endif /* CAT_HAS_LONGLONG */" >> config.h
 		else
 			echo "Unable to find 64-bit type on 64-bit arch"
 			cleanup 1
