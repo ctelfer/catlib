@@ -25,7 +25,7 @@
 
 
 
-STATIC_BUG_ON(strspn_bad_size_char, CHAR_BIT != 8)
+STATIC_BUG_ON(strspn_bad_size_char, CHAR_BIT != 8);
 
 
 int memcmp(const void *b1p, const void *b2p, size_t len)

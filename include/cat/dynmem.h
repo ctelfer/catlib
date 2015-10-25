@@ -13,10 +13,17 @@
 
 /* core alignment type */
 union align_u {
+	void *		p;
 	long		l;
 	size_t		sz;
+	double		d;
+#if CAT_HAS_LONGLONG
+	long long	ll;
+#endif /* CAT_HAS_LONGLONG */
 };
+
 #define UNITSIZE	sizeof(union align_u)
+STATIC_BUG_ON(align_u_not_power_2_size, (UNITSIZE & (UNITSIZE - 1)) != 0);
 
 struct memblk {
 	union align_u		mb_len;
@@ -64,7 +71,6 @@ void dynmem_each_block(struct dynmempool *pool, apply_f f, void *ctx);
 
 typedef uint64_t tlsf_sz_t;
 #define TLSF_SZ_BITS 64
-#define TLSF_LG2_UNITSIZE 3 /* guess: verify by assert */
 
 #ifndef TLSF_L2_LEN
 #define TLSF_L2_LEN 6
@@ -85,7 +91,6 @@ typedef uint64_t tlsf_sz_t;
 typedef uint32_t tlsf_sz_t;
 
 #define TLSF_SZ_BITS 32
-#define TLSF_LG2_UNITSIZE 2 /* guess: verify by assert */
 
 #ifndef TLSF_L2_LEN
 #define TLSF_L2_LEN 5
@@ -99,14 +104,18 @@ typedef uint32_t tlsf_sz_t;
 
 #endif /* CAT_64BIT */
 
-#define TLSF_ALIM	((tlsf_sz_t)1 << TLSF_LG2_ALIM)
-#define TLSF_MINNU 	((sizeof(struct memblk)+2*UNITSIZE-1)/UNITSIZE)
-#define TLSF_MINSZ	(MINNU * UNITSIZE)
-#define TLSF_MINPOOL	((MINNU + 2) * UNITSIZE)
-#define TLSF_NUML2	(TLSF_LG2_ALIM - TLSF_LG2_UNITSIZE)
-#define TLSF_FULLBLLEN	(1 << TLSF_L2_LEN)
-#define TLSF_NUMSMALL	(TLSF_L2_LEN)
-#define TLSF_NUMFULL	(TLSF_NUML2 - TLSF_L2_LEN)
+
+enum {
+	TLSF_LG2_UNITSIZE = FLOG2(UNITSIZE),
+	TLSF_ALIM = ((tlsf_sz_t)1 << TLSF_LG2_ALIM),
+	TLSF_MINNU = ((sizeof(struct memblk)+2*UNITSIZE-1)/UNITSIZE),
+	TLSF_MINSZ = (TLSF_MINNU * UNITSIZE),
+	TLSF_MINPOOL = ((TLSF_MINNU + 2) * UNITSIZE),
+	TLSF_NUML2 = (TLSF_LG2_ALIM - TLSF_LG2_UNITSIZE),
+	TLSF_FULLBLLEN = (1 << TLSF_L2_LEN),
+	TLSF_NUMSMALL = (TLSF_L2_LEN),
+	TLSF_NUMFULL = (TLSF_NUML2 - TLSF_L2_LEN)
+};
 
 /* 
   TLSF_SZ_BITS list heads for each list with a # of UNITSIZE slots >= to min 

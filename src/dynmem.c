@@ -16,7 +16,6 @@ union dynmempool_u {
 	struct dynmempool	p;
 };
 
-/* XXX assumes that alignment is a power of 2 */
 #define sizetonu(n)	(((size_t)(n) + UNITSIZE - 1) / UNITSIZE)
 #define nutosize(n)	((size_t)(n) * UNITSIZE)
 #define round2u(n)	(nutosize(sizetonu(n)))
@@ -364,7 +363,7 @@ void dynmem_each_block(struct dynmempool *pool, apply_f f, void *ctx)
 /* ----------------- Two-Layer Segregated Fit ----------------- */
 
 
-STATIC_BUG_ON(bad_lg2_unitsize, ((1 << TLSF_LG2_UNITSIZE) != UNITSIZE))
+STATIC_BUG_ON(bad_lg2_unitsize, ((1 << TLSF_LG2_UNITSIZE) != UNITSIZE));
 
 #if CAT_DEBUG_LEVEL > 0
 #define ASSERT(x) abort_unless(x)

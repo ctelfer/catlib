@@ -14,7 +14,7 @@
 #include <string.h>
 #include <ctype.h>
 
-STATIC_BUG_ON(cat_str_bad_size_char, CHAR_BIT != 8)
+STATIC_BUG_ON(cat_str_bad_size_char, CHAR_BIT != 8);
 
 #ifndef va_copy
 #ifndef __va_copy
