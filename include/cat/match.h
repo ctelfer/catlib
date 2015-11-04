@@ -10,7 +10,6 @@
 #define __match_h
 #include <cat/cat.h>
 #include <cat/mem.h>
-#include <cat/list.h>
 #include <cat/hash.h>
 
 /* Knuth-Morris-Pratt String matching */

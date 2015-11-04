@@ -24,60 +24,54 @@ struct raw *erawdup(struct raw const * const r);
 /* Application level list data structure */
 #include <cat/list.h>
 
-struct clist_node { 
-	struct list	cln_entry;
-	struct memmgr * cln_mm;
-	struct clist *	cln_list;
-	attrib_t	cln_data_u;
+struct clist_node {
+	struct list		entry;
+	struct clist *		list;
+	void *			data;
 };
+
+
+struct clist_attr {
+	struct clist_node *	(*node_alloc)(struct clist *list);
+	void 			(*node_free)(struct clist *list,
+					     struct clist_node *node);
+	attrib_t		ctx;
+};
+
 
 struct clist {
-	struct clist_node	cl_base;
-	struct memmgr *		cl_mm;
-	size_t			cl_fill;
-	size_t			cl_node_size;
-	size_t			cl_data_size;
+	struct clist_node	base;
+	size_t 			fill;
+	struct clist_node * 	(*node_alloc)(struct clist *list);
+	void 			(*node_free)(struct clist *list,
+					     struct clist_node *node);
+	attrib_t		ctx;
 };
 
-#define cln_intval	cln_data_u.int_val
-#define cln_uintval	cln_data_u.uin_tval
-#define cln_pointer	cln_data_u.ptr_val
-#define cln_attr_ptr	cln_data_u.bytes
-#define l_to_cln(ln) 	container(ln, struct clist_node, cln_entry)
-#define cln_next(clnp)	l_to_cln((clnp)->cln_entry.next)
-#define cln_prev(clnp)	l_to_cln((clnp)->cln_entry.prev)
-#define cln_data(clnp, type)	(*((type *)&(clnp)->cln_data_u))
-#define cln_dptr(clnp)	((void *)((clnp)->cln_attr_ptr))
-#define cl_head(clp)	(&(clp)->cl_base)
-#define cl_end(clp)	(&(clp)->cl_base)
-#define cl_first(clp)	l_to_cln((clp)->cl_base.cln_entry.next)
-#define cl_last(clp)	l_to_cln((clp)->cl_base.cln_entry.prev)
-#define clist_for_each(node, list)	\
+#define l_to_cln(ln) 	container(ln, struct clist_node, entry)
+#define cl_next(clnp)	l_to_cln((clnp)->entry.next)
+#define cl_prev(clnp)	l_to_cln((clnp)->entry.prev)
+#define cl_head(clp)	(&(clp)->base)
+#define cl_end(clp)	(&(clp)->base)
+#define cl_first(clp)	l_to_cln((clp)->base.entry.next)
+#define cl_last(clp)	l_to_cln((clp)->base.entry.prev)
+#define cl_for_each(node, list)		\
 	for ( (node) = cl_head(list) ;	\
 	      (node) != cl_end(list) ;	\
-	      (node) = cln_next(node) )
+	      (node) = cl_next(node) )
 
-struct clist *clist_new_list(struct memmgr *mm, size_t dlen);
-void clist_free_list(struct clist *list);
-
-void clist_init_list(struct clist *list, struct memmgr *mm, size_t dlen);
-void clist_clear_list(struct clist *list);
-
-int clist_isempty(struct clist *list);
-size_t clist_fill(struct clist *list);
-
-struct clist_node *clist_new_node(struct clist *list, void *val);
-int clist_insert(struct clist *list, struct clist_node *prev, 
-		 struct clist_node *node);
-int clist_remove(struct clist_node *node);
-void clist_delete(struct clist_node *node);
-
-int clist_enqueue(struct clist *list, void *val);
-int clist_dequeue(struct clist *list, void *val);
-int clist_push(struct clist *list, void *val);
-int clist_pop(struct clist *list, void *val);
-int clist_top(struct clist *list, void *val);
-void clist_apply(struct clist *list, apply_f f, void *arg);
+struct clist *cl_new(const struct clist_attr *attr);
+void   cl_free(struct clist *list);
+int    cl_isempty(struct clist *list);
+size_t cl_fill(struct clist *list);
+int    cl_ins(struct clist *list, struct clist_node *prev, void *val);
+void * cl_del(struct clist *list, struct clist_node *node);
+int    cl_enq(struct clist *list, void *val);
+void * cl_deq(struct clist *list);
+int    cl_push(struct clist *list, void *val);
+void * cl_pop(struct clist *list, void *val);
+void * cl_top(struct clist *list);
+void   cl_apply(struct clist *list, apply_f f, void *arg);
 
 
 #include <cat/str.h>
@@ -102,61 +96,160 @@ struct dlist * 	cdl_new(cat_time_t t, void *data);
 void *	       	cdl_free(struct dlist *node);
 
 
-/* Enumeration used for the various dictionary data types that follow */
-enum {
-	CAT_KT_STR = 0,
-	CAT_KT_BIN = 1,
-	CAT_KT_RAW = 2,
-	CAT_KT_PTR = 3,
-	CAT_KT_NUM = 4
-};
-
-
+/* Application layer hash table functions */
 #include <cat/hash.h>
 
-/* Application layer hash table functions */
-struct htab *	ht_new(struct memmgr *mm, size_t nbkts, int ktype, size_t ksize,
-		       size_t dsize);
-void		ht_free(struct htab *t);
-int		ht_get(struct htab *t, const void *key, void *res);
-void *		ht_get_dptr(struct htab *t, const void *key);
-int		ht_put(struct htab *t, const void *key, void *data);
-int		ht_clr(struct htab *t, const void *key);
+struct chnode {
+	struct hnode	node;
+	void *		data;
+};
+
+struct chtab;
+
+struct chtab_attr {
+	cmp_f		kcmp;
+	hash_f		hash;
+	size_t		hctx_size;
+	struct chnode *	(*node_alloc)(struct chtab *, void *k);
+	void		(*node_free)(struct chtab *, struct chnode *);
+	void *		ctx;
+};
+
+struct chtab {
+	struct htab	table;
+	struct chnode *	(*node_alloc)(struct chtab *t, void *k);
+	void		(*node_free)(struct chtab *t, struct chnode *n);
+	void *		ctx;
+};
+
+extern struct chtab_attr cht_std_attr_skey;	/* string key table */
+extern struct chtab_attr cht_std_attr_rkey;	/* raw key table */
+extern struct chtab_attr cht_std_attr_ikey;	/* int key table */
+
+
+struct chtab *	cht_new(size_t nbkts, struct chtab_attr *attr, void *hctx);
+void		cht_free(struct chtab *t);
+void *		cht_get(struct chtab *t, const void *key);
+int		cht_put(struct htab *t, const void *key, void *data,
+			void **odata);
+void *		cht_del(struct chtab *t, const void *key);
+void		cht_apply(struct chtab *t, apply_f f, void *ctx);
 
 
 #include <cat/avl.h>
 
-struct avl *	avl_new(struct memmgr *mm, int ktype, size_t ksiz, size_t dsiz);
-void		avl_free(struct avl *t);
-int		avl_get(struct avl *t, const void *key, void *res);
-void *		avl_get_dptr(struct avl *t, const void *key);
-int		avl_put(struct avl *t, const void *key, void *data);
-int		avl_clr(struct avl *t, const void *key);
+struct canode {
+	struct anode	node;
+	void *		data;
+};
+
+struct cavltree;
+
+struct cavltree_attr {
+	cmp_f		kcmp;
+	struct canode *	(*node_alloc)(struct cavltree *t, void *k);
+	void		(*node_free)(struct cavltree *t, struct canode *n);
+	void *		ctx;
+};
+
+struct cavltree {
+	struct avltree	tree;
+	struct canode *	(*node_alloc)(struct cavltree *t, void *k);
+	void		(*node_free)(struct cavltree *t, struct canode *n);
+	void *		ctx;
+};
+
+extern struct cavltree_attr cavl_std_attr_skey;	/* string key table */
+extern struct cavltree_attr cavl_std_attr_rkey;	/* raw key table */
+extern struct cavltree_attr cavl_std_attr_ikey;	/* int key table */
+
+
+struct cavltree * cavl_new(struct cavltree_attr *attr);
+void		cavl_free(struct cavltree *t);
+void *		cavl_get(struct cavltree *t, const void *key);
+int		cavl_put(struct cavltree *t, const void *key, void *data,
+			 void **odata);
+void *		cavl_del(struct cavltree *t, const void *key);
+void		cavl_apply(struct cavltree *t, apply_f f, void *ctx);
 
 
 #include <cat/rbtree.h>
 
-struct rbtree *	rb_new(struct memmgr *mm, int ktype, size_t ksiz, size_t dsiz);
-void		rb_free(struct rbtree *t);
-int		rb_get(struct rbtree *t, const void *key, void *res);
-void *		rb_get_dptr(struct rbtree *t, const void *key);
-int		rb_put(struct rbtree *t, const void *key, void *data);
-int		rb_clr(struct rbtree *t, const void *key);
+struct crbnode {
+	struct rbnode	node;
+	void *		data;
+};
+
+struct crbtree;
+
+struct crbtree_attr {
+	cmp_f		kcmp;
+	struct canode *	(*node_alloc)(struct crbtree *t, void *k);
+	void		(*node_free)(struct crbtree *t, struct crbnode *n);
+	void *		ctx;
+};
+
+struct crbtree {
+	struct rbtree	tree;
+	struct canode *	(*node_alloc)(struct crbtree *t, void *k);
+	void		(*node_free)(struct crbtree *t, struct crbnode *n);
+	void *		ctx;
+};
+
+extern struct crbtree_attr crb_std_attr_skey;	/* string key table */
+extern struct crbtree_attr crb_std_attr_rkey;	/* raw key table */
+extern struct crbtree_attr crb_std_attr_ikey;	/* int key table */
+
+
+struct crbtree *crb_new(struct crbtree_attr *attr);
+void		crb_free(struct crbtree *t);
+void *		crb_get(struct crbtree *t, const void *key);
+int		crb_put(struct crbtree *t, const void *key, void *data,
+			void **odata);
+void *		crb_del(struct crbtree *t, const void *key);
+void		crb_apply(struct crbtree *t, apply_f f, void *ctx);
 
 
 #include <cat/splay.h>
 
-struct splay *	st_new(struct memmgr *mm, int ktype, size_t ksiz, size_t dsiz);
-void		st_free(struct splay *t);
-int		st_get(struct splay *t, const void *key, void *res);
-void *		st_get_dptr(struct splay *t, const void *key);
-int		st_put(struct splay *t, const void *key, void *data);
-int		st_clr(struct splay *t, const void *key);
+struct cstnode {
+	struct stnode	node;
+	void *		data;
+};
+
+struct cstree;
+
+struct cstree_attr {
+	cmp_f		kcmp;
+	struct canode *	(*node_alloc)(struct cstree *t, void *k);
+	void		(*node_free)(struct cstree *t, struct cstnode *n);
+	void *		ctx;
+};
+
+struct cstree {
+	struct splay	tree;
+	struct canode *	(*node_alloc)(struct cstree *t, void *k);
+	void		(*node_free)(struct cstree *t, struct cstnode *n);
+	void *		ctx;
+};
+
+extern struct cstree_attr cst_std_attr_skey;	/* string key table */
+extern struct cstree_attr cst_std_attr_rkey;	/* raw key table */
+extern struct cstree_attr cst_std_attr_ikey;	/* int key table */
+
+
+struct cstree * cst_new(struct cstree_attr *attr);
+void		cst_free(struct cstree *t);
+void *		cst_get(struct cstree *t, const void *key);
+int		cst_put(struct cstree *t, const void *key, void *data,
+			void **odata);
+void *		cst_del(struct cstree *t, const void *key);
+void		cst_apply(struct cstree *t, apply_f f, void *ctx);
 
 
 #include <cat/heap.h>
 
-struct heap * hp_new(struct memmgr *mm, int size, cmp_f cmp);
+struct heap * hp_new(int size, cmp_f cmp)
 void	      hp_free(struct heap *hp);
 
 

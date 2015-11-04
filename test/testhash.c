@@ -15,9 +15,12 @@
 #define NOPS	65536
 #define NITER   (128 * NOPS)
 
+
+struct htab t; 
+struct hnode *buckets[128 * 1024];
+
 void timeit()
 {
-  struct htab *t; 
   struct hnode nodes[NOPS], *node;
   uint hashes[NOPS];
   int i, j;
@@ -26,19 +29,18 @@ void timeit()
   double usec;
   uint h;
 
-  t = ht_new(&estdmm, 128 * 1024, CAT_KT_STR, 0, 0);
+  ht_init(&t, buckets, array_length(buckets), cmp_str, ht_shash, NULL);
 
   for (i = 0; i < NOPS; i++) {
     key = str_fmt_a("node%d", i);
-    ht_ninit(&nodes[i], key, NULL);
+    ht_ninit(&nodes[i], key);
     hashes[i] = ht_hash(t, key);
   }
 
   gettimeofday(&start, NULL);
   for (j = 0; j < NITER / NOPS; j++) {
     for (i = 0; i < NOPS; i++)
-      if ( (node = ht_ins(t, &nodes[i], hashes[i])) != NULL )
-        err("iteration %d: duplicate node for key %d found\n", j, i);
+      ht_ins(t, &nodes[i], hashes[i]);
     for (i = 0; i < NOPS; i++)
       ht_rem(&nodes[i]);
   }
@@ -70,7 +72,7 @@ void timeit()
 
   gettimeofday(&start, NULL);
   for ( i = 0 ; i < NITER ; ++i ) {
-    ht_ins(t, &nodes[0], 0); 
+    ht_ins(t, &nodes[0], &hashes[0]);
     ht_rem(&nodes[0]);
   }
   gettimeofday(&end, NULL);
@@ -98,8 +100,6 @@ void timeit()
 
   for (i = 0; i < NOPS; i++)
     free(nodes[i].key);
-
-  ht_free(t);
 }
 
 
@@ -112,52 +112,47 @@ int main()
                     {"Key 3!", "By now! this is over."},
                     {"key 1", "Overwrite."}
                   };
-  struct htab *table; 
+  struct chtab *table; 
   char *s;
-  struct hnode n, *hnp;
-  struct raw r;
 
-  table = ht_new(&estdmm, 128, CAT_KT_STR, 0, 0);
+  table = cht_new(128, NULL, NULL);
 
   for (i = 0; i < NUMSTR; i++) {
-    ht_put(table, strs[i][0], strs[i][1]);
-    hnp = ht_lkup(table, strs[i][0], 0);
-    printf("Put (%s) at key (%s): %p\n", strs[i][1], strs[i][0], hnp);
+    cht_put(table, strs[i][0], strs[i][1]);
+    s = cht_get(table, strs[i][0]);
+    printf("Put (%s) at key (%s): %p\n", strs[i][1], strs[i][0], s);
   }
 
-  if (ht_get_dptr(table, "bye")) 
+  if (cht_get(table, "bye")) 
     printf("found something I shouldn't have!\n"); 
 
-  s = ht_get_dptr(table, strs[1][0]);
+  s = cht_get(table, strs[1][0]);
   printf("Under key %s is the string %s\n", strs[1][0], s);
   printf("address is %p\n\n", s); 
 
-  s = ht_get_dptr(table, strs[2][0]);
+  s = cht_get(table, strs[2][0]);
   printf("Under key %s is the string %s\n", strs[2][0], s);
   printf("address is %p\n\n", s); 
 
-  s = ht_get_dptr(table, strs[0][0]);
+  s = cht_get(table, strs[0][0]);
   printf("Under key %s is the string %s\n", strs[0][0], s); 
   printf("address is %p\n\n", s); 
 
-  s = ht_get_dptr(table, strs[1][0]);
-  ht_clr(table, strs[1][0]);
+  s = cht_get(table, strs[1][0]);
+  cht_del(table, strs[1][0]);
   printf("Deleted %s\n", s); 
   printf("address is %p\n\n", s); 
 
 
-  hnp = ht_lkup(table, strs[2][0], NULL);
-  s = hnp->data;
-  ht_rem(hnp);
-  free(hnp);
+  s = cht_del(table, strs[2][0]);
   printf("Deleted %s\n", s); 
   printf("address is %p\n\n", s); 
 
-  if (ht_get_dptr(table, strs[1][0]))
+  if (cht_get(table, strs[1][0]))
     printf("Error!  Thing not deleted! : %s\n",
-           (char *)ht_get_dptr(table, strs[1][0]));
+           (char *)cht_get(table, strs[1][0]));
 
-  ht_free(table); 
+  cht_free(table); 
 
   timeit();
 

@@ -40,9 +40,11 @@ DECLARE_SHELL_ENV(env, cmds);
 /* graph at a time */
 struct tgraph { 
 	struct graph *graph;
-	struct htab *node_tab;
+	struct chtab *node_tab;
 };
 
+
+#define IDKEY(_x) (int2ptr((_x) + 1))
 
 int gnew(struct shell_env *env, int na, char *args[], struct shell_value *rv)
 {
@@ -56,7 +58,7 @@ int gnew(struct shell_env *env, int na, char *args[], struct shell_value *rv)
 
 	g = emalloc(sizeof(*g));
 	g->graph = gr_new(&estdmm, isbi, 0, 0);
-	g->node_tab = ht_new(&estdmm, 32, CAT_KT_NUM, 0, 0);
+	g->node_tab = cht_new(32, &cht_std_attr_ikey, NULL);
 
 	rv->sval_type = SVT_PTR;
 	rv->sval_ptr = g;
@@ -80,7 +82,7 @@ int gdel(struct shell_env *env, int na, char *args[], struct shell_value *rv)
 	g = p;
 
 	gr_free(g->graph);
-	ht_free(g->node_tab);
+	cht_free(g->node_tab);
 	free(g);
 
 	rv->sval_type = SVT_NIL;
@@ -108,14 +110,14 @@ int add_node(struct shell_env *env, int na, char *args[],
 	}
 	g = p;
 
-	if ( ht_get_dptr(g->node_tab, &id) ) {
+	if ( cht_get(g->node_tab, IDKEY(id)) ) {
 		fprintf(stderr, "Node %d already exists in the graph\n", id);
 		return -1;
 	}
 
 	n = gr_add_node(g->graph);
 	n->gr_node_val = id;
-	ht_put(g->node_tab, &id, n);
+	cht_put(g->node_tab, IDKEY(id), n);
 	printf("Created node %d\n", id);
 
 	rv->sval_type = SVT_PTR;
@@ -143,14 +145,14 @@ int del_node(struct shell_env *env, int na, char *args[],
 	}
 	g = p;
 
-	n = ht_get_dptr(g->node_tab, &id);
+	n = cht_get(g->node_tab, IDKEY(id));
 	if ( !n ) {
 		fprintf(stderr, "couldn't find node %d\n", id);
 		return -1;
 	}
 
 	gr_del_node(n);
-	ht_clr(g->node_tab, &id);
+	cht_del(g->node_tab, IDKEY(id));
 
 	rv->sval_type = SVT_NIL;
 	rv->sval_ptr = NULL;
@@ -179,13 +181,13 @@ int edge(struct shell_env *env, int na, char *args[], struct shell_value *rv)
 	}
 	g = p;
 
-	n1 = ht_get_dptr(g->node_tab, &id1);
+	n1 = cht_get(g->node_tab, IDKEY(id1));
 	if ( !n1 ) {
 		fprintf(stderr, "couldn't find node %d\n", id1);
 		return -1;
 	}
 
-	n2 = ht_get_dptr(g->node_tab, &id2);
+	n2 = cht_get(g->node_tab, IDKEY(id2));
 	if ( !n2 ) {
 		fprintf(stderr, "couldn't find node %d\n", id2);
 		return -1;

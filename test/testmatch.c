@@ -65,11 +65,11 @@ void gather(void *edgep, void *gatherp)
 	struct sfxedge *edge = edgep;
 	struct gatherctx *gctx = gatherp;
 	++nedges;
-	if ( !ht_get_dptr(gctx->edges, edge) )
-		ht_put(gctx->edges, edge, int2ptr(nedges));
-	if ( !ht_get_dptr(gctx->nodes, edge->hentry.data) ) {
+	if ( !cht_get(gctx->edges, edge) )
+		cht_put(gctx->edges, edge, int2ptr(nedges));
+	if ( !cht_get(gctx->nodes, edge->hentry.data) ) {
 		++nnodes;
-		ht_put(gctx->nodes, edge->hentry.data, int2ptr(nnodes));
+		cht_put(gctx->nodes, edge->hentry.data, int2ptr(nnodes));
 	}
 }
 
@@ -83,9 +83,9 @@ void printedges(void *edgep, void *gatherp)
 	char ch;
 	char str[50];
 
-	src = ptr2int(ht_get_dptr(gctx->nodes, ek->node));
-	dst = ptr2int(ht_get_dptr(gctx->nodes, edge->hentry.data));
-	edgenum = ptr2int(ht_get_dptr(gctx->edges, edge));
+	src = ptr2int(cht_get(gctx->nodes, ek->node));
+	dst = ptr2int(cht_get(gctx->nodes, edge->hentry.data));
+	edgenum = ptr2int(cht_get(gctx->edges, edge));
 	ch = ek->character;
 	if ( ch == '\0' )
 		ch = '@';
@@ -110,11 +110,11 @@ void printsfx(struct sfxtree *sfx)
 	char ch;
 
 	gctx.sfx = sfx;
-	gctx.edges = ht_new(&estdmm, 100, CAT_KT_PTR, 0, 0);
-	gctx.nodes = ht_new(&estdmm, 100, CAT_KT_PTR, 0, 0);
-	ht_put(gctx.nodes, &sfx->root, int2ptr(1));
+	gctx.edges = cht_new(100, cht_std_attr_ikey, NULL);
+	gctx.nodes = cht_new(100, cht_std_attr_ikey, NULL);
+	cht_put(gctx.nodes, &sfx->root, int2ptr(1));
 	nnodes = 1;
-	ht_apply(&sfx->edges, gather, &gctx);
+	cht_apply(&sfx->edges, gather, &gctx);
 	for ( i = 0 ; i < sfx->str.len ; ++i )
 		printf("%2d ", i);
 	printf("\n");
@@ -125,9 +125,9 @@ void printsfx(struct sfxtree *sfx)
 		printf(" %c ", ch);
 	}
 	printf("\n");
-	ht_apply(&sfx->edges, printedges, &gctx);
-	ht_free(gctx.edges);
-	ht_free(gctx.nodes);
+	cht_apply(&sfx->edges, printedges, &gctx);
+	cht_free(gctx.edges);
+	cht_free(gctx.nodes);
 }
 
 

@@ -198,18 +198,17 @@ static unsigned edgehash(const void *key, void *notused)
 }
 
 
-static struct hnode *newedge(void *k, void *d, void *c)
+static struct hnode *newedge(struct sfxedgekey *ek, struct memmgr *mm)
 {
 	struct sfxedge *edge;
-	struct memmgr *mm = c;
-	struct sfxedgekey *ek = k, *nk;
+	struct sfxedgekey *nk;
 
 	edge = mem_get(mm, sizeof(struct sfxedge) + sizeof(struct sfxedgekey));
 	nk = (struct sfxedgekey *)(edge + 1);
 	memset(nk, 0, sizeof(*nk));
 	nk->node = ek->node;
 	nk->character = ek->character;
-	ht_ninit(&edge->hentry, nk, d);
+	ht_ninit(&edge->hentry, nk);
 
 	return &edge->hentry;
 }
@@ -237,7 +236,7 @@ static struct sfxedge *getedge(struct sfxtree *t, struct sfxnode *par, int ch,
 	if ( !(node = ht_lkup(ht, &ek, &hash)) ) {
 		if ( !*create )
 			return NULL;
-		if ( !(node = newedge(&ek, NULL, t->mm)) ) {
+		if ( !(node = newedge(&ek, t->mm)) ) {
 			*create = 0;
 			return NULL;
 		}
@@ -396,7 +395,7 @@ int sfx_init(struct sfxtree *sfx, struct raw *str, struct memmgr *mm)
 	sfx->mm = mm;
 	sfx->str = *str;
 	/* XXX fix size? */
-	if ( ((ulong)~0) / sizeof(struct list) < str->len )
+	if ( ((size_t)~0) / sizeof(struct hnode *) < str->len )
 		return -1;
 	if ( !(buckets = mem_get(mm, sizeof(struct hnode *) * str->len)) )
 		return -1;

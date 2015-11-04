@@ -19,7 +19,6 @@ struct rbnode {
 	char		col;
 	struct rbtree *	tree;
 	void *		key;
-	void *		data;
 } ;
 
 #define CRB_L 0	/* left node */

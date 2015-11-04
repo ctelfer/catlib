@@ -88,15 +88,18 @@ int csv_read_field(struct csv_state *csv, char **res)
 int csv_read_rec(struct csv_state *csv, struct csv_record *cr)
 {
 	ulong nf, i;
+	ulong rsz = 8;
+	size_t size;
 	int code = CSV_OK;
-	struct clist *list;
-	struct clist_node *trav;
 	char *field, **record;
+	byte_t *bp;
 
 	abort_unless(csv != NULL);
 	abort_unless(cr != NULL);
 
-	list = clist_new_list(&stdmm, sizeof(char *));
+	record = mem_get(&stdmm, sizeof(*record) * rsz);
+	if ( record == NULL )
+		return CSV_ERR;
 
 	for ( nf = 0 ; (code != CSV_REC) && (code != CSV_EOF) ; ++nf ) {
 		abort_unless(nf <= (ulong)~0);
@@ -105,33 +108,33 @@ int csv_read_rec(struct csv_state *csv, struct csv_record *cr)
 			goto err;
 		else if ( code != CSV_EOF )
 			break;
-		if ( !clist_enqueue(list, &field) )
-			goto err;
+		if ( nf == rsz ) {
+			bp = (byte_t *)bp;
+			size = rsz * sizeof(*record);
+			if ( mm_grow(&stdmm, &bp, &size, size + sizeof(*record)) < 0) {
+				code = CSV_ERR;
+				goto err;
+			}
+			rsz = size / sizeof(*record);
+			record = (char **)record;
+		}
+		record[nf++] = field;
 	}
 
 	if ( code == CSV_EOF ) {
 		abort_unless(nf == 0);
-		clist_free_list(list);
 		return CSV_EOF;
 	}
-
-	record = malloc(sizeof(char **) * nf);
-	if ( record == NULL )
-		goto err;
-	for ( i = 0 ; i < nf ; ++i )
-		clist_dequeue(list, &record[i]);
 
 	cr->cr_nfields = nf;
 	cr->cr_fields = record;
 
-	clist_free_list(list);
 	return CSV_REC;
 
 err:
-	for ( trav = cl_first(list); trav != cl_end(list); 
-	      trav = cln_next(trav) )
-		mem_free(&stdmm, cln_data(trav, char *));
-	clist_free_list(list);
+	for ( i = 0; i < nf; ++i )
+		free(records[i]);
+	free(records);
 	return CSV_ERR;
 }
 

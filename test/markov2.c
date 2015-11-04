@@ -1,7 +1,7 @@
 /*
  * by Christopher Adam Telfer
  *
- * Copyright 2003-2012 -- See accompanying license
+ * Copyright 2003-2015 -- See accompanying license
  *
  */
 #include <cat/cat.h>
@@ -38,14 +38,12 @@ void add(int prefixes[NPREF], int word)
 
 	key.data = (byte_t*)prefixes;
 	key.len  = sizeof(int) * NPREF;
-	node = ht_lkup(Prefix_tbl, &key, &hash);
-	if ( ! node ) { 
-		list = clist_new_list(&estdmm, sizeof(int));
-		clist_enqueue(list, &word);
-		ht_put(Prefix_tbl, &key, list);
-	} else {
-		clist_enqueue(node->data, &word);
-	}
+	list = cht_get(Prefix_tbl, &key);
+	if ( list == NULL ) { 
+		list = cl_new(NULL);
+		cht_put(Prefix_tbl, &key, list);
+	} 
+	cl_enq(list, int2ptr(word));
 	memmove(prefixes, prefixes + 1, (NPREF-1) * sizeof(int));
 	prefixes[NPREF-1] = word;
 }
@@ -66,13 +64,13 @@ void generate(void)
 	for ( i = 0 ; i < NPREF ; ++i )
 		prefixes[i] = i * sizeof(NONWORD);
 	for ( i = 0 ; i < MAXGEN ; ++i ) {
-		list = ht_get_dptr(Prefix_tbl, &key);
+		list = cht_get(Prefix_tbl, &key);
 		h = cl_first(list);
-		for ( n = 2, t = cln_next(h) ; t != cl_end(list) ; 
-		      t = cln_next(t), ++n )
+		for ( n = 2, t = cl_next(h) ; t != cl_end(list) ; 
+		      t = cl_next(t), ++n )
 			if ( (random() % n) == 0 )
 				h = t;
-		word = cln_data(h, int);
+		word = ptr2int(h->data);
 		if ( word == END )
 			return;
 		memmove(prefixes, prefixes + 1, (NPREF-1) * sizeof(int));
@@ -93,8 +91,8 @@ int main(int argc, char **argv)
 
 	gettimeofday(&tv, NULL);
 	srandom(tv.tv_usec);
-	Prefix_tbl = ht_new(&estdmm, HTSIZ, CAT_KT_RAW, 0, 0);
-	Word_tbl = ht_new(&estdmm, HTSIZ, CAT_KT_STR, 0, 0);
+	Prefix_tbl = cht_new(HTSIZ, &cht_std_attr_rkey, NULL);
+	Word_tbl = cht_new(HTSIZ, &cht_std_attr_skey, NULL);
 	if (grow(&Strings.data, &Strings.len, 
 		 NPREF * sizeof(NONWORD) + MAXWORD) < 0)
 		errsys("Out of memory\n");
@@ -106,8 +104,8 @@ int main(int argc, char **argv)
 	sprintf(fmt, "%%%ds", MAXWORD - 1);
 
 	while ( scanf(fmt, STR(cur)) > 0 ) { 
-		if ( (idx = ptr2int(ht_get_dptr(Word_tbl, STR(cur)))) == 0 ) {
-			ht_put(Word_tbl, STR(cur), int2ptr(cur));
+		if ( (idx = ptr2int(cht_get(Word_tbl, STR(cur)))) == 0 ) {
+			cht_put(Word_tbl, STR(cur), int2ptr(cur));
 			l = strlen(STR(cur)) + 1;
 			if (grow(&Strings.data,&Strings.len,cur+l+MAXWORD) < 0)
 				errsys("Out of memory\n");
@@ -117,9 +115,10 @@ int main(int argc, char **argv)
 		add(prefixes, idx);
 	}
 	add(prefixes, END);
-	ht_free(Word_tbl);
+	cht_free(Word_tbl);
 
 	printf("Generating...\n");
 	generate();
+	cht_free(&Prefix_tbl);
 	return 0;
 }

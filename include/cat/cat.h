@@ -209,13 +209,15 @@ typedef CAT_ALIGN	cat_align_t;
  * incorrectly.  If a programmer knows specifically otherwise the coder can 
  * #define CAT_ALIGN.
  */
-#define CAT_ALIGN_SIZE(x) \
-	(((x)+(sizeof(cat_align_t)-1))/sizeof(cat_align_t)*sizeof(cat_align_t))
-#define CAT_DECLARE_ALIGNED_DATA(name, len) \
-	CAT_DECLARE_ALIGNED_DATA_Q(,name,len)
+#define CAT_ALIGN_SIZE(_x) \
+	(((_x)+(sizeof(cat_align_t)-1))/sizeof(cat_align_t)*sizeof(cat_align_t))
+#define CAT_ALIGN_PTR_OFF(_p, _off) \
+	((void *)((byte_t *)(_p) + CAT_ALIGN_SIZE(_off)))
+#define CAT_DECLARE_ALIGNED_DATA(_name, _len) \
+	CAT_DECLARE_ALIGNED_DATA_Q(,_name,_len)
 /* qual - (e.g. static volatile), name - variable name, len - in bytes */
-#define CAT_DECLARE_ALIGNED_DATA_Q(qual, name, len) \
-	qual CAT_ALIGN name[CAT_ALIGN_SIZE(len) / sizeof(CAT_ALIGN)]
+#define CAT_DECLARE_ALIGNED_DATA_Q(_qual, _name, _len) \
+	qual CAT_ALIGN name[CAT_ALIGN_SIZE(_len) / sizeof(CAT_ALIGN)]
 
 
 /* We redefined this here because we might be including a c89 stddef.h */
@@ -326,6 +328,7 @@ union attrib_u {
 	long double	ldbl_val;
 	double		dbl_val;
 	float		float_val;
+	struct raw	raw_val;
 	byte_t		bytes[1];
 	cat_align_t	align[1];
 };

@@ -16,20 +16,19 @@
 struct stnode {
 	struct stnode *	p[3];
 	char		pdir;
-	struct splay *	tree;
+	struct sptree *	tree;
 	void *		key;
-	void *		data;
-} ;
+};
 
 #define CST_L 0	 /* left node */
 #define CST_R 2	 /* right node */
 #define CST_P 1  /* parent node */
 #define CST_N 3  /* Used to denote an exact node when given a (p,dir) pair */
 
-struct splay {
+struct sptree {
 	cmp_f		cmp;
 	struct stnode	root;
-} ; 
+}; 
 
 
 #define st_left		p[CST_L]
@@ -48,20 +47,20 @@ struct splay {
 #endif /* CAT_USE_INLINE */
 
 /* main functions */
-DECL void            st_init(struct splay *t, cmp_f cmp);
+DECL void            st_init(struct sptree *t, cmp_f cmp);
 DECL void            st_ninit(struct stnode *n, void *k, void *d);
-DECL struct stnode * st_lkup(struct splay *t, const void *key);
-DECL struct stnode * st_ins(struct splay *t, struct stnode *node);
+DECL struct stnode * st_lkup(struct sptree *t, const void *key);
+DECL struct stnode * st_ins(struct sptree *t, struct stnode *node);
 DECL void            st_rem(struct stnode *node);
-DECL void            st_apply(struct splay *t, apply_f func, void * ctx);
-DECL int	     st_isempty(struct splay *t);
-DECL struct stnode * st_getroot(struct splay *t);
-DECL struct stnode * st_getmin(struct splay *t);
-DECL struct stnode * st_getmax(struct splay *t);
+DECL void            st_apply(struct sptree *t, apply_f func, void * ctx);
+DECL int	     st_isempty(struct sptree *t);
+DECL struct stnode * st_getroot(struct sptree *t);
+DECL struct stnode * st_getmin(struct sptree *t);
+DECL struct stnode * st_getmax(struct sptree *t);
 
 
 /* Auxiliary (helper) functions (don't use) outside the module */
-DECL void st_findloc(struct splay *t, const void *key, struct stnode **pn,
+DECL void st_findloc(struct sptree *t, const void *key, struct stnode **pn,
 		     int *pd);
 DECL void st_fix(struct stnode *par, struct stnode *cld, int dir);
 DECL void st_rl(struct stnode *n);
@@ -75,7 +74,7 @@ DECL void st_splay(struct stnode *n);
 
 #if defined(CAT_SP_DO_DECL) && CAT_SP_DO_DECL
 
-DECL void st_init(struct splay *t, cmp_f cmp)
+DECL void st_init(struct sptree *t, cmp_f cmp)
 {
 	abort_unless(t);
 	abort_unless(cmp);
@@ -95,7 +94,7 @@ DECL void st_ninit(struct stnode *n, void *k, void *d)
 }
 
 
-DECL struct stnode * st_lkup(struct splay *t, const void *key)
+DECL struct stnode * st_lkup(struct sptree *t, const void *key)
 {
 	struct stnode *n;
 	int dir;
@@ -112,7 +111,7 @@ DECL struct stnode * st_lkup(struct splay *t, const void *key)
 }
 
 
-DECL struct stnode * st_ins(struct splay *t, struct stnode *node)
+DECL struct stnode * st_ins(struct sptree *t, struct stnode *node)
 {
 	struct stnode *n;
 	int dir;
@@ -145,10 +144,10 @@ DECL struct stnode * st_ins(struct splay *t, struct stnode *node)
 DECL void st_rem(struct stnode *node)
 {
 	struct stnode *root, *rep;
-	struct splay *t;
+	struct sptree *t;
 
 	abort_unless(node);
-	if ( ! node || ! node->tree )
+	if ( !node || !node->tree )
 		return;
 	t = node->tree;
 	root = &t->root;
@@ -174,7 +173,7 @@ DECL void st_rem(struct stnode *node)
 }
 
 
-DECL void st_apply(struct splay *t, apply_f func, void * ctx)
+DECL void st_apply(struct sptree *t, apply_f func, void * ctx)
 {
 	struct stnode *trav;
 	int dir = CST_P;
@@ -218,21 +217,21 @@ DECL void st_apply(struct splay *t, apply_f func, void * ctx)
 }
 
 
-DECL int st_isempty(struct splay *t)
+DECL int st_isempty(struct sptree *t)
 {
 	abort_unless(t);
 	return t->st_root == NULL;
 }
 
 
-DECL struct stnode * st_getroot(struct splay *t)
+DECL struct stnode * st_getroot(struct sptree *t)
 {
 	abort_unless(t);
 	return t->st_root;
 }
 
 
-DECL struct stnode * st_getmin(struct splay *t)
+DECL struct stnode * st_getmin(struct sptree *t)
 {
 	struct stnode *trav;
 	abort_unless(t);
@@ -245,7 +244,7 @@ DECL struct stnode * st_getmin(struct splay *t)
 }
 
 
-DECL struct stnode * st_getmax(struct splay *t)
+DECL struct stnode * st_getmax(struct sptree *t)
 {
 	struct stnode *trav;
 	abort_unless(t);
@@ -258,7 +257,7 @@ DECL struct stnode * st_getmax(struct splay *t)
 }
 
 
-DECL void st_findloc(struct splay *t, const void *key, struct stnode **pn,
+DECL void st_findloc(struct sptree *t, const void *key, struct stnode **pn,
 		     int *pd)
 {
 	struct stnode *tmp, *par;

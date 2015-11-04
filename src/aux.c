@@ -40,6 +40,25 @@ int cmp_raw(const void *k1p, const void *k2p)
 }
 
 
+int cmp_intptr(const void *k1, const void *k2)
+{
+	return ptr2int(k1) - ptr2int(k2);
+}
+
+
+int cmp_uintptr(const void *k1, const void *k2)
+{
+	uintptr_t v1 = ptr2uint(k1);
+	uintptr_t v2 = ptr2uint(k2);
+	if ( v1 < v2 )
+		return -1;
+	else if ( v1 == v2 )
+		return 0;
+	else
+		return 1;
+}
+
+
 ulong uldivmod(ulong dend, ulong dsor, int div)
 {
 	ulong r = 0;
