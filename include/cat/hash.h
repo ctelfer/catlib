@@ -134,7 +134,7 @@ DECL struct hnode * ht_lkup(struct htab *t, const void *key, uint *hp)
 DECL struct hnode *ht_ins(struct htab *t, struct hnode *node, uint hash)
 {
 	const void *key;
-	struct hnode **trav, *old;
+	struct hnode **trav, *old, *next;
 
 	abort_unless(t != NULL);
 	abort_unless(node != NULL);
@@ -150,7 +150,10 @@ DECL struct hnode *ht_ins(struct htab *t, struct hnode *node, uint hash)
 		if ( ! (*t->cmp)((*trav)->key, key) ) {
 			old = *trav;
 			node->prevp = trav;
-			node->next = old->next;
+			next = old->next;
+			node->next = next;
+			if ( next != NULL )
+				next->prevp = &node->next;
 			*trav = node;
 			old->next = NULL;
 			old->prevp = NULL;
