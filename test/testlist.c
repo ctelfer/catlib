@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
   usec /= NT;
   cl_free(cl);
 
-  printf("Roughly %f nanoseconds for clist_enqueue(),clist_dequeue()\n", 
+  printf("Roughly %f nanoseconds for cl_enq(),cl_deq()\n", 
          usec * 1000);
 
   return 0;

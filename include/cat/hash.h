@@ -182,6 +182,8 @@ DECL void ht_ins(struct htab *t, struct hnode *node, uint hash)
 
 	node->prevp = trav;
 	node->next = *trav;
+	if ( *trav != NULL )
+		(*trav)->prevp = &node->next;
 	*trav = node;
 }
 

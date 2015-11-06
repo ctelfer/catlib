@@ -192,7 +192,6 @@ struct rbnode *np;
   fflush(stdout);
 
   s = crb_del(t, strs[2][0]);
-  free(s);
   printf("Deleted %s\n", s); 
   printf("address is %p\n\n", s); 
   fflush(stdout);

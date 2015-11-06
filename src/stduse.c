@@ -31,6 +31,9 @@
 #endif /* va_copy */
 
 
+#define SMAX (~(size_t)0)
+
+
 /* Memory operations */
 
 static void * std_ealloc(struct memmgr *mm, size_t size) 
@@ -539,9 +542,9 @@ struct chtab *cht_new(size_t nbkts, struct chtab_attr *attr, void *hctx)
 	tsize = CAT_ALIGN_SIZE(sizeof(struct chtab));
 	hctx_size = CAT_ALIGN_SIZE(attr->hctx_size);
 	abort_unless(hctx_size >= attr->hctx_size);
-	abort_unless((size_t)-1 - hctx_size >= tsize);
+	abort_unless(SMAX - hctx_size >= tsize);
 	n = hctx_size + tsize;
-	abort_unless(((size_t)-1 - n) / sizeof(struct hnode *) < nbkts);
+	abort_unless((SMAX - n) / sizeof(struct hnode *) >= nbkts);
 	n += sizeof(struct hnode *) * nbkts;
 
 	t = emalloc(n);
@@ -1353,16 +1356,17 @@ struct heap *hp_new(size_t size, cmp_f cmp)
 	struct heap *hp;
 	void **elem = NULL;
 
-	abort_unless(size >= 0 && cmp);
-	abort_unless((size_t)-1 / sizeof(void *) <= size);
+	abort_unless(cmp);
+	abort_unless(SMAX / sizeof(void *) >= size);
 
 	hp = malloc(sizeof(struct heap));
+	if ( hp == NULL )
 		return NULL;
 
 	if ( size > 0 ) {
-		elem = mem_get(&stdmm, size * sizeof(void*));
+		elem = malloc(size * sizeof(void*));
 		if ( elem == NULL ) {
-			mem_free(&stdmm, hp);
+			free(hp);
 			return NULL;
 		}
 	}
