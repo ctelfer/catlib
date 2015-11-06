@@ -93,7 +93,7 @@ struct raw *erawdup(struct raw const * const r)
 /* List operations */
 
 
-static struct clist_node *cl_def_node_alloc(struct clist *list, void *ctx)
+static struct clist_node *cl_def_node_alloc(struct clist *list)
 {
 	return malloc(sizeof(struct clist_node));
 }
@@ -105,14 +105,14 @@ static void cl_def_node_free(struct clist *list, struct clist_node *node)
 }
 
 
-static struct cl_attr cl_def_attr = {
+static struct clist_attr cl_def_attr = {
 	cl_def_node_alloc,
 	cl_def_node_free,
 	{ 0 }
 };
 
 
-struct clist *cl_new(const struct clist_attr *attr);
+struct clist *cl_new(const struct clist_attr *attr)
 {
 	struct clist *list;
 	list = malloc(sizeof(*list));
@@ -137,7 +137,7 @@ struct clist *cl_new(const struct clist_attr *attr);
 void cl_free(struct clist *list)
 {
 	while ( !cl_isempty(list) )
-		cl_del(cl_first(list));
+		cl_del(list, cl_first(list));
 	free(list);
 }
 
@@ -156,9 +156,7 @@ size_t cl_fill(struct clist *list)
 
 struct clist_node *cl_node_new(struct clist *list, void *val)
 {
-	struct clist_node *node;
-
-	return node;
+	return (*list->node_alloc)(list);
 }
 
 
@@ -166,7 +164,7 @@ int cl_ins(struct clist *list, struct clist_node *prev, void *val)
 {
 	struct clist_node *node;
 
-	node = (*clist->node_alloc)(list);
+	node = (*list->node_alloc)(list);
 	if ( node == NULL )
 		return -1;
 
@@ -196,7 +194,6 @@ void *cl_del(struct clist *list, struct clist_node *node)
 
 int cl_enq(struct clist *list, void *val)
 {
-	struct clist_node *node;
 	return cl_ins(list, cl_last(list), val);
 }
 
@@ -405,7 +402,7 @@ void * cdl_free(struct dlist * nodep)
 
 /* Used by all xxx_apply() functions to store the real apply function */
 /* when wrapping with a new apply function to get the data pointer. */
-static struct apply_ctx {
+struct apply_ctx {
 	void *ctx;
 	apply_f f;
 };
@@ -430,12 +427,12 @@ static struct chnode *cht_node_alloc_skey(struct chtab *t, void *key)
 }
 
 
-static void cht_node_free_skey(struct chtab *t, struct chnode *node)
+static void cht_node_free_skey(struct chtab *t, struct chnode *chn)
 {
-	abort_unless(node != NULL);
-	abort_unless(node->key != NULL);
-	free(node->key);
-	free(node);
+	abort_unless(chn != NULL);
+	abort_unless(chn->node.key != NULL);
+	free(chn->node.key);
+	free(chn);
 }
 
 
@@ -454,7 +451,6 @@ static struct chnode *cht_node_alloc_rkey(struct chtab *t, void *key)
 	struct chnode *chn;
 	struct raw *rkey = key;
 	struct raw *rnode;
-	size_t size = CAT_ALIGN_SIZE(sizeof(struct chnode));
 
 	if ( rkey->len > 0 ) {
 		kcpy = malloc(rkey->len);
@@ -476,14 +472,14 @@ static struct chnode *cht_node_alloc_rkey(struct chtab *t, void *key)
 }
 
 
-static void cht_node_free_rkey(struct chtab *t, struct chnode *node)
+static void cht_node_free_rkey(struct chtab *t, struct chnode *chn)
 {
 	struct raw *r;
-	abort_unless(node != NULL);
-	abort_unless(node->key != NULL);
-	r = node->key;
+	abort_unless(chn != NULL);
+	abort_unless(chn->node.key != NULL);
+	r = chn->node.key;
 	free(r->data);
-	free(node);
+	free(chn);
 }
 
 
@@ -507,15 +503,15 @@ static struct chnode *cht_node_alloc_ikey(struct chtab *t, void *key)
 }
 
 
-static void cht_node_free_ikey(struct chtab *t, struct chnode *node)
+static void cht_node_free_ikey(struct chtab *t, struct chnode *chn)
 {
-	abort_unless(node != NULL);
-	free(node);
+	abort_unless(chn != NULL);
+	free(chn);
 }
 
 
 struct chtab_attr cht_std_attr_ikey = {
-	&cmp_int,
+	&cmp_intptr,
 	&ht_phash,
 	0,
 	&cht_node_alloc_ikey,
@@ -543,9 +539,9 @@ struct chtab *cht_new(size_t nbkts, struct chtab_attr *attr, void *hctx)
 	tsize = CAT_ALIGN_SIZE(sizeof(struct chtab));
 	hctx_size = CAT_ALIGN_SIZE(attr->hctx_size);
 	abort_unless(hctx_size >= attr->hctx_size);
-	abort_unless(SIZE_MAX - hctx_size >= tsize);
+	abort_unless((size_t)-1 - hctx_size >= tsize);
 	n = hctx_size + tsize;
-	abort_unless((SIZE_MAX - n) / sizeof(struct hnode *) < nbkts);
+	abort_unless(((size_t)-1 - n) / sizeof(struct hnode *) < nbkts);
 	n += sizeof(struct hnode *) * nbkts;
 
 	t = emalloc(n);
@@ -553,14 +549,14 @@ struct chtab *cht_new(size_t nbkts, struct chtab_attr *attr, void *hctx)
 		return NULL;
 
 	new_hctx = (byte_t *)t + tsize;
-	buckets = (byte_t *)new_hctx + hctx_size;
+	buckets = (struct hnode **)((byte_t *)new_hctx + hctx_size);
 
 	if (hctx_size != 0)
 		memmove(new_hctx, hctx, attr->hctx_size);
 	else
 		new_hctx = NULL;
 
-	ht_init(&cht->table, buckets, nbkts, attr->kcmp, attr->hash, hctx);
+	ht_init(&t->table, buckets, nbkts, attr->kcmp, attr->hash, new_hctx);
 	t->node_alloc = attr->node_alloc;
 	t->node_free = attr->node_free;
 	t->ctx = attr->ctx;
@@ -573,29 +569,28 @@ void cht_free(struct chtab *t)
 {
 	unsigned i;
 	struct chnode *chn;
-	void (*ff)(struct chtab *t, struct chnode *n);
 
 	abort_unless(t != NULL);
 
-	for ( i = 0; i < t->nbkts ; ++i ) {
-		while ( t->bkts[i] != NULL ) {
-			chn = container(t->bkts[i], struct chnode, node);
+	for ( i = 0; i < t->table.nbkts ; ++i ) {
+		while ( t->table.bkts[i] != NULL ) {
+			chn = container(t->table.bkts[i], struct chnode, node);
 			ht_rem(&chn->node);
-			(*ff)(t, chn);
+			(*t->node_free)(t, chn);
 		}
 	}
 	free(t);
 }
 
 
-void *cht_get(struct chtab *t, const void *key)
+void *cht_get(struct chtab *t, void *key)
 {
 	struct hnode *hn;
 
 	abort_unless(t != NULL);
 	abort_unless(key != NULL);
 
-	hn = ht_lkup(t, key, NULL);
+	hn = ht_lkup(&t->table, key, NULL);
 	if ( hn != NULL )
 		return container(hn, struct chnode, node)->data;
 	else
@@ -603,7 +598,7 @@ void *cht_get(struct chtab *t, const void *key)
 }
 
 
-int cht_put(struct chtab *t, const void *key, void *data, void **odata)
+int cht_put(struct chtab *t, void *key, void *data, void **odata)
 {
 	struct hnode *hn;
 	struct chnode *chn;
@@ -611,9 +606,9 @@ int cht_put(struct chtab *t, const void *key, void *data, void **odata)
 
 	abort_unless(t != NULL);
 	abort_unless(key != NULL);
-	abort_unless(ndata != NULL);
+	abort_unless(data != NULL);
 
-	hn = ht_lkup(t, key, &h);
+	hn = ht_lkup(&t->table, key, &h);
 	if ( hn == NULL ) {
 		if ( odata != NULL )
 			*odata = NULL;
@@ -622,17 +617,18 @@ int cht_put(struct chtab *t, const void *key, void *data, void **odata)
 			return -1;
 		chn->data = data;
 		ht_ins(&t->table, &chn->node, h);
+		return 0;
 	} else {
 		chn = container(hn, struct chnode, node);
 		if ( odata != NULL )
 			*odata = chn->data;
 		chn->data = data;
+		return 1;
 	}
-	return 0;
 }
 
 
-void *cht_del(struct chtab *t, const void *key)
+void *cht_del(struct chtab *t, void *key)
 {
 	struct hnode *hn;
 	struct chnode *chn;
@@ -641,7 +637,7 @@ void *cht_del(struct chtab *t, const void *key)
 	abort_unless(t != NULL);
 	abort_unless(key != NULL);
 
-	hn = ht_lkup(t, key);
+	hn = ht_lkup(&t->table, key, NULL);
 	if ( hn != NULL ) {
 		ht_rem(hn);
 		chn = container(hn, struct chnode, node);
@@ -654,16 +650,18 @@ void *cht_del(struct chtab *t, const void *key)
 
 static void cht_apply_wrap(void *p, void *ctx)
 {
-	struct chnode *node = p;
+	struct chnode *chn = p;
 	struct apply_ctx *ac = ctx;
-	(*ac->f)(p->data, ac->ctx);
+	(*ac->f)(chn->data, ac->ctx);
 }
 
 
 void cht_apply(struct chtab *t, apply_f f, void *ctx)
 {
-	struct apply_ctx ac = { t->ctx, f };
-	ht_apply(&t->tree, &cht_apply_wrap, &ac);
+	struct apply_ctx ac;
+	ac.ctx = t->ctx;
+	ac.f = f;
+	ht_apply(&t->table, &cht_apply_wrap, &ac);
 }
 
 
@@ -686,19 +684,19 @@ static struct canode *cavl_node_alloc_skey(struct cavltree *t, void *key)
 }
 
 
-static void cavl_node_free_skey(struct cavltree *t, struct canode *node)
+static void cavl_node_free_skey(struct cavltree *t, struct canode *can)
 {
-	abort_unless(node != NULL);
-	abort_unless(node->key != NULL);
-	free(node->key);
-	free(node);
+	abort_unless(can != NULL);
+	abort_unless(can->node.key != NULL);
+	free(can->node.key);
+	free(can);
 }
 
 
 struct cavltree_attr cavl_std_attr_skey = {
 	&cmp_str,
 	&cavl_node_alloc_skey,
-	&cavl_node_free_skey
+	&cavl_node_free_skey,
 	0,
 };
 
@@ -709,7 +707,6 @@ static struct canode *cavl_node_alloc_rkey(struct cavltree *t, void *key)
 	struct canode *can;
 	struct raw *rkey = key;
 	struct raw *rnode;
-	size_t size = CAT_ALIGN_SIZE(sizeof(struct canode));
 
 	if ( rkey->len > 0 ) {
 		kcpy = malloc(rkey->len);
@@ -731,21 +728,21 @@ static struct canode *cavl_node_alloc_rkey(struct cavltree *t, void *key)
 }
 
 
-static void cavl_node_free_rkey(struct cavltree *t, struct canode *node)
+static void cavl_node_free_rkey(struct cavltree *t, struct canode *can)
 {
 	struct raw *r;
-	abort_unless(node != NULL);
-	abort_unless(node->key != NULL);
-	r = node->key;
+	abort_unless(can!= NULL);
+	abort_unless(can->node.key != NULL);
+	r = can->node.key;
 	free(r->data);
-	free(node);
+	free(can);
 }
 
 
 struct cavltree_attr cavl_std_attr_rkey = {
 	&cmp_raw,
 	&cavl_node_alloc_rkey,
-	&cavl_node_free_rkey
+	&cavl_node_free_rkey,
 	0,
 };
 
@@ -761,17 +758,17 @@ static struct canode *cavl_node_alloc_ikey(struct cavltree *t, void *key)
 }
 
 
-static void cavl_node_free_ikey(struct cavltree *t, struct canode *node)
+static void cavl_node_free_ikey(struct cavltree *t, struct canode *can)
 {
-	abort_unless(node != NULL);
-	free(node);
+	abort_unless(can != NULL);
+	free(can);
 }
 
 
 struct cavltree_attr cavl_std_attr_ikey = {
 	&cmp_intptr,
 	&cavl_node_alloc_ikey,
-	&cavl_node_free_ikey
+	&cavl_node_free_ikey,
 	0,
 };
 
@@ -810,13 +807,13 @@ void cavl_free(struct cavltree *t)
 	while ( (an = avl_getroot(&t->tree)) != NULL ) {
 		avl_rem(an);
 		can = container(an, struct canode, node);
-		(*avl->node_free)(t, an);
+		(*t->node_free)(t, can);
 	}
 	free(t);
 }
 
 
-void *cavl_get(struct cavltree *t, const void *key)
+void *cavl_get(struct cavltree *t, void *key)
 {
 	struct anode *an;
 
@@ -830,7 +827,7 @@ void *cavl_get(struct cavltree *t, const void *key)
 }
 
 
-int cavl_put(struct cavltree *t, const void *key, void *data, void **odata)
+int cavl_put(struct cavltree *t, void *key, void *data, void **odata)
 {
 	int dir;
 	struct anode *an;
@@ -840,25 +837,26 @@ int cavl_put(struct cavltree *t, const void *key, void *data, void **odata)
 	abort_unless(key != NULL);
 
 
-	an = avl_lkup(t, key, &dir);
+	an = avl_lkup(&t->tree, key, &dir);
 	if ( dir != CA_N ) {
 		can = (*t->node_alloc)(t, key);
 		if ( can == NULL )
 			return -1;
-		avl_ins(t, &can->node, an, dir);
+		can->data = data;
+		avl_ins(&t->tree, &can->node, an, dir);
+		return 0;
 	} else {
 		can = container(an, struct canode, node);
 		if ( odata != NULL )
 			*odata = can->data;
+		can->data = data;
+		return 1;
 	}
-	can->data = data;
-	return 0;
 }
 
 
-void *cavl_del(struct cavltree *t, const void *key)
+void *cavl_del(struct cavltree *t, void *key)
 {
-	int dir;
 	struct anode *an;
 	struct canode *can;
 	void *data = NULL;
@@ -871,7 +869,7 @@ void *cavl_del(struct cavltree *t, const void *key)
 		can = container(an, struct canode, node);
 		data = can->data;
 		avl_rem(an);
-		(*t->node_free)(t, an);
+		(*t->node_free)(t, can);
 	}
 	return data;
 }
@@ -887,7 +885,9 @@ static void cavl_apply_wrap(void *p, void *ctx)
 
 void cavl_apply(struct cavltree *t, apply_f f, void *ctx)
 {
-	struct apply_ctx ac = { t->ctx, f };
+	struct apply_ctx ac;
+	ac.ctx = t->ctx;
+	ac.f = f;
 	avl_apply(&t->tree, &cavl_apply_wrap, &ac);
 }
 
@@ -911,19 +911,19 @@ static struct crbnode *crb_node_alloc_skey(struct crbtree *t, void *key)
 }
 
 
-static void crb_node_free_skey(struct crbtree *t, struct crbnode *node)
+static void crb_node_free_skey(struct crbtree *t, struct crbnode *crn)
 {
-	abort_unless(node != NULL);
-	abort_unless(node->key != NULL);
-	free(node->key);
-	free(node);
+	abort_unless(crn != NULL);
+	abort_unless(crn->node.key != NULL);
+	free(crn->node.key);
+	free(crn);
 }
 
 
 struct crbtree_attr crb_std_attr_skey = {
 	&cmp_str,
 	&crb_node_alloc_skey,
-	&crb_node_free_skey
+	&crb_node_free_skey,
 	0,
 };
 
@@ -934,7 +934,6 @@ static struct crbnode *crb_node_alloc_rkey(struct crbtree *t, void *key)
 	struct crbnode *crn;
 	struct raw *rkey = key;
 	struct raw *rnode;
-	size_t size = CAT_ALIGN_SIZE(sizeof(struct crbnode));
 
 	if ( rkey->len > 0 ) {
 		kcpy = malloc(rkey->len);
@@ -956,21 +955,21 @@ static struct crbnode *crb_node_alloc_rkey(struct crbtree *t, void *key)
 }
 
 
-static void crb_node_free_rkey(struct crbtree *t, struct crbnode *node)
+static void crb_node_free_rkey(struct crbtree *t, struct crbnode *crn)
 {
 	struct raw *r;
-	abort_unless(node != NULL);
-	abort_unless(node->key != NULL);
-	r = node->key;
+	abort_unless(crn != NULL);
+	abort_unless(crn->node.key != NULL);
+	r = crn->node.key;
 	free(r->data);
-	free(node);
+	free(crn);
 }
 
 
 struct crbtree_attr crb_std_attr_rkey = {
 	&cmp_raw,
 	&crb_node_alloc_rkey,
-	&crb_node_free_rkey
+	&crb_node_free_rkey,
 	0,
 };
 
@@ -986,17 +985,17 @@ static struct crbnode *crb_node_alloc_ikey(struct crbtree *t, void *key)
 }
 
 
-static void crb_node_free_ikey(struct crbtree *t, struct crbnode *node)
+static void crb_node_free_ikey(struct crbtree *t, struct crbnode *crn)
 {
-	abort_unless(node != NULL);
-	free(node);
+	abort_unless(crn != NULL);
+	free(crn);
 }
 
 
 struct crbtree_attr crb_std_attr_ikey = {
 	&cmp_intptr,
 	&crb_node_alloc_ikey,
-	&crb_node_free_ikey
+	&crb_node_free_ikey,
 	0,
 };
 
@@ -1016,7 +1015,7 @@ struct crbtree *crb_new(struct crbtree_attr *attr)
 	if ( t == NULL )
 		return NULL;
 
-	rb_init(t, attr->kcmp);
+	rb_init(&t->tree, attr->kcmp);
 	t->node_alloc = attr->node_alloc;
 	t->node_free = attr->node_free;
 	t->ctx = attr->ctx;
@@ -1032,16 +1031,16 @@ void crb_free(struct crbtree *t)
 
 	abort_unless(t != NULL);
 
-	while ( (rn = rb_getroot(&->tree)) != NULL ) {
+	while ( (rn = rb_getroot(&t->tree)) != NULL ) {
 		rb_rem(rn);
 		crn = container(rn, struct crbnode, node);
-		(*t->node_free)(t, rn);
+		(*t->node_free)(t, crn);
 	}
 	free(t);
 }
 
 
-void *crb_get(struct crbtree *t, const void *key)
+void *crb_get(struct crbtree *t, void *key)
 {
 	struct rbnode *rn;
 
@@ -1055,7 +1054,7 @@ void *crb_get(struct crbtree *t, const void *key)
 }
 
 
-int crb_put(struct crbtree *t, const void *key, void *data, void **odata)
+int crb_put(struct crbtree *t, void *key, void *data, void **odata)
 {
 	int dir;
 	struct rbnode *rn;
@@ -1065,25 +1064,26 @@ int crb_put(struct crbtree *t, const void *key, void *data, void **odata)
 	abort_unless(key != NULL);
 
 
-	rn = rb_lkup(t, key, &dir);
+	rn = rb_lkup(&t->tree, key, &dir);
 	if ( dir != CRB_N ) {
 		crn = (*t->node_alloc)(t, key);
 		if ( crn == NULL )
 			return -1;
-		rb_ins(t, &crn->node, rn, dir);
+		crn->data = data;
+		rb_ins(&t->tree, &crn->node, rn, dir);
+		return 0;
 	} else {
 		crn = container(rn, struct crbnode, node);
 		if ( odata != NULL )
 			*odata = crn->data;
+		crn->data = data;
+		return 1;
 	}
-	crn->data = data;
-	return 0;
 }
 
 
-void *crb_del(struct crbtree *t, const void *key)
+void *crb_del(struct crbtree *t, void *key)
 {
-	int dir;
 	struct rbnode *rn;
 	struct crbnode *crn;
 	void *data = NULL;
@@ -1091,12 +1091,12 @@ void *crb_del(struct crbtree *t, const void *key)
 	abort_unless(t != NULL);
 	abort_unless(key != NULL);
 
-	rn = rb_lkup(t, key, NULL);
+	rn = rb_lkup(&t->tree, key, NULL);
 	if ( rn != NULL ) {
 		crn = container(rn, struct crbnode, node);
 		data = crn->data;
 		rb_rem(rn);
-		(*t->node_free)(t, rn);
+		(*t->node_free)(t, crn);
 	}
 	return data;
 }
@@ -1112,7 +1112,9 @@ static void crb_apply_wrap(void *p, void *ctx)
 
 void crb_apply(struct crbtree *t, apply_f f, void *ctx)
 {
-	struct apply_ctx ac = { t->ctx, f };
+	struct apply_ctx ac;
+	ac.ctx = t->ctx;
+	ac.f = f;
 	rb_apply(&t->tree, &crb_apply_wrap, &ac);
 }
 
@@ -1136,19 +1138,19 @@ static struct cstnode *cst_node_alloc_skey(struct cstree *t, void *key)
 }
 
 
-static void cst_node_free_skey(struct cstree *t, struct cstnode *node)
+static void cst_node_free_skey(struct cstree *t, struct cstnode *csn)
 {
-	abort_unless(node != NULL);
-	abort_unless(node->key != NULL);
-	free(node->key);
-	free(node);
+	abort_unless(csn != NULL);
+	abort_unless(csn->node.key != NULL);
+	free(csn->node.key);
+	free(csn);
 }
 
 
 struct cstree_attr cst_std_attr_skey = {
 	&cmp_str,
 	&cst_node_alloc_skey,
-	&cst_node_free_skey
+	&cst_node_free_skey,
 	0,
 };
 
@@ -1159,7 +1161,6 @@ static struct cstnode *cst_node_alloc_rkey(struct cstree *t, void *key)
 	struct cstnode *csn;
 	struct raw *rkey = key;
 	struct raw *rnode;
-	size_t size = CAT_ALIGN_SIZE(sizeof(struct cstnode));
 
 	if ( rkey->len > 0 ) {
 		kcpy = malloc(rkey->len);
@@ -1181,21 +1182,21 @@ static struct cstnode *cst_node_alloc_rkey(struct cstree *t, void *key)
 }
 
 
-static void cst_node_free_rkey(struct cstree *t, struct cstnode *node)
+static void cst_node_free_rkey(struct cstree *t, struct cstnode *csn)
 {
 	struct raw *r;
-	abort_unless(node != NULL);
-	abort_unless(node->key != NULL);
-	r = node->key;
+	abort_unless(csn != NULL);
+	abort_unless(csn->node.key != NULL);
+	r = csn->node.key;
 	free(r->data);
-	free(node);
+	free(csn);
 }
 
 
 struct cstree_attr cst_std_attr_rkey = {
 	&cmp_raw,
 	&cst_node_alloc_rkey,
-	&cst_node_free_rkey
+	&cst_node_free_rkey,
 	0,
 };
 
@@ -1211,17 +1212,17 @@ static struct cstnode *cst_node_alloc_ikey(struct cstree *t, void *key)
 }
 
 
-static void cst_node_free_ikey(struct cstree *t, struct cstnode *node)
+static void cst_node_free_ikey(struct cstree *t, struct cstnode *csn)
 {
-	abort_unless(node != NULL);
-	free(node);
+	abort_unless(csn != NULL);
+	free(csn);
 }
 
 
 struct cstree_attr cst_std_attr_ikey = {
 	&cmp_intptr,
 	&cst_node_alloc_ikey,
-	&cst_node_free_ikey
+	&cst_node_free_ikey,
 	0,
 };
 
@@ -1241,7 +1242,7 @@ struct cstree *cst_new(struct cstree_attr *attr)
 	if ( t == NULL )
 		return NULL;
 
-	st_init(t, attr->kcmp);
+	st_init(&t->tree, attr->kcmp);
 	t->node_alloc = attr->node_alloc;
 	t->node_free = attr->node_free;
 	t->ctx = attr->ctx;
@@ -1250,39 +1251,38 @@ struct cstree *cst_new(struct cstree_attr *attr)
 }
 
 
-void st_free(struct cstree *t)
+void cst_free(struct cstree *t)
 {
 	struct stnode *sn;
 	struct cstnode *csn;
 
 	abort_unless(t != NULL);
 
-	while ( (sn = st_getroot(&->tree)) != NULL ) {
+	while ( (sn = st_getroot(&t->tree)) != NULL ) {
 		st_rem(sn);
 		csn = container(sn, struct cstnode, node);
-		(*t->node_free)(t, sn);
+		(*t->node_free)(t, csn);
 	}
 	free(t);
 }
 
 
-void *cst_get(struct cstree *t, const void *key)
+void *cst_get(struct cstree *t, void *key)
 {
 	struct stnode *sn;
 
 	abort_unless(t != NULL);
 	abort_unless(key != NULL);
 
-	sn = st_lkup(&t->tree, key, NULL);
+	sn = st_lkup(&t->tree, key);
 	if ( sn != NULL )
 		return container(sn, struct cstnode, node)->data;
 	return NULL;
 }
 
 
-int cst_put(struct cstree *t, const void *key, void *data, void **odata)
+int cst_put(struct cstree *t, void *key, void *data, void **odata)
 {
-	int dir;
 	struct stnode *sn;
 	struct cstnode *csn;
 
@@ -1290,25 +1290,26 @@ int cst_put(struct cstree *t, const void *key, void *data, void **odata)
 	abort_unless(key != NULL);
 
 
-	sn = st_lkup(t, key, &dir);
-	if ( dir != CRB_N ) {
+	sn = st_lkup(&t->tree, key);
+	if ( sn == NULL ) {
 		csn = (*t->node_alloc)(t, key);
 		if ( csn == NULL )
 			return -1;
-		st_ins(t, &csn->node, sn, dir);
+		csn->data = data;
+		st_ins(&t->tree, &csn->node);
+		return 0;
 	} else {
 		csn = container(sn, struct cstnode, node);
 		if ( odata != NULL )
 			*odata = csn->data;
+		csn->data = data;
+		return 1;
 	}
-	csn->data = data;
-	return 0;
 }
 
 
-void *cst_del(struct cstree *t, const void *key)
+void *cst_del(struct cstree *t, void *key)
 {
-	int dir;
 	struct stnode *sn;
 	struct cstnode *csn;
 	void *data = NULL;
@@ -1316,12 +1317,12 @@ void *cst_del(struct cstree *t, const void *key)
 	abort_unless(t != NULL);
 	abort_unless(key != NULL);
 
-	sn = st_lkup(t, key, NULL);
+	sn = st_lkup(&t->tree, key);
 	if ( sn != NULL ) {
 		csn = container(sn, struct cstnode, node);
 		data = csn->data;
 		st_rem(sn);
-		(*t->node_free)(t, sn);
+		(*t->node_free)(t, csn);
 	}
 	return data;
 }
@@ -1337,7 +1338,9 @@ static void cst_apply_wrap(void *p, void *ctx)
 
 void cst_apply(struct cstree *t, apply_f f, void *ctx)
 {
-	struct apply_ctx ac = { t->ctx, f };
+	struct apply_ctx ac;
+	ac.ctx = t->ctx;
+	ac.f = f;
 	st_apply(&t->tree, &cst_apply_wrap, &ac);
 }
 
@@ -1351,7 +1354,7 @@ struct heap *hp_new(size_t size, cmp_f cmp)
 	void **elem = NULL;
 
 	abort_unless(size >= 0 && cmp);
-	abort_unless(SIZE_MAX / sizeof(void *) <= size);
+	abort_unless((size_t)-1 / sizeof(void *) <= size);
 
 	hp = malloc(sizeof(struct heap));
 		return NULL;

@@ -59,12 +59,12 @@ struct uemux {
 	struct memmgr *		mm;
 	struct dlist		timers;
 	int 			maxfd;
-	struct avl *		fdtab;
+	struct cavltree *	fdtab;
 	struct list		iolist;
 	fd_set			rset;
 	fd_set			wset;
 	fd_set			eset;
-	struct avl *		sigtab;
+	struct cavltree *	sigtab;
 	int			done;
 };
 

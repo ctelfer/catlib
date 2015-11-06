@@ -107,7 +107,6 @@ typedef uint32_t tlsf_sz_t;
 
 enum {
 	TLSF_LG2_UNITSIZE = FLOG2(UNITSIZE),
-	TLSF_ALIM = ((tlsf_sz_t)1 << TLSF_LG2_ALIM),
 	TLSF_MINNU = ((sizeof(struct memblk)+2*UNITSIZE-1)/UNITSIZE),
 	TLSF_MINSZ = (TLSF_MINNU * UNITSIZE),
 	TLSF_MINPOOL = ((TLSF_MINNU + 2) * UNITSIZE),
@@ -116,6 +115,9 @@ enum {
 	TLSF_NUMSMALL = (TLSF_L2_LEN),
 	TLSF_NUMFULL = (TLSF_NUML2 - TLSF_L2_LEN)
 };
+
+/* Must be #defined since enums must be of type 'int' */
+#define TLSF_ALIM ((tlsf_sz_t)1 << TLSF_LG2_ALIM)
 
 /* 
   TLSF_SZ_BITS list heads for each list with a # of UNITSIZE slots >= to min 

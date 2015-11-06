@@ -9,24 +9,13 @@
 #include <stdlib.h>
 #include <cat/avl.h>
 #include <cat/stduse.h>
+#include <cat/emalloc.h>
 #include <sys/time.h>
 
 #define NUMSTR	4
 #define NA	200
 
 /* in case strdup() doesn't exist */
-char *sdup(const char *s)
-{
-	char *ns;
-	size_t ls = strlen(s);
-	ns = malloc(ls + 1);
-	if (ns == NULL)
-		return NULL;
-	memcpy(ns, s, ls);
-	ns[ls] = '\0';
-	return ns;
-}
-
 int vrfy(struct anode *an)
 {
   int l, r;
@@ -55,6 +44,7 @@ int vrfy(struct anode *an)
 void printan(struct anode *an, int d)
 {
   int i;
+  struct canode *can = container(an, struct canode, node);
 
   if ( an->avl_right ) 
     printan(an->avl_right, d+1);
@@ -62,7 +52,7 @@ void printan(struct anode *an, int d)
   for ( i = 0 ; i < d ; ++i ) 
     printf("  ");
 
-  printf("[%s:%s->%d]\n", (char *)an->key, (char *)an->data, an->b);
+  printf("[%s:%s->%d]\n", (char *)an->key, (char *)can->data, an->b);
 
   if ( an->avl_left ) 
     printan(an->avl_left, d+1);
@@ -72,12 +62,12 @@ void printan(struct anode *an, int d)
 
 
 
-void printavl(struct avl *a)
+void printavl(struct cavltree *t)
 {
-  if ( a->avl_root == NULL ) 
+  if ( t->tree.avl_root == NULL ) 
     printf("tree is empty\n");
   else
-    printan(a->avl_root, 0);
+    printan(t->tree.avl_root, 0);
 }
 
 
@@ -98,11 +88,11 @@ void timeit()
   struct anode nodes[NOPS], *finder;
   struct timeval start, end;
   int i, j, dir;
-  struct avl t;
+  struct avltree t;
   double dbl;
 
   for (i = 0; i < NOPS; i++)
-    avl_ninit(&nodes[i], str_fmt_a("node%d", i), NULL);
+    avl_ninit(&nodes[i], str_fmt_a("node%d", i));
   avl_init(&t, cmp_str);
 
   gettimeofday(&start, NULL);
@@ -160,35 +150,34 @@ char *strs[NUMSTR][2] =
                     {"Key 3!", "By now! this is over."},
                     {"key 1", "Overwrite."}
                   };
-struct avl *avl; 
+struct cavltree *avl; 
 char *s;
-struct anode *anp;
 
-  avl = avl_new(&estdmm, CAT_KT_STR, 0, 0);
+  avl = cavl_new(&cavl_std_attr_skey);
 
   for (i = 0; i < NUMSTR; i++)
   {
-    avl_put(avl, strs[i][0], strs[i][1]);
-    anp = avl_lkup(avl, strs[i][0], 0);
-    printf("Put (%s) at key (%s): %p\n", strs[i][1], strs[i][0], anp);
+    cavl_put(avl, strs[i][0], strs[i][1], NULL);
+    s = cavl_get(avl, strs[i][0]);
+    printf("Put (%s) at key (%s): %p\n", s, strs[i][0], s);
     fflush(stdout);
   }
 
-  if (avl_get_dptr(avl, "bye")) 
+  if (cavl_get(avl, "bye")) 
     printf("found something I shouldn't have!\n"); 
   fflush(stdout);
 
-  s = avl_get_dptr(avl, strs[1][0]);
+  s = cavl_get(avl, strs[1][0]);
   printf("Under key %s is the string %s\n", strs[1][0], s);
   printf("address is %p\n\n", s); 
   fflush(stdout);
 
-  s = avl_get_dptr(avl, strs[2][0]);
+  s = cavl_get(avl, strs[2][0]);
   printf("Under key %s is the string %s\n", strs[2][0], s);
   printf("address is %p\n\n", s); 
   fflush(stdout);
 
-  s = avl_get_dptr(avl, strs[0][0]);
+  s = cavl_get(avl, strs[0][0]);
   printf("Under key %s is the string %s\n", strs[0][0], s); 
   printf("address is %p\n\n", s); 
   fflush(stdout);
@@ -196,29 +185,27 @@ struct anode *anp;
   printavl(avl);
   fflush(stdout);
 
-  s = avl_get_dptr(avl, strs[1][0]);
-  avl_clr(avl, strs[1][0]);
+  s = cavl_get(avl, strs[1][0]);
+  cavl_del(avl, strs[1][0]);
   printf("Deleted %s\n", s); 
   printf("address is %p\n\n", s); 
   fflush(stdout);
 
-  anp = avl_lkup(avl, strs[2][0], NULL);
-  s = anp->data;
-  avl_rem(anp);
-  free(anp);
+  s = cavl_del(avl, strs[2][0]);
   printf("Deleted %s\n", s); 
   printf("address is %p\n\n", s); 
   fflush(stdout);
 
-  if (avl_get_dptr(avl, strs[1][0]))
+  if (cavl_get(avl, strs[1][0]))
     printf("Error!  Thing not deleted! : %s\n", 
-            (char*)avl_get_dptr(avl, strs[1][0]));
+            (char*)cavl_get(avl, strs[1][0]));
   fflush(stdout);
 
   printavl(avl);
   printf("\n");
-  avl_free(avl); 	/* get rid of "Overwrite!" */
-  avl = avl_new(&estdmm, CAT_KT_STR, 0, 0);
+  cavl_free(avl); 	/* get rid of "Overwrite!" */
+
+  avl = cavl_new(&cavl_std_attr_skey);
 
   for ( i = 0 ; i < NA ; ++i ) 
     arr[i] = i;
@@ -236,7 +223,7 @@ struct anode *anp;
     printf("%d ", arr[i]);
     sprintf(nstr, "k%03d", arr[i]);
     sprintf(vstr, "v%03d", arr[i]);
-    avl_put(avl, nstr, sdup(vstr));
+    cavl_put(avl, nstr, estrdup(vstr), NULL);
   }
   printf("\n\n");
 
@@ -263,10 +250,9 @@ struct anode *anp;
 */
 
     sprintf(nstr, "k%03d", arr[i]);
-    s = avl_get_dptr(avl, nstr);
-    avl_clr(avl, nstr);
+    s = cavl_del(avl, nstr);
     free(s);
-    if ( vrfy(avl->avl_root) < 0 )
+    if ( vrfy(avl->tree.avl_root) < 0 )
     {
       printavl(avl);
       exit(-1);
@@ -278,8 +264,8 @@ struct anode *anp;
   printavl(avl);
   fflush(stdout);
 
-  avl_apply(avl, ourfree, NULL);
-  avl_free(avl); 
+  cavl_apply(avl, ourfree, NULL);
+  cavl_free(avl); 
 
   printf("Freed\n");
 

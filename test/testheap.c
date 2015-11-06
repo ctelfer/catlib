@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
   printf("\n");
 
   /* generate the heap */
-  hp = hp_new(&estdmm, 0, &my_cmp_int);
+  hp = hp_new(0, &my_cmp_int);
 
   for ( i = 0 ; i < num ; ++i ) {
     if (hp_add(hp, int2ptr(arr[i]), NULL) < 0) {

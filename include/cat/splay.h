@@ -48,7 +48,7 @@ struct sptree {
 
 /* main functions */
 DECL void            st_init(struct sptree *t, cmp_f cmp);
-DECL void            st_ninit(struct stnode *n, void *k, void *d);
+DECL void            st_ninit(struct stnode *n, void *k);
 DECL struct stnode * st_lkup(struct sptree *t, const void *key);
 DECL struct stnode * st_ins(struct sptree *t, struct stnode *node);
 DECL void            st_rem(struct stnode *node);
@@ -79,18 +79,17 @@ DECL void st_init(struct sptree *t, cmp_f cmp)
 	abort_unless(t);
 	abort_unless(cmp);
 	t->cmp = cmp;
-	st_ninit(&t->root, NULL, NULL);
+	st_ninit(&t->root, NULL);
 	t->root.pdir = CST_P;
 }
 
 
-DECL void st_ninit(struct stnode *n, void *k, void *d)
+DECL void st_ninit(struct stnode *n, void *k)
 {
 	abort_unless(n);
 	n->p[CST_L] = n->p[CST_R] = n->p[CST_P] = NULL;
 	n->pdir = CST_N;
 	n->key = k;
-	n->data = d;
 }
 
 
@@ -192,7 +191,7 @@ DECL void st_apply(struct sptree *t, apply_f func, void * ctx)
 			else if ( trav->st_right )
 				trav = trav->st_right;
 			else {
-				(*func)(trav->data, ctx);
+				(*func)(trav, ctx);
 				dir = trav->pdir;
 				trav = trav->st_par;
 			}
@@ -202,13 +201,13 @@ DECL void st_apply(struct sptree *t, apply_f func, void * ctx)
 				dir = CST_P;
 				trav = trav->st_right;
 			} else {
-				(*func)(trav->data, ctx);
+				(*func)(trav, ctx);
 				dir = trav->pdir;
 				trav = trav->st_par;
 			}
 			break;
 		case CST_R:
-			(*func)(trav->data, ctx);
+			(*func)(trav, ctx);
 			dir = trav->pdir;
 			trav = trav->st_par;
 			break;

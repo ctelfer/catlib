@@ -69,7 +69,7 @@ void * cl_del(struct clist *list, struct clist_node *node);
 int    cl_enq(struct clist *list, void *val);
 void * cl_deq(struct clist *list);
 int    cl_push(struct clist *list, void *val);
-void * cl_pop(struct clist *list, void *val);
+void * cl_pop(struct clist *list);
 void * cl_top(struct clist *list);
 void   cl_apply(struct clist *list, apply_f f, void *arg);
 
@@ -104,6 +104,8 @@ struct chnode {
 	void *		data;
 };
 
+#define cht_data(_n) (container((_n), struct chnode, node)->data)
+
 struct chtab;
 
 struct chtab_attr {
@@ -126,13 +128,12 @@ extern struct chtab_attr cht_std_attr_skey;	/* string key table */
 extern struct chtab_attr cht_std_attr_rkey;	/* raw key table */
 extern struct chtab_attr cht_std_attr_ikey;	/* int key table */
 
-
 struct chtab *	cht_new(size_t nbkts, struct chtab_attr *attr, void *hctx);
 void		cht_free(struct chtab *t);
-void *		cht_get(struct chtab *t, const void *key);
-int		cht_put(struct htab *t, const void *key, void *data,
+void *		cht_get(struct chtab *t, void *key);
+int		cht_put(struct chtab *t, void *key, void *data,
 			void **odata);
-void *		cht_del(struct chtab *t, const void *key);
+void *		cht_del(struct chtab *t, void *key);
 void		cht_apply(struct chtab *t, apply_f f, void *ctx);
 
 
@@ -142,6 +143,8 @@ struct canode {
 	struct anode	node;
 	void *		data;
 };
+
+#define cavl_data(_n) (container((_n), struct canode, node)->data)
 
 struct cavltree;
 
@@ -166,10 +169,10 @@ extern struct cavltree_attr cavl_std_attr_ikey;	/* int key table */
 
 struct cavltree * cavl_new(struct cavltree_attr *attr);
 void		cavl_free(struct cavltree *t);
-void *		cavl_get(struct cavltree *t, const void *key);
-int		cavl_put(struct cavltree *t, const void *key, void *data,
+void *		cavl_get(struct cavltree *t, void *key);
+int		cavl_put(struct cavltree *t, void *key, void *data,
 			 void **odata);
-void *		cavl_del(struct cavltree *t, const void *key);
+void *		cavl_del(struct cavltree *t, void *key);
 void		cavl_apply(struct cavltree *t, apply_f f, void *ctx);
 
 
@@ -180,18 +183,20 @@ struct crbnode {
 	void *		data;
 };
 
+#define crb_data(_n) (container((_n), struct crbnode, node)->data)
+
 struct crbtree;
 
 struct crbtree_attr {
 	cmp_f		kcmp;
-	struct canode *	(*node_alloc)(struct crbtree *t, void *k);
+	struct crbnode *(*node_alloc)(struct crbtree *t, void *k);
 	void		(*node_free)(struct crbtree *t, struct crbnode *n);
 	void *		ctx;
 };
 
 struct crbtree {
 	struct rbtree	tree;
-	struct canode *	(*node_alloc)(struct crbtree *t, void *k);
+	struct crbnode *(*node_alloc)(struct crbtree *t, void *k);
 	void		(*node_free)(struct crbtree *t, struct crbnode *n);
 	void *		ctx;
 };
@@ -203,10 +208,10 @@ extern struct crbtree_attr crb_std_attr_ikey;	/* int key table */
 
 struct crbtree *crb_new(struct crbtree_attr *attr);
 void		crb_free(struct crbtree *t);
-void *		crb_get(struct crbtree *t, const void *key);
-int		crb_put(struct crbtree *t, const void *key, void *data,
+void *		crb_get(struct crbtree *t, void *key);
+int		crb_put(struct crbtree *t, void *key, void *data,
 			void **odata);
-void *		crb_del(struct crbtree *t, const void *key);
+void *		crb_del(struct crbtree *t, void *key);
 void		crb_apply(struct crbtree *t, apply_f f, void *ctx);
 
 
@@ -217,18 +222,20 @@ struct cstnode {
 	void *		data;
 };
 
+#define cst_data(_n) (container((_n), struct cstnode, node)->data)
+
 struct cstree;
 
 struct cstree_attr {
 	cmp_f		kcmp;
-	struct canode *	(*node_alloc)(struct cstree *t, void *k);
+	struct cstnode *(*node_alloc)(struct cstree *t, void *k);
 	void		(*node_free)(struct cstree *t, struct cstnode *n);
 	void *		ctx;
 };
 
 struct cstree {
-	struct splay	tree;
-	struct canode *	(*node_alloc)(struct cstree *t, void *k);
+	struct sptree	tree;
+	struct cstnode *(*node_alloc)(struct cstree *t, void *k);
 	void		(*node_free)(struct cstree *t, struct cstnode *n);
 	void *		ctx;
 };
@@ -240,16 +247,16 @@ extern struct cstree_attr cst_std_attr_ikey;	/* int key table */
 
 struct cstree * cst_new(struct cstree_attr *attr);
 void		cst_free(struct cstree *t);
-void *		cst_get(struct cstree *t, const void *key);
-int		cst_put(struct cstree *t, const void *key, void *data,
+void *		cst_get(struct cstree *t, void *key);
+int		cst_put(struct cstree *t, void *key, void *data,
 			void **odata);
-void *		cst_del(struct cstree *t, const void *key);
+void *		cst_del(struct cstree *t, void *key);
 void		cst_apply(struct cstree *t, apply_f f, void *ctx);
 
 
 #include <cat/heap.h>
 
-struct heap * hp_new(int size, cmp_f cmp)
+struct heap * hp_new(size_t size, cmp_f cmp);
 void	      hp_free(struct heap *hp);
 
 

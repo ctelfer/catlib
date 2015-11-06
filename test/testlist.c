@@ -17,23 +17,10 @@
 #define NT2 1000000
 
 
-static struct clist_node dummy_node;
-static void *dmm_alloc(struct memmgr *mm, size_t len)
-{
-	return &dummy_node;
-}
-
-static void dmm_free(struct memmgr *mm, void *data)
-{
-}
-
-struct memmgr dummymm = { &dmm_alloc, NULL, &dmm_free, NULL };
-
-
 int main(int argc, char *argv[])
 {
   struct list list, elem, *node;
-  struct clist cl;
+  struct clist *cl;
   struct timeval tv, tv2;
   double usec;
   int i, x;
@@ -74,17 +61,17 @@ int main(int argc, char *argv[])
   while ( l_isempty(&list) )
     free(l_deq(&list));
 
-  clist_init_list(&cl, &dummymm, sizeof(int));
+  cl = cl_new(NULL);
   gettimeofday(&tv, 0);
   for ( i = 0 ; i < NT ; ++i ) {
-    clist_enqueue(&cl, &i);
-    clist_dequeue(&cl, &x);
+    cl_enq(cl, int2ptr(i));
+    x = ptr2int(cl_deq(cl));
   }
   gettimeofday(&tv2, 0);
   usec = (tv2.tv_sec - tv.tv_sec) * 1000000 + 
          tv2.tv_usec - tv.tv_usec;
   usec /= NT;
-  clist_clear_list(&cl);
+  cl_free(cl);
 
   printf("Roughly %f nanoseconds for clist_enqueue(),clist_dequeue()\n", 
          usec * 1000);

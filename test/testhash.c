@@ -34,13 +34,13 @@ void timeit()
   for (i = 0; i < NOPS; i++) {
     key = str_fmt_a("node%d", i);
     ht_ninit(&nodes[i], key);
-    hashes[i] = ht_hash(t, key);
+    hashes[i] = ht_hash(&t, key);
   }
 
   gettimeofday(&start, NULL);
   for (j = 0; j < NITER / NOPS; j++) {
     for (i = 0; i < NOPS; i++)
-      ht_ins(t, &nodes[i], hashes[i]);
+      ht_ins(&t, &nodes[i], hashes[i]);
     for (i = 0; i < NOPS; i++)
       ht_rem(&nodes[i]);
   }
@@ -55,9 +55,9 @@ void timeit()
   gettimeofday(&start, NULL);
   for (j = 0; j < NITER / NOPS; j++) { 
     for (i = 0; i < NOPS; i++) { 
-      if (ht_lkup(t, nodes[i].key, &h))
+      if (ht_lkup(&t, nodes[i].key, &h))
         err("iteration %d: duplicate node for key %d found\n", j, i);
-      ht_ins(t, &nodes[i], h); 
+      ht_ins(&t, &nodes[i], h); 
     }
     for (i = 0; i < NOPS; i++)
       ht_rem(&nodes[i]);
@@ -72,7 +72,7 @@ void timeit()
 
   gettimeofday(&start, NULL);
   for ( i = 0 ; i < NITER ; ++i ) {
-    ht_ins(t, &nodes[0], &hashes[0]);
+    ht_ins(&t, &nodes[0], hashes[0]);
     ht_rem(&nodes[0]);
   }
   gettimeofday(&end, NULL);
@@ -85,9 +85,9 @@ void timeit()
 
   gettimeofday(&start, NULL);
   for ( i = 0 ; i < NITER ; ++i ) { 
-    if (ht_lkup(t, nodes[0].key, &h))
+    if (ht_lkup(&t, nodes[0].key, &h))
       err("duplicate node for key %d found", i);
-    ht_ins(t, &nodes[0], h); 
+    ht_ins(&t, &nodes[0], h); 
     ht_rem(&nodes[0]);
   }
   gettimeofday(&end, NULL);
@@ -118,7 +118,7 @@ int main()
   table = cht_new(128, NULL, NULL);
 
   for (i = 0; i < NUMSTR; i++) {
-    cht_put(table, strs[i][0], strs[i][1]);
+    cht_put(table, strs[i][0], strs[i][1], NULL);
     s = cht_get(table, strs[i][0]);
     printf("Put (%s) at key (%s): %p\n", strs[i][1], strs[i][0], s);
   }

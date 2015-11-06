@@ -52,8 +52,8 @@ void dobm(struct raw *str, struct raw *pat)
 
 struct gatherctx {
 	struct sfxtree *sfx;
-	struct htab *edges;
-	struct htab *nodes;
+	struct chtab *edges;
+	struct chtab *nodes;
 };
 
 
@@ -66,10 +66,10 @@ void gather(void *edgep, void *gatherp)
 	struct gatherctx *gctx = gatherp;
 	++nedges;
 	if ( !cht_get(gctx->edges, edge) )
-		cht_put(gctx->edges, edge, int2ptr(nedges));
-	if ( !cht_get(gctx->nodes, edge->hentry.data) ) {
+		cht_put(gctx->edges, edge, int2ptr(nedges), NULL);
+	if ( !cht_get(gctx->nodes, edge->node) ) {
 		++nnodes;
-		cht_put(gctx->nodes, edge->hentry.data, int2ptr(nnodes));
+		cht_put(gctx->nodes, edge->node, int2ptr(nnodes), NULL);
 	}
 }
 
@@ -84,7 +84,7 @@ void printedges(void *edgep, void *gatherp)
 	char str[50];
 
 	src = ptr2int(cht_get(gctx->nodes, ek->node));
-	dst = ptr2int(cht_get(gctx->nodes, edge->hentry.data));
+	dst = ptr2int(cht_get(gctx->nodes, edge->node));
 	edgenum = ptr2int(cht_get(gctx->edges, edge));
 	ch = ek->character;
 	if ( ch == '\0' )
@@ -110,11 +110,11 @@ void printsfx(struct sfxtree *sfx)
 	char ch;
 
 	gctx.sfx = sfx;
-	gctx.edges = cht_new(100, cht_std_attr_ikey, NULL);
-	gctx.nodes = cht_new(100, cht_std_attr_ikey, NULL);
-	cht_put(gctx.nodes, &sfx->root, int2ptr(1));
+	gctx.edges = cht_new(100, &cht_std_attr_ikey, NULL);
+	gctx.nodes = cht_new(100, &cht_std_attr_ikey, NULL);
+	cht_put(gctx.nodes, &sfx->root, int2ptr(1), NULL);
 	nnodes = 1;
-	cht_apply(&sfx->edges, gather, &gctx);
+	ht_apply(&sfx->edges, gather, &gctx);
 	for ( i = 0 ; i < sfx->str.len ; ++i )
 		printf("%2d ", i);
 	printf("\n");
@@ -125,7 +125,7 @@ void printsfx(struct sfxtree *sfx)
 		printf(" %c ", ch);
 	}
 	printf("\n");
-	cht_apply(&sfx->edges, printedges, &gctx);
+	ht_apply(&sfx->edges, printedges, &gctx);
 	cht_free(gctx.edges);
 	cht_free(gctx.nodes);
 }

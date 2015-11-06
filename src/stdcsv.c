@@ -91,14 +91,14 @@ int csv_read_rec(struct csv_state *csv, struct csv_record *cr)
 	ulong rsz = 8;
 	size_t size;
 	int code = CSV_OK;
-	char *field, **record;
+	char *field, **fields;
 	byte_t *bp;
 
 	abort_unless(csv != NULL);
 	abort_unless(cr != NULL);
 
-	record = mem_get(&stdmm, sizeof(*record) * rsz);
-	if ( record == NULL )
+	fields = mem_get(&stdmm, sizeof(char *) * rsz);
+	if ( fields == NULL )
 		return CSV_ERR;
 
 	for ( nf = 0 ; (code != CSV_REC) && (code != CSV_EOF) ; ++nf ) {
@@ -109,16 +109,16 @@ int csv_read_rec(struct csv_state *csv, struct csv_record *cr)
 		else if ( code != CSV_EOF )
 			break;
 		if ( nf == rsz ) {
-			bp = (byte_t *)bp;
-			size = rsz * sizeof(*record);
-			if ( mm_grow(&stdmm, &bp, &size, size + sizeof(*record)) < 0) {
+			bp = (byte_t *)fields;
+			size = rsz * sizeof(char *);
+			if ( mm_grow(&stdmm, &bp, &size, size + sizeof(char *)) < 0) {
 				code = CSV_ERR;
 				goto err;
 			}
-			rsz = size / sizeof(*record);
-			record = (char **)record;
+			rsz = size / sizeof(char *);
+			fields = (char **)bp;
 		}
-		record[nf++] = field;
+		fields[nf++] = field;
 	}
 
 	if ( code == CSV_EOF ) {
@@ -127,14 +127,14 @@ int csv_read_rec(struct csv_state *csv, struct csv_record *cr)
 	}
 
 	cr->cr_nfields = nf;
-	cr->cr_fields = record;
+	cr->cr_fields = fields;
 
 	return CSV_REC;
 
 err:
 	for ( i = 0; i < nf; ++i )
-		free(records[i]);
-	free(records);
+		free(fields[i]);
+	free(fields);
 	return CSV_ERR;
 }
 

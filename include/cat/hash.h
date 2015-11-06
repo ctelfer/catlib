@@ -58,6 +58,7 @@ DECL void           ht_apply(struct htab *t, apply_f func, void * ctx);
 PTRDECL uint        ht_shash(const void *key, void *unused);
 PTRDECL uint        ht_phash(const void *key, void *unused);
 PTRDECL uint        ht_rhash(const void *key, void *unused);
+PTRDECL uint        ht_ihash(const void *key, void *unused);
 
 
 #if defined(CAT_HASH_DO_DECL) && CAT_HASH_DO_DECL
@@ -72,6 +73,7 @@ DECL void ht_init(struct htab *t, struct hnode **bkts, uint nbkts,
 	(void)ht_shash;
 	(void)ht_phash;
 	(void)ht_rhash;
+	(void)ht_ihash;
 
 	abort_unless(t != NULL);
 	abort_unless(bkts != NULL);
@@ -162,18 +164,15 @@ DECL struct hnode * ht_lkup(struct htab *t, const void *key, uint *hp)
 
 DECL void ht_ins(struct htab *t, struct hnode *node, uint hash)
 {
-	const void *key;
-	struct hnode **trav, *old;
+	struct hnode **trav;
 
 	abort_unless(t != NULL);
 	abort_unless(node != NULL);
 
-	key = node->key;
-
 	if ( t->po2mask ) {
 		trav = t->bkts + (hash & t->po2mask);
 	} else {
-#if !CAT_HAS_DIV
+#if CAT_HAS_DIV
 		trav = t->bkts + (hash % t->nbkts);
 #else /* CAT_HAS_DIV */
 		hash = _modulo(hash, t->nbkts);
@@ -184,8 +183,6 @@ DECL void ht_ins(struct htab *t, struct hnode *node, uint hash)
 	node->prevp = trav;
 	node->next = *trav;
 	*trav = node;
-
-	return NULL;
 }
 
 
@@ -289,7 +286,7 @@ PTRDECL uint ht_phash(const void *key, void *unused)
 PTRDECL uint ht_ihash(const void *key, void *unused)  
 {
 	uintptr_t v = ptr2uint(key);
-	return v * (v >> 257) + (v >> 25) | (v << 18);
+	return (v * (v >> 7) + (v >> 25)) | (v << 18);
 }
 
 

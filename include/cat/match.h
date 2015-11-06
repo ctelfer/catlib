@@ -59,6 +59,7 @@ struct sfxnode {
 
 struct sfxedge {
 	struct hnode			hentry;
+	struct sfxnode *		node;
 	long				start;
 	long				end;
 };

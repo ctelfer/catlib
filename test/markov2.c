@@ -24,8 +24,8 @@
 #define MAXWORD 80
 
 #define STR(x) ((char *)&Strings.data[x])
-struct htab *Prefix_tbl;
-struct htab *Word_tbl;
+struct chtab *Prefix_tbl;
+struct chtab *Word_tbl;
 struct raw Strings = { 0, NULL };
 
 
@@ -41,7 +41,7 @@ void add(int prefixes[NPREF], int word)
 	list = cht_get(Prefix_tbl, &key);
 	if ( list == NULL ) { 
 		list = cl_new(NULL);
-		cht_put(Prefix_tbl, &key, list);
+		cht_put(Prefix_tbl, &key, list, NULL);
 	} 
 	cl_enq(list, int2ptr(word));
 	memmove(prefixes, prefixes + 1, (NPREF-1) * sizeof(int));
@@ -105,7 +105,7 @@ int main(int argc, char **argv)
 
 	while ( scanf(fmt, STR(cur)) > 0 ) { 
 		if ( (idx = ptr2int(cht_get(Word_tbl, STR(cur)))) == 0 ) {
-			cht_put(Word_tbl, STR(cur), int2ptr(cur));
+			cht_put(Word_tbl, STR(cur), int2ptr(cur), NULL);
 			l = strlen(STR(cur)) + 1;
 			if (grow(&Strings.data,&Strings.len,cur+l+MAXWORD) < 0)
 				errsys("Out of memory\n");
@@ -119,6 +119,6 @@ int main(int argc, char **argv)
 
 	printf("Generating...\n");
 	generate();
-	cht_free(&Prefix_tbl);
+	cht_free(Prefix_tbl);
 	return 0;
 }

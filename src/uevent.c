@@ -25,7 +25,7 @@
 #include <cat/err.h>
 #include <cat/stduse.h>
 
-static int  fdmax(struct avl *a);
+static int  fdmax(struct cavltree *a);
 static void disable_signals(sigset_t *save);
 static void restore_signals(sigset_t *save);
 static void tdispatch(void *lp, void *muxp);
@@ -37,13 +37,16 @@ static int uemux_maxsig;
 static int uemux_initialized = 0;
 
 
-static int fdmax(struct avl *a)
+#define IKEY(_i) (int2ptr((_i) + 1))
+
+
+static int fdmax(struct cavltree *a)
 {
-	struct anode *n = avl_getmax(a);
+	struct anode *n = avl_getmax(&a->tree);
 	struct ue_ioevent *io;
 	if ( !n ) 
 		return -1;
-	io = n->data;
+	io = cavl_data(n);
 	return io->fd;
 }
 
@@ -79,13 +82,13 @@ void ue_init(struct uemux *mux, struct memmgr *mm)
 	mux->mm = mm;
 	mux->done = 0;
 	mux->maxfd = -1;
-	mux->fdtab = avl_new(mm, CAT_KT_NUM, 0, 0);
+	mux->fdtab = cavl_new(&cavl_std_attr_ikey);
 	dl_init(&mux->timers, tm_zero);
 	l_init(&mux->iolist);
 	FD_ZERO(&mux->rset);
 	FD_ZERO(&mux->wset);
 	FD_ZERO(&mux->eset);
-	mux->sigtab = avl_new(mm, CAT_KT_NUM, 0, 0);
+	mux->sigtab = cavl_new(&cavl_std_attr_ikey);
 }
 
 
@@ -109,10 +112,10 @@ void ue_fini(struct uemux *mux)
 
 	if ( mux->mm )
 		l_apply(&mux->iolist, free_io, NULL);
-	avl_free(mux->fdtab);
+	cavl_free(mux->fdtab);
 	if ( mux->mm )
-		avl_apply(mux->sigtab, free_sigevent, NULL);
-	avl_free(mux->sigtab);
+		cavl_apply(mux->sigtab, free_sigevent, NULL);
+	cavl_free(mux->sigtab);
 
 	while ( !dl_isempty(&mux->timers) ) {
 		t = container(dl_head(&mux->timers), struct ue_timer, entry);
@@ -204,12 +207,12 @@ int ue_io_reg(struct uemux *mux, struct ue_ioevent *io)
 		     io->type == UE_EX);
 	abort_unless(io->fd >= 0);
 
-	if ( (list = avl_get_dptr(mux->fdtab, &io->fd)) == NULL ) {
+	if ( (list = cavl_get(mux->fdtab, IKEY(io->fd))) == NULL ) {
 		list = mem_get(mux->mm, sizeof(struct list));
 		if ( list == NULL )
 			return -1;
 		l_init(list);
-		if ( !avl_put(mux->fdtab, &io->fd, list) ) {
+		if ( cavl_put(mux->fdtab, IKEY(io->fd), list, NULL) < 0 ) {
 			mem_free(mux->mm, list);
 			return -1;
 		}
@@ -253,7 +256,7 @@ void ue_io_cancel(struct ue_ioevent *io)
 	cb_unreg(&io->cb);
 
 	l_rem(&io->fdlist);
-	list = avl_get_dptr(mux->fdtab, &io->fd);
+	list = cavl_get(mux->fdtab, IKEY(io->fd));
 	abort_unless(list);
 
 	l_for_each(trav, list) {
@@ -269,7 +272,7 @@ void ue_io_cancel(struct ue_ioevent *io)
 		}
 	}
 	if ( l_isempty(list) ) {
-		avl_clr(mux->fdtab, &io->fd);
+		cavl_del(mux->fdtab, IKEY(io->fd));
 		if ( io->fd == mux->maxfd )
 			mux->maxfd = fdmax(mux->fdtab);
 		mem_free(mux->mm, list);
@@ -306,14 +309,14 @@ int ue_sig_reg(struct uemux *mux, struct ue_sigevent *se)
 
 	se->mux = mux;
 	l_init(&se->cb.entry);
-	if ( (list = avl_get_dptr(mux->sigtab, &se->signum)) == NULL ) {
+	if ( (list = cavl_get(mux->sigtab, IKEY(se->signum))) == NULL ) {
 		list = mem_get(mux->mm, sizeof(struct list));
 		if ( list == NULL ) {
 			restore_signals(&save);
 			return -1;
 		}
 		l_init(list);
-		if ( !avl_put(mux->sigtab, &se->signum, list) ) {
+		if ( cavl_put(mux->sigtab, IKEY(se->signum), list, NULL) < 0 ) {
 			mem_free(mux->mm, list);
 			restore_signals(&save);
 			return -1;
@@ -327,7 +330,7 @@ int ue_sig_reg(struct uemux *mux, struct ue_sigevent *se)
 		sa.sa_flags = SA_RESTART;
 
 		if ( sigaction(se->signum, &sa, NULL) < 0 ) {
-			avl_clr(mux->sigtab, &se->signum);
+			cavl_del(mux->sigtab, IKEY(se->signum));
 			mem_free(mux->mm, list);
 			restore_signals(&save);
 			return -1;
@@ -359,11 +362,11 @@ void ue_sig_cancel(struct ue_sigevent *se)
 	se->mux = NULL;
 
 	cb_unreg(&se->cb);
-	list = avl_get_dptr(mux->sigtab, &se->signum);
+	list = cavl_get(mux->sigtab, IKEY(se->signum));
 	abort_unless(list);
 
 	if ( l_isempty(list) ) {
-		avl_clr(mux->sigtab, &se->signum);
+		cavl_del(mux->sigtab, IKEY(se->signum));
 		mem_free(mux->mm, list);
 		/* TODO could add code to remove handler */
 		/* would need to save the old sigaction entry */
@@ -392,7 +395,7 @@ static void run_sig_handlers(struct uemux *mux, sigset_t *ss, int maxsig)
 			return;
 		if ( !sigismember(ss, i) )
 			continue;
-		if ( (list = avl_get_dptr(mux->sigtab, &i)) == NULL )
+		if ( (list = cavl_get(mux->sigtab, IKEY(i))) == NULL )
 			continue;
 		abort_unless(list);
 		/* TODO, fix this int2ptr */

@@ -30,14 +30,14 @@ CDS_NEWSTRUCT(struct list, char *, strent_s);
 
 char *Prefixes[NPREF];
 struct ring Buffer;
-struct htab *Table;
+struct chtab *Table;
 
 
 static void print_tablist(void *nodep, void *aux)
 {
-	struct hnode *n = nodep;
+	struct chnode *n = nodep;
 	struct list *t, *l = n->data;
-	printf("*%s* : *%s* ", (char *)n->key, CDS_DATA(l, strent_s));
+	printf("*%s* : *%s* ", (char *)n->node.key, CDS_DATA(l, strent_s));
 	for ( t = l->next ; t != l ; t = t->next )
 		printf(" *%s*", CDS_DATA(t, strent_s));
 	printf("\n");
@@ -68,7 +68,7 @@ void add(char *word)
 	l_init(CDS_NPTR(w, strent_s));
 	ol = cht_get(Table, Buffer.data);
 	if ( ! ol )
-		cht_put(Table, Buffer.data, CDS_NPTR(w, strent_s));
+		cht_put(Table, Buffer.data, CDS_NPTR(w, strent_s), NULL);
 	else
 		l_ins(ol->prev, CDS_NPTR(w, strent_s));
 	memmove(Prefixes, Prefixes + 1, (NPREF-1) * sizeof(char *));
