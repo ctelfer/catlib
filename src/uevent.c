@@ -212,7 +212,7 @@ int ue_io_reg(struct uemux *mux, struct ue_ioevent *io)
 		if ( list == NULL )
 			return -1;
 		l_init(list);
-		if ( cavl_put(mux->fdtab, IKEY(io->fd), list, NULL) < 0 ) {
+		if ( cavl_put(mux->fdtab, IKEY(io->fd), list) < 0 ) {
 			mem_free(mux->mm, list);
 			return -1;
 		}
@@ -316,7 +316,7 @@ int ue_sig_reg(struct uemux *mux, struct ue_sigevent *se)
 			return -1;
 		}
 		l_init(list);
-		if ( cavl_put(mux->sigtab, IKEY(se->signum), list, NULL) < 0 ) {
+		if ( cavl_put(mux->sigtab, IKEY(se->signum), list) < 0 ) {
 			mem_free(mux->mm, list);
 			restore_signals(&save);
 			return -1;

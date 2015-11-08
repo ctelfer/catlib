@@ -158,7 +158,7 @@ struct rbnode *np;
 
   for (i = 0; i < NUMSTR; i++)
   {
-    crb_put(t, strs[i][0], strs[i][1], NULL);
+    crb_put(t, strs[i][0], strs[i][1]);
     s = crb_get(t, strs[i][0]);
     printf("Put (%s) at key (%s): %p\n", s, strs[i][0], s);
     fflush(stdout);
@@ -228,7 +228,7 @@ struct rbnode *np;
 */
     sprintf(nstr, "k%03d", arr[i]);
     sprintf(vstr, "v%03d", arr[i]);
-    crb_put(t, nstr, estrdup(vstr), NULL);
+    crb_put(t, nstr, estrdup(vstr));
     if ( vrfy(t->tree.rb_root) < 0 )
     {
       printrbt(t);

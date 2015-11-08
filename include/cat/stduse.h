@@ -3,7 +3,7 @@
  *
  * by Christopher Adam Telfer
  *
- * Copyright 2007-2012 -- See accompanying license
+ * Copyright 2007-2015 -- See accompanying license
  *
  */
 
@@ -131,8 +131,7 @@ extern struct chtab_attr cht_std_attr_ikey;	/* int key table */
 struct chtab *	cht_new(size_t nbkts, struct chtab_attr *attr, void *hctx);
 void		cht_free(struct chtab *t);
 void *		cht_get(struct chtab *t, void *key);
-int		cht_put(struct chtab *t, void *key, void *data,
-			void **odata);
+int		cht_put(struct chtab *t, void *key, void *data);
 void *		cht_del(struct chtab *t, void *key);
 void		cht_apply(struct chtab *t, apply_f f, void *ctx);
 
@@ -170,8 +169,7 @@ extern struct cavltree_attr cavl_std_attr_ikey;	/* int key table */
 struct cavltree * cavl_new(struct cavltree_attr *attr);
 void		cavl_free(struct cavltree *t);
 void *		cavl_get(struct cavltree *t, void *key);
-int		cavl_put(struct cavltree *t, void *key, void *data,
-			 void **odata);
+int		cavl_put(struct cavltree *t, void *key, void *data);
 void *		cavl_del(struct cavltree *t, void *key);
 void		cavl_apply(struct cavltree *t, apply_f f, void *ctx);
 
@@ -209,8 +207,7 @@ extern struct crbtree_attr crb_std_attr_ikey;	/* int key table */
 struct crbtree *crb_new(struct crbtree_attr *attr);
 void		crb_free(struct crbtree *t);
 void *		crb_get(struct crbtree *t, void *key);
-int		crb_put(struct crbtree *t, void *key, void *data,
-			void **odata);
+int		crb_put(struct crbtree *t, void *key, void *data);
 void *		crb_del(struct crbtree *t, void *key);
 void		crb_apply(struct crbtree *t, apply_f f, void *ctx);
 
@@ -248,8 +245,7 @@ extern struct cstree_attr cst_std_attr_ikey;	/* int key table */
 struct cstree * cst_new(struct cstree_attr *attr);
 void		cst_free(struct cstree *t);
 void *		cst_get(struct cstree *t, void *key);
-int		cst_put(struct cstree *t, void *key, void *data,
-			void **odata);
+int		cst_put(struct cstree *t, void *key, void *data);
 void *		cst_del(struct cstree *t, void *key);
 void		cst_apply(struct cstree *t, apply_f f, void *ctx);
 

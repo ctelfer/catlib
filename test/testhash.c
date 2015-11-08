@@ -118,7 +118,7 @@ int main()
   table = cht_new(128, NULL, NULL);
 
   for (i = 0; i < NUMSTR; i++) {
-    cht_put(table, strs[i][0], strs[i][1], NULL);
+    cht_put(table, strs[i][0], strs[i][1]);
     s = cht_get(table, strs[i][0]);
     printf("Put (%s) at key (%s): %p\n", strs[i][1], strs[i][0], s);
   }

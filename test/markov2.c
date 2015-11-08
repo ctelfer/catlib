@@ -18,6 +18,8 @@
 
 #define NPREF	2
 #define NONWORD "\n"
+#define I2D(_x) int2ptr((_x) + 1)
+#define D2I(_x) (ptr2int(_x) - 1)
 #define END	-1
 #define MAXGEN	10000
 #define HTSIZ	4096
@@ -41,7 +43,7 @@ void add(int prefixes[NPREF], int word)
 	list = cht_get(Prefix_tbl, &key);
 	if ( list == NULL ) { 
 		list = cl_new(NULL);
-		cht_put(Prefix_tbl, &key, list, NULL);
+		abort_unless(cht_put(Prefix_tbl, &key, list) == 0);
 	} 
 	cl_enq(list, int2ptr(word));
 	memmove(prefixes, prefixes + 1, (NPREF-1) * sizeof(int));
@@ -65,6 +67,7 @@ void generate(void)
 		prefixes[i] = i * sizeof(NONWORD);
 	for ( i = 0 ; i < MAXGEN ; ++i ) {
 		list = cht_get(Prefix_tbl, &key);
+		abort_unless(list != NULL);
 		h = cl_first(list);
 		for ( n = 2, t = cl_next(h) ; t != cl_end(list) ; 
 		      t = cl_next(t), ++n )
@@ -84,10 +87,12 @@ void generate(void)
 int main(int argc, char **argv)
 {
 	int i, l, idx;
+	int rv;
 	unsigned long cur;
 	char fmt[32];
 	struct timeval tv;
 	int prefixes[NPREF];
+	void *d;
 
 	gettimeofday(&tv, NULL);
 	srandom(tv.tv_usec);
@@ -104,13 +109,18 @@ int main(int argc, char **argv)
 	sprintf(fmt, "%%%ds", MAXWORD - 1);
 
 	while ( scanf(fmt, STR(cur)) > 0 ) { 
-		if ( (idx = ptr2int(cht_get(Word_tbl, STR(cur)))) == 0 ) {
-			cht_put(Word_tbl, STR(cur), int2ptr(cur), NULL);
+		d = cht_get(Word_tbl, STR(cur));
+		if ( d == NULL ) {
+			cht_put(Word_tbl, STR(cur), I2D(cur));
 			l = strlen(STR(cur)) + 1;
-			if (grow(&Strings.data,&Strings.len,cur+l+MAXWORD) < 0)
-				errsys("Out of memory\n");
+			rv = grow(&Strings.data, &Strings.len,
+				  cur + l + MAXWORD);
+			if ( rv < 0 )
+				errsys("Could not grow string buffer:");
 			idx = cur;
 			cur += l;
+		} else {
+			idx = D2I(d);
 		}
 		add(prefixes, idx);
 	}

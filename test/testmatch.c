@@ -66,10 +66,10 @@ void gather(void *edgep, void *gatherp)
 	struct gatherctx *gctx = gatherp;
 	++nedges;
 	if ( !cht_get(gctx->edges, edge) )
-		cht_put(gctx->edges, edge, int2ptr(nedges), NULL);
+		cht_put(gctx->edges, edge, int2ptr(nedges));
 	if ( !cht_get(gctx->nodes, edge->node) ) {
 		++nnodes;
-		cht_put(gctx->nodes, edge->node, int2ptr(nnodes), NULL);
+		cht_put(gctx->nodes, edge->node, int2ptr(nnodes));
 	}
 }
 
@@ -112,7 +112,7 @@ void printsfx(struct sfxtree *sfx)
 	gctx.sfx = sfx;
 	gctx.edges = cht_new(100, &cht_std_attr_ikey, NULL);
 	gctx.nodes = cht_new(100, &cht_std_attr_ikey, NULL);
-	cht_put(gctx.nodes, &sfx->root, int2ptr(1), NULL);
+	cht_put(gctx.nodes, &sfx->root, int2ptr(1));
 	nnodes = 1;
 	ht_apply(&sfx->edges, gather, &gctx);
 	for ( i = 0 ; i < sfx->str.len ; ++i )

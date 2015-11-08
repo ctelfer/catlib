@@ -117,7 +117,7 @@ int add_node(struct shell_env *env, int na, char *args[],
 
 	n = gr_add_node(g->graph);
 	n->gr_node_val = id;
-	cht_put(g->node_tab, IDKEY(id), n, NULL);
+	cht_put(g->node_tab, IDKEY(id), n);
 	printf("Created node %d\n", id);
 
 	rv->sval_type = SVT_PTR;

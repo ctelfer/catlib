@@ -68,7 +68,7 @@ void add(char *word)
 	l_init(CDS_NPTR(w, strent_s));
 	ol = cht_get(Table, Buffer.data);
 	if ( ! ol )
-		cht_put(Table, Buffer.data, CDS_NPTR(w, strent_s), NULL);
+		cht_put(Table, Buffer.data, CDS_NPTR(w, strent_s));
 	else
 		l_ins(ol->prev, CDS_NPTR(w, strent_s));
 	memmove(Prefixes, Prefixes + 1, (NPREF-1) * sizeof(char *));

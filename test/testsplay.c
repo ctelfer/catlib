@@ -133,7 +133,7 @@ struct stnode *np;
 
   for (i = 0; i < NUMSTR; i++)
   {
-    cst_put(t, strs[i][0], strs[i][1], NULL);
+    cst_put(t, strs[i][0], strs[i][1]);
     s = cst_get(t, strs[i][0]);
     printf("Put (%s) at key (%s): %p\n", s, strs[i][0], s);
     fflush(stdout);
@@ -203,7 +203,7 @@ struct stnode *np;
 */
     sprintf(nstr, "k%03d", arr[i]);
     sprintf(vstr, "v%03d", arr[i]);
-    cst_put(t, nstr, estrdup(vstr), NULL);
+    cst_put(t, nstr, estrdup(vstr));
   }
   printf("\n\n");
 

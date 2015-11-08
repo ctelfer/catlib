@@ -157,7 +157,7 @@ char *s;
 
   for (i = 0; i < NUMSTR; i++)
   {
-    cavl_put(avl, strs[i][0], strs[i][1], NULL);
+    cavl_put(avl, strs[i][0], strs[i][1]);
     s = cavl_get(avl, strs[i][0]);
     printf("Put (%s) at key (%s): %p\n", s, strs[i][0], s);
     fflush(stdout);
@@ -223,7 +223,7 @@ char *s;
     printf("%d ", arr[i]);
     sprintf(nstr, "k%03d", arr[i]);
     sprintf(vstr, "v%03d", arr[i]);
-    cavl_put(avl, nstr, estrdup(vstr), NULL);
+    cavl_put(avl, nstr, estrdup(vstr));
   }
   printf("\n\n");
 
