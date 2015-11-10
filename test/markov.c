@@ -116,7 +116,7 @@ int main(int argc, char **argv)
 	srandom(tv.tv_usec);
 
 	for ( i = 0 ; i < NPREF ; ++i ) Prefixes[i] = NONWORD;
-	Table = cht_new(HTSIZ, NULL, NULL);
+	Table = cht_new(HTSIZ, NULL, NULL, 1);
 	ring_init(&Buffer, emalloc(BUFLEN), BUFLEN);
 
 	sprintf(fmt, "%%%ds", (int)sizeof(word)-1);

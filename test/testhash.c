@@ -115,7 +115,7 @@ int main()
   struct chtab *table; 
   char *s;
 
-  table = cht_new(128, NULL, NULL);
+  table = cht_new(128, NULL, NULL, 1);
 
   for (i = 0; i < NUMSTR; i++) {
     cht_put(table, strs[i][0], strs[i][1]);

@@ -129,7 +129,7 @@ struct cstree *t;
 char *s;
 struct stnode *np;
 
-  t = cst_new(&cst_std_attr_skey);
+  t = cst_new(&cst_std_attr_skey, 1);
 
   for (i = 0; i < NUMSTR; i++)
   {
@@ -179,7 +179,7 @@ struct stnode *np;
   print_splay(&t->tree);
   printf("\n");
   cst_free(t); 	/* get rid of "Overwrite!" */
-  t = cst_new(&cst_std_attr_skey);
+  t = cst_new(&cst_std_attr_skey, 1);
 
   for ( i = 0 ; i < NA ; ++i ) 
     arr[i] = i;

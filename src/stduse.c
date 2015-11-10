@@ -81,10 +81,10 @@ struct raw *erawdup(struct raw const * const r)
 	size_t s;
 	struct raw *rnew;
 	if ( !r || !r->data || !r->len )
-		err("erawdup: invalid raw provided");
+		err("erawdup: invalid raw provided\n");
 	s = r->len + sizeof(union raw_u);
 	if ( s < sizeof(union raw_u) )
-		err("erawdup: integer overflow");
+		err("erawdup: integer overflow\n");
 	rnew = emalloc(s);
 	rnew->len = r->len;
 	rnew->data = (byte_t *)((union raw_u *)rnew + 1);
@@ -115,24 +115,31 @@ static struct clist_attr cl_def_attr = {
 };
 
 
-struct clist *cl_new(const struct clist_attr *attr)
+struct clist *cl_new(const struct clist_attr *attr, int abort_on_fail)
 {
 	struct clist *list;
+
+	if ( attr == NULL )
+		attr = &cl_def_attr;
+
+	abort_unless(attr->node_alloc != NULL);
+	abort_unless(attr->node_free != NULL);
+
 	list = malloc(sizeof(*list));
-	if ( list != NULL ) {
-		if ( attr == NULL )
-			attr = &cl_def_attr;
-
-		abort_unless(attr->node_alloc != NULL);
-		abort_unless(attr->node_free != NULL);
-
-		l_init(&list->base.entry);
-		list->base.list = NULL;
-		list->fill = 0;
-		list->node_alloc = attr->node_alloc;
-		list->node_free = attr->node_free;
-		list->ctx = attr->ctx;
+	if ( list == NULL ) {
+		if ( abort_on_fail )
+			err("cl_new: unable to allocate list\n");
+		return NULL;
 	}
+
+	l_init(&list->base.entry);
+	list->base.list = NULL;
+	list->fill = 0;
+	list->abort_on_fail = abort_on_fail;
+	list->node_alloc = attr->node_alloc;
+	list->node_free = attr->node_free;
+	list->ctx = attr->ctx;
+
 	return list;
 }
 
@@ -159,7 +166,10 @@ size_t cl_fill(struct clist *list)
 
 struct clist_node *cl_node_new(struct clist *list, void *val)
 {
-	return (*list->node_alloc)(list);
+	struct clist_node *n = (*list->node_alloc)(list);
+	if ( n == NULL && list->abort_on_fail )
+		err("cl_node_new: unable to allocate node\n");
+	return n;
 }
 
 
@@ -168,8 +178,11 @@ int cl_ins(struct clist *list, struct clist_node *prev, void *val)
 	struct clist_node *node;
 
 	node = (*list->node_alloc)(list);
-	if ( node == NULL )
+	if ( node == NULL ) {
+		if ( list->abort_on_fail )
+			err("cl_ins: unable to allocate NULL\n");
 		return -1;
+	}
 
 	if ( prev == NULL )
 		prev = cl_head(list);
@@ -403,12 +416,16 @@ void * cdl_free(struct dlist * nodep)
 }
 
 
+
+
 /* Used by all xxx_apply() functions to store the real apply function */
 /* when wrapping with a new apply function to get the data pointer. */
 struct apply_ctx {
 	void *ctx;
 	apply_f f;
 };
+
+
 
 
 /* Hash table functions */
@@ -444,7 +461,8 @@ struct chtab_attr cht_std_attr_skey = {
 	&ht_shash,
 	0,
 	&cht_node_alloc_skey,
-	&cht_node_free_skey
+	&cht_node_free_skey,
+	NULL,
 };
 
 
@@ -485,11 +503,12 @@ struct chtab_attr cht_std_attr_rkey = {
 	&ht_rhash,
 	0,
 	&cht_node_alloc_rkey,
-	&cht_node_free_rkey
+	&cht_node_free_rkey,
+	NULL,
 };
 
 
-static struct chnode *cht_node_alloc_ikey(struct chtab *t, void *key)
+static struct chnode *cht_node_alloc_pkey(struct chtab *t, void *key)
 {
 	struct chnode *chn;
 	chn = malloc(sizeof(*chn));
@@ -500,23 +519,34 @@ static struct chnode *cht_node_alloc_ikey(struct chtab *t, void *key)
 }
 
 
-static void cht_node_free_ikey(struct chtab *t, struct chnode *chn)
+static void cht_node_free_pkey(struct chtab *t, struct chnode *chn)
 {
-	abort_unless(chn != NULL);
 	free(chn);
 }
 
 
-struct chtab_attr cht_std_attr_ikey = {
-	&cmp_intptr,
+struct chtab_attr cht_std_attr_pkey = {
+	&cmp_ptr,
 	&ht_phash,
 	0,
-	&cht_node_alloc_ikey,
-	&cht_node_free_ikey
+	&cht_node_alloc_pkey,
+	&cht_node_free_pkey,
+	NULL,
 };
 
 
-struct chtab *cht_new(size_t nbkts, struct chtab_attr *attr, void *hctx)
+struct chtab_attr cht_std_attr_bkey = {
+	NULL,		/* Must be supplied by user */
+	NULL,		/* Must be supplied by user */
+	0,		/* Must be supplied by user */
+	&cht_node_alloc_pkey,
+	&cht_node_free_pkey,
+	NULL,
+};
+
+
+struct chtab *cht_new(size_t nbkts, struct chtab_attr *attr, void *hctx,
+		      int abort_on_fail)
 {
 	size_t n;
 	size_t tsize;
@@ -542,8 +572,11 @@ struct chtab *cht_new(size_t nbkts, struct chtab_attr *attr, void *hctx)
 	n += sizeof(struct hnode *) * nbkts;
 
 	t = emalloc(n);
-	if ( t == NULL )
+	if ( t == NULL ) {
+		if ( abort_on_fail )
+			err("cht_new: unable to allocate table\n");
 		return NULL;
+	}
 
 	new_hctx = (byte_t *)t + tsize;
 	buckets = (struct hnode **)((byte_t *)new_hctx + hctx_size);
@@ -554,6 +587,7 @@ struct chtab *cht_new(size_t nbkts, struct chtab_attr *attr, void *hctx)
 		new_hctx = NULL;
 
 	ht_init(&t->table, buckets, nbkts, attr->kcmp, attr->hash, new_hctx);
+	t->abort_on_fail = abort_on_fail;
 	t->node_alloc = attr->node_alloc;
 	t->node_free = attr->node_free;
 	t->ctx = attr->ctx;
@@ -590,8 +624,7 @@ void *cht_get(struct chtab *t, void *key)
 	hn = ht_lkup(&t->table, key, NULL);
 	if ( hn != NULL )
 		return container(hn, struct chnode, node)->data;
-	else
-		return NULL;
+	return NULL;
 }
 
 
@@ -606,12 +639,18 @@ int cht_put(struct chtab *t, void *key, void *data)
 	abort_unless(data != NULL);
 
 	hn = ht_lkup(&t->table, key, &h);
-	if ( hn != NULL )
-		return -2;
+	if ( hn != NULL ) {
+		chn = container(hn, struct chnode, node);
+		chn->data = data;
+		return 1;
+	}
 
 	chn = (*t->node_alloc)(t, key);
-	if ( chn == NULL )
+	if ( chn == NULL ) {
+		if ( t->abort_on_fail )
+			err("cht_put: unable to allocate node\n");
 		return -1;
+	}
 
 	chn->data = data;
 	ht_ins(&t->table, &chn->node, h);
@@ -654,6 +693,8 @@ void cht_apply(struct chtab *t, apply_f f, void *ctx)
 	ac.f = f;
 	ht_apply(&t->table, &cht_apply_wrap, &ac);
 }
+
+
 
 
 /* AVL Trees */
@@ -732,7 +773,7 @@ struct cavltree_attr cavl_std_attr_rkey = {
 };
 
 
-static struct canode *cavl_node_alloc_ikey(struct cavltree *t, void *key)
+static struct canode *cavl_node_alloc_pkey(struct cavltree *t, void *key)
 {
 	struct canode *can;
 	can = malloc(sizeof(*can));
@@ -743,22 +784,29 @@ static struct canode *cavl_node_alloc_ikey(struct cavltree *t, void *key)
 }
 
 
-static void cavl_node_free_ikey(struct cavltree *t, struct canode *can)
+static void cavl_node_free_pkey(struct cavltree *t, struct canode *can)
 {
-	abort_unless(can != NULL);
 	free(can);
 }
 
 
-struct cavltree_attr cavl_std_attr_ikey = {
-	&cmp_intptr,
-	&cavl_node_alloc_ikey,
-	&cavl_node_free_ikey,
+struct cavltree_attr cavl_std_attr_pkey = {
+	&cmp_ptr,
+	&cavl_node_alloc_pkey,
+	&cavl_node_free_pkey,
 	0,
 };
 
 
-struct cavltree *cavl_new(struct cavltree_attr *attr)
+struct cavltree_attr cavl_std_attr_bkey = {
+	NULL, 			/* Must be supplied by user */
+	&cavl_node_alloc_pkey,
+	&cavl_node_free_pkey,
+	0,
+};
+
+
+struct cavltree *cavl_new(struct cavltree_attr *attr, int abort_on_fail)
 {
 	struct cavltree *t;
 
@@ -770,10 +818,14 @@ struct cavltree *cavl_new(struct cavltree_attr *attr)
 	abort_unless(attr->node_free != NULL);
 
 	t = malloc(sizeof(*t));
-	if ( t == NULL )
+	if ( t == NULL ) {
+		if ( abort_on_fail )
+			err("cavl_new: unable to allocate tree\n");
 		return NULL;
+	}
 
 	avl_init(&t->tree, attr->kcmp);
+	t->abort_on_fail = abort_on_fail;
 	t->node_alloc = attr->node_alloc;
 	t->node_free = attr->node_free;
 	t->ctx = attr->ctx;
@@ -823,12 +875,18 @@ int cavl_put(struct cavltree *t, void *key, void *data)
 
 
 	an = avl_lkup(&t->tree, key, &dir);
-	if ( dir == CA_N )
-		return -2;
+	if ( dir == CA_N ) {
+		can = container(an, struct canode, node);
+		can->data = data;
+		return 1;
+	}
 
 	can = (*t->node_alloc)(t, key);
-	if ( can == NULL )
+	if ( can == NULL ) {
+		if ( t->abort_on_fail )
+			err("cavl_put: unable to allocate node\n");
 		return -1;
+	}
 
 	can->data = data;
 	avl_ins(&t->tree, &can->node, an, dir);
@@ -871,6 +929,8 @@ void cavl_apply(struct cavltree *t, apply_f f, void *ctx)
 	ac.f = f;
 	avl_apply(&t->tree, &cavl_apply_wrap, &ac);
 }
+
+
 
 
 /* Red-Black Trees */
@@ -949,7 +1009,7 @@ struct crbtree_attr crb_std_attr_rkey = {
 };
 
 
-static struct crbnode *crb_node_alloc_ikey(struct crbtree *t, void *key)
+static struct crbnode *crb_node_alloc_pkey(struct crbtree *t, void *key)
 {
 	struct crbnode *crn;
 	crn = malloc(sizeof(*crn));
@@ -960,22 +1020,29 @@ static struct crbnode *crb_node_alloc_ikey(struct crbtree *t, void *key)
 }
 
 
-static void crb_node_free_ikey(struct crbtree *t, struct crbnode *crn)
+static void crb_node_free_pkey(struct crbtree *t, struct crbnode *crn)
 {
-	abort_unless(crn != NULL);
 	free(crn);
 }
 
 
-struct crbtree_attr crb_std_attr_ikey = {
-	&cmp_intptr,
-	&crb_node_alloc_ikey,
-	&crb_node_free_ikey,
+struct crbtree_attr crb_std_attr_pkey = {
+	&cmp_ptr,
+	&crb_node_alloc_pkey,
+	&crb_node_free_pkey,
 	0,
 };
 
 
-struct crbtree *crb_new(struct crbtree_attr *attr)
+struct crbtree_attr crb_std_attr_bkey = {
+	NULL, 			/* Must be supplied by user */
+	&crb_node_alloc_pkey,
+	&crb_node_free_pkey,
+	0,
+};
+
+
+struct crbtree *crb_new(struct crbtree_attr *attr, int abort_on_fail)
 {
 	struct crbtree *t;
 
@@ -987,10 +1054,14 @@ struct crbtree *crb_new(struct crbtree_attr *attr)
 	abort_unless(attr->node_free != NULL);
 
 	t = malloc(sizeof(*t));
-	if ( t == NULL )
+	if ( t == NULL ) {
+		if ( abort_on_fail )
+			err("crb_new: unable to allocate tree\n");
 		return NULL;
+	}
 
 	rb_init(&t->tree, attr->kcmp);
+	t->abort_on_fail = abort_on_fail;
 	t->node_alloc = attr->node_alloc;
 	t->node_free = attr->node_free;
 	t->ctx = attr->ctx;
@@ -1040,12 +1111,18 @@ int crb_put(struct crbtree *t, void *key, void *data)
 
 
 	rn = rb_lkup(&t->tree, key, &dir);
-	if ( dir == CRB_N )
-		return -2;
+	if ( dir == CRB_N ) {
+		crn = container(rn, struct crbnode, node);
+		crn->data = data;
+		return 1;
+	}
 
 	crn = (*t->node_alloc)(t, key);
-	if ( crn == NULL )
+	if ( crn == NULL ) {
+		if ( t->abort_on_fail )
+			err("crb_put: unable to allocate node\n");
 		return -1;
+	}
 
 	crn->data = data;
 	rb_ins(&t->tree, &crn->node, rn, dir);
@@ -1088,6 +1165,8 @@ void crb_apply(struct crbtree *t, apply_f f, void *ctx)
 	ac.f = f;
 	rb_apply(&t->tree, &crb_apply_wrap, &ac);
 }
+
+
 
 
 /* Splay Trees */
@@ -1166,7 +1245,7 @@ struct cstree_attr cst_std_attr_rkey = {
 };
 
 
-static struct cstnode *cst_node_alloc_ikey(struct cstree *t, void *key)
+static struct cstnode *cst_node_alloc_pkey(struct cstree *t, void *key)
 {
 	struct cstnode *csn;
 	csn = malloc(sizeof(*csn));
@@ -1177,22 +1256,29 @@ static struct cstnode *cst_node_alloc_ikey(struct cstree *t, void *key)
 }
 
 
-static void cst_node_free_ikey(struct cstree *t, struct cstnode *csn)
+static void cst_node_free_pkey(struct cstree *t, struct cstnode *csn)
 {
-	abort_unless(csn != NULL);
 	free(csn);
 }
 
 
-struct cstree_attr cst_std_attr_ikey = {
-	&cmp_intptr,
-	&cst_node_alloc_ikey,
-	&cst_node_free_ikey,
+struct cstree_attr cst_std_attr_pkey = {
+	&cmp_ptr,
+	&cst_node_alloc_pkey,
+	&cst_node_free_pkey,
 	0,
 };
 
 
-struct cstree *cst_new(struct cstree_attr *attr)
+struct cstree_attr cst_std_attr_bkey = {
+	NULL,			/* Must be supplied by user */
+	&cst_node_alloc_pkey,
+	&cst_node_free_pkey,
+	0,
+};
+
+
+struct cstree *cst_new(struct cstree_attr *attr, int abort_on_fail)
 {
 	struct cstree *t;
 
@@ -1204,10 +1290,14 @@ struct cstree *cst_new(struct cstree_attr *attr)
 	abort_unless(attr->node_free != NULL);
 
 	t = malloc(sizeof(*t));
-	if ( t == NULL )
+	if ( t == NULL ) {
+		if ( abort_on_fail )
+			err("cst_new: unable to allocate tree\n");
 		return NULL;
+	}
 
 	st_init(&t->tree, attr->kcmp);
+	t->abort_on_fail = abort_on_fail;
 	t->node_alloc = attr->node_alloc;
 	t->node_free = attr->node_free;
 	t->ctx = attr->ctx;
@@ -1256,12 +1346,18 @@ int cst_put(struct cstree *t, void *key, void *data)
 
 
 	sn = st_lkup(&t->tree, key);
-	if ( sn != NULL )
-		return -2;
+	if ( sn != NULL ) {
+		csn = container(sn, struct cstnode, node);
+		csn->data = data;
+		return 1;
+	}
 
 	csn = (*t->node_alloc)(t, key);
-	if ( csn == NULL )
+	if ( csn == NULL ) {
+		if ( t->abort_on_fail )
+			err("cst_put: unable to allocate node\n");
 		return -1;
+	}
 
 	csn->data = data;
 	st_ins(&t->tree, &csn->node);
@@ -1306,6 +1402,8 @@ void cst_apply(struct cstree *t, apply_f f, void *ctx)
 }
 
 
+
+
 /* Heap operations */
 
 
@@ -1340,6 +1438,8 @@ void hp_free(struct heap *hp)
 	mem_free(&stdmm, hp->elem);
 	free(hp);
 }
+
+
 
 
 /* Ring operations */

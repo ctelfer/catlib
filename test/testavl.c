@@ -153,7 +153,7 @@ char *strs[NUMSTR][2] =
 struct cavltree *avl; 
 char *s;
 
-  avl = cavl_new(&cavl_std_attr_skey);
+  avl = cavl_new(&cavl_std_attr_skey, 1);
 
   for (i = 0; i < NUMSTR; i++)
   {
@@ -205,7 +205,7 @@ char *s;
   printf("\n");
   cavl_free(avl); 	/* get rid of "Overwrite!" */
 
-  avl = cavl_new(&cavl_std_attr_skey);
+  avl = cavl_new(&cavl_std_attr_skey, 1);
 
   for ( i = 0 ; i < NA ; ++i ) 
     arr[i] = i;

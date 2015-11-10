@@ -42,8 +42,8 @@ void add(int prefixes[NPREF], int word)
 	key.len  = sizeof(int) * NPREF;
 	list = cht_get(Prefix_tbl, &key);
 	if ( list == NULL ) { 
-		list = cl_new(NULL);
-		abort_unless(cht_put(Prefix_tbl, &key, list) == 0);
+		list = cl_new(NULL, 1);
+		cht_put(Prefix_tbl, &key, list);
 	} 
 	cl_enq(list, int2ptr(word));
 	memmove(prefixes, prefixes + 1, (NPREF-1) * sizeof(int));
@@ -96,8 +96,8 @@ int main(int argc, char **argv)
 
 	gettimeofday(&tv, NULL);
 	srandom(tv.tv_usec);
-	Prefix_tbl = cht_new(HTSIZ, &cht_std_attr_rkey, NULL);
-	Word_tbl = cht_new(HTSIZ, &cht_std_attr_skey, NULL);
+	Prefix_tbl = cht_new(HTSIZ, &cht_std_attr_rkey, NULL, 1);
+	Word_tbl = cht_new(HTSIZ, &cht_std_attr_skey, NULL, 1);
 	if (grow(&Strings.data, &Strings.len, 
 		 NPREF * sizeof(NONWORD) + MAXWORD) < 0)
 		errsys("Out of memory\n");

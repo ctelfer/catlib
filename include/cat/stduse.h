@@ -21,6 +21,10 @@ extern struct memmgr estdmm;
 struct raw *erawdup(struct raw const * const r);
 
 
+#define DECLARE_BINARY_CMPF(_fn, _t) \
+static int _fn(const void *a, const void *b) {return memcmp(a, b, sizeof(_t));}
+
+
 /* Application level list data structure */
 #include <cat/list.h>
 
@@ -42,6 +46,7 @@ struct clist_attr {
 struct clist {
 	struct clist_node	base;
 	size_t 			fill;
+	int			abort_on_fail;
 	struct clist_node * 	(*node_alloc)(struct clist *list);
 	void 			(*node_free)(struct clist *list,
 					     struct clist_node *node);
@@ -60,7 +65,7 @@ struct clist {
 	      (node) != cl_end(list) ;	\
 	      (node) = cl_next(node) )
 
-struct clist *cl_new(const struct clist_attr *attr);
+struct clist *cl_new(const struct clist_attr *attr, int abort_on_fail);
 void   cl_free(struct clist *list);
 int    cl_isempty(struct clist *list);
 size_t cl_fill(struct clist *list);
@@ -119,6 +124,7 @@ struct chtab_attr {
 
 struct chtab {
 	struct htab	table;
+	int		abort_on_fail;
 	struct chnode *	(*node_alloc)(struct chtab *t, void *k);
 	void		(*node_free)(struct chtab *t, struct chnode *n);
 	void *		ctx;
@@ -126,9 +132,11 @@ struct chtab {
 
 extern struct chtab_attr cht_std_attr_skey;	/* string key table */
 extern struct chtab_attr cht_std_attr_rkey;	/* raw key table */
-extern struct chtab_attr cht_std_attr_ikey;	/* int key table */
+extern struct chtab_attr cht_std_attr_pkey;	/* ptr key table */
+extern struct chtab_attr cht_std_attr_bkey;	/* binary key table */
 
-struct chtab *	cht_new(size_t nbkts, struct chtab_attr *attr, void *hctx);
+struct chtab *	cht_new(size_t nbkts, struct chtab_attr *attr, void *hctx,
+			int abort_on_fail);
 void		cht_free(struct chtab *t);
 void *		cht_get(struct chtab *t, void *key);
 int		cht_put(struct chtab *t, void *key, void *data);
@@ -156,6 +164,7 @@ struct cavltree_attr {
 
 struct cavltree {
 	struct avltree	tree;
+	int		abort_on_fail;
 	struct canode *	(*node_alloc)(struct cavltree *t, void *k);
 	void		(*node_free)(struct cavltree *t, struct canode *n);
 	void *		ctx;
@@ -163,10 +172,11 @@ struct cavltree {
 
 extern struct cavltree_attr cavl_std_attr_skey;	/* string key table */
 extern struct cavltree_attr cavl_std_attr_rkey;	/* raw key table */
-extern struct cavltree_attr cavl_std_attr_ikey;	/* int key table */
+extern struct cavltree_attr cavl_std_attr_pkey;	/* ptr key table */
+extern struct cavltree_attr cavl_std_attr_bkey;	/* binary key table */
 
 
-struct cavltree * cavl_new(struct cavltree_attr *attr);
+struct cavltree * cavl_new(struct cavltree_attr *attr, int abort_on_fail);
 void		cavl_free(struct cavltree *t);
 void *		cavl_get(struct cavltree *t, void *key);
 int		cavl_put(struct cavltree *t, void *key, void *data);
@@ -194,6 +204,7 @@ struct crbtree_attr {
 
 struct crbtree {
 	struct rbtree	tree;
+	int		abort_on_fail;
 	struct crbnode *(*node_alloc)(struct crbtree *t, void *k);
 	void		(*node_free)(struct crbtree *t, struct crbnode *n);
 	void *		ctx;
@@ -201,10 +212,11 @@ struct crbtree {
 
 extern struct crbtree_attr crb_std_attr_skey;	/* string key table */
 extern struct crbtree_attr crb_std_attr_rkey;	/* raw key table */
-extern struct crbtree_attr crb_std_attr_ikey;	/* int key table */
+extern struct crbtree_attr crb_std_attr_pkey;	/* ptr key table */
+extern struct crbtree_attr crb_std_attr_bkey;	/* binary key table */
 
 
-struct crbtree *crb_new(struct crbtree_attr *attr);
+struct crbtree *crb_new(struct crbtree_attr *attr, int abort_on_fail);
 void		crb_free(struct crbtree *t);
 void *		crb_get(struct crbtree *t, void *key);
 int		crb_put(struct crbtree *t, void *key, void *data);
@@ -232,6 +244,7 @@ struct cstree_attr {
 
 struct cstree {
 	struct sptree	tree;
+	int		abort_on_fail;
 	struct cstnode *(*node_alloc)(struct cstree *t, void *k);
 	void		(*node_free)(struct cstree *t, struct cstnode *n);
 	void *		ctx;
@@ -239,10 +252,11 @@ struct cstree {
 
 extern struct cstree_attr cst_std_attr_skey;	/* string key table */
 extern struct cstree_attr cst_std_attr_rkey;	/* raw key table */
-extern struct cstree_attr cst_std_attr_ikey;	/* int key table */
+extern struct cstree_attr cst_std_attr_pkey;	/* ptr key table */
+extern struct cstree_attr cst_std_attr_bkey;	/* binary key table */
 
 
-struct cstree * cst_new(struct cstree_attr *attr);
+struct cstree * cst_new(struct cstree_attr *attr, int abort_on_fail);
 void		cst_free(struct cstree *t);
 void *		cst_get(struct cstree *t, void *key);
 int		cst_put(struct cstree *t, void *key, void *data);

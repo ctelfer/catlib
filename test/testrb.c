@@ -154,7 +154,7 @@ struct crbtree *t;
 char *s;
 struct rbnode *np;
 
-  t = crb_new(&crb_std_attr_skey);
+  t = crb_new(&crb_std_attr_skey, 1);
 
   for (i = 0; i < NUMSTR; i++)
   {
@@ -204,7 +204,7 @@ struct rbnode *np;
   printrbt(t);
   printf("\n");
   crb_free(t); 	/* get rid of "Overwrite!" */
-  t = crb_new(&crb_std_attr_skey);
+  t = crb_new(&crb_std_attr_skey, 1);
 
   for ( i = 0 ; i < NA ; ++i ) 
     arr[i] = i;

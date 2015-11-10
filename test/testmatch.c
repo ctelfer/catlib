@@ -110,8 +110,8 @@ void printsfx(struct sfxtree *sfx)
 	char ch;
 
 	gctx.sfx = sfx;
-	gctx.edges = cht_new(100, &cht_std_attr_ikey, NULL);
-	gctx.nodes = cht_new(100, &cht_std_attr_ikey, NULL);
+	gctx.edges = cht_new(100, &cht_std_attr_pkey, NULL, 1);
+	gctx.nodes = cht_new(100, &cht_std_attr_pkey, NULL, 1);
 	cht_put(gctx.nodes, &sfx->root, int2ptr(1));
 	nnodes = 1;
 	ht_apply(&sfx->edges, gather, &gctx);

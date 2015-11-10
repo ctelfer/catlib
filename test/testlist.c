@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
   while ( l_isempty(&list) )
     free(l_deq(&list));
 
-  cl = cl_new(NULL);
+  cl = cl_new(NULL, 1);
   gettimeofday(&tv, 0);
   for ( i = 0 ; i < NT ; ++i ) {
     cl_enq(cl, int2ptr(i));

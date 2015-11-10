@@ -82,13 +82,13 @@ void ue_init(struct uemux *mux, struct memmgr *mm)
 	mux->mm = mm;
 	mux->done = 0;
 	mux->maxfd = -1;
-	mux->fdtab = cavl_new(&cavl_std_attr_ikey);
+	mux->fdtab = cavl_new(&cavl_std_attr_pkey, 0);
 	dl_init(&mux->timers, tm_zero);
 	l_init(&mux->iolist);
 	FD_ZERO(&mux->rset);
 	FD_ZERO(&mux->wset);
 	FD_ZERO(&mux->eset);
-	mux->sigtab = cavl_new(&cavl_std_attr_ikey);
+	mux->sigtab = cavl_new(&cavl_std_attr_pkey, 0);
 }
 
 
