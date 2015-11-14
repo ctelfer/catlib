@@ -19,7 +19,6 @@ struct rbnode {
 	char		col;
 	struct rbtree *	tree;
 	void *		key;
-	void *		data;
 } ;
 
 #define CRB_L 0	/* left node */
@@ -52,7 +51,7 @@ struct rbtree {
 
 /* main functions */
 DECL void            rb_init(struct rbtree *t, cmp_f cmp);
-DECL void            rb_ninit(struct rbnode *n, void *k, void *d);
+DECL void            rb_ninit(struct rbnode *n, void *k);
 DECL struct rbnode * rb_lkup(struct rbtree *t, const void *key, int *dir);
 DECL struct rbnode * rb_ins(struct rbtree *t, struct rbnode *node, 
 			    struct rbnode *loc, int dir);
@@ -82,19 +81,18 @@ DECL void rb_init(struct rbtree *t, cmp_f cmp)
 	abort_unless(t);
 	abort_unless(cmp);
 	t->cmp = *cmp;
-	rb_ninit(&t->root, NULL, NULL);
+	rb_ninit(&t->root, NULL);
 	t->root.pdir = CRB_P;
 }
 
 
-DECL void rb_ninit(struct rbnode *n, void *k, void *d)
+DECL void rb_ninit(struct rbnode *n, void *k)
 {
 	abort_unless(n);
 	n->p[0] = n->p[1] = n->p[2] = NULL;
 	n->pdir = 0;
 	n->col  = CRB_RED;
 	n->key  = k;
-	n->data = d;
 }
 
 
@@ -120,7 +118,7 @@ DECL struct rbnode *rb_lkup(struct rbtree *t, const void *key, int *rdir)
 
 
 DECL struct rbnode *rb_ins(struct rbtree *t, struct rbnode *node, 
-								           struct rbnode *loc, int atdir)
+			   struct rbnode *loc, int atdir)
 {
 	struct rbnode *p;
 	int dir;
@@ -150,7 +148,7 @@ DECL struct rbnode *rb_ins(struct rbtree *t, struct rbnode *node,
 		node->tree = t;
 		p->tree = NULL;
 		p->col = CRB_RED;
-		rb_ninit(p, p->key, p->data);
+		rb_ninit(p, p->key);
 		return p;
 	} 
 	else {
@@ -181,7 +179,7 @@ DECL void rb_apply(struct rbtree *t, apply_f func, void * ctx)
 			else if ( trav->p[CRB_R] )
 				trav = trav->p[CRB_R];	/* dir stays the same */
 			else {
-				func(trav->data, ctx);
+				func(trav, ctx);
 				dir  = trav->pdir;
 				trav = trav->p[CRB_P];
 			}
@@ -192,14 +190,14 @@ DECL void rb_apply(struct rbtree *t, apply_f func, void * ctx)
 				dir  = CRB_P;
 				trav = trav->p[CRB_R];	/* dir stays the same */
 			} else {
-				func(trav->data, ctx);
+				func(trav, ctx);
 				dir  = trav->pdir;
 				trav = trav->p[CRB_P];
 			}
 			break;
 
 		case CRB_R:
-			func(trav->data, ctx);
+			func(trav, ctx);
 			dir  = trav->pdir;
 			trav = trav->p[CRB_P];
 			break;
@@ -352,7 +350,7 @@ DECL void rb_rem(struct rbnode *node)
 		rb_fix(tmp, node->p[CRB_R], CRB_R);
 		rb_fix(node->p[CRB_P], tmp, node->pdir);
 	}
-	rb_ninit(node, node->key, node->data);
+	rb_ninit(node, node->key);
 	if ( oldc == CRB_RED )
 		return;
 

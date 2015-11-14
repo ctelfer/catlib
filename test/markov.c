@@ -1,7 +1,7 @@
 /*
  * by Christopher Adam Telfer
  *
- * Copyright 2003-2012 -- See accompanying license
+ * Copyright 2003-2015 -- See accompanying license
  *
  */
 #include <cat/cat.h>
@@ -30,23 +30,23 @@ CDS_NEWSTRUCT(struct list, char *, strent_s);
 
 char *Prefixes[NPREF];
 struct ring Buffer;
-struct htab *Table;
+struct chtab *Table;
 
 
 static void print_tablist(void *nodep, void *aux)
 {
-	struct hnode *n = nodep;
+	struct chnode *n = nodep;
 	struct list *t, *l = n->data;
-	printf("*%s* : *%s* ", (char *)n->key, CDS_DATA(l, strent_s));
+	printf("*%s* : *%s* ", (char *)n->node.key, CDS_DATA(l, strent_s));
 	for ( t = l->next ; t != l ; t = t->next )
 		printf(" *%s*", CDS_DATA(t, strent_s));
 	printf("\n");
 }
 
 
-void printall(struct htab *t)
+void printall(struct chtab *t)
 {
-	ht_apply(t, print_tablist, NULL);
+	cht_apply(t, print_tablist, NULL);
 }
 
 
@@ -66,9 +66,9 @@ void add(char *word)
 	abort_unless(s != NULL);
 	CDS_NEW(w, s);
 	l_init(CDS_NPTR(w, strent_s));
-	ol = ht_get_dptr(Table, Buffer.data);
+	ol = cht_get(Table, Buffer.data);
 	if ( ! ol )
-		ht_put(Table, Buffer.data, CDS_NPTR(w, strent_s));
+		cht_put(Table, Buffer.data, CDS_NPTR(w, strent_s));
 	else
 		l_ins(ol->prev, CDS_NPTR(w, strent_s));
 	memmove(Prefixes, Prefixes + 1, (NPREF-1) * sizeof(char *));
@@ -89,7 +89,7 @@ void generate(void)
 		ring_fmt(&Buffer, "%s", Prefixes[0]);
 		for ( j = 1 ; j < NPREF ; ++j )
 			ring_fmt(&Buffer, " %s", Prefixes[j]);
-		h = s = ht_get_dptr(Table, Buffer.data);
+		h = s = cht_get(Table, Buffer.data);
 		n = 1;
 		for ( t = s->next ; t != s ; t = t->next )
 			if ( (random() % ++n) == 0 )
@@ -116,7 +116,7 @@ int main(int argc, char **argv)
 	srandom(tv.tv_usec);
 
 	for ( i = 0 ; i < NPREF ; ++i ) Prefixes[i] = NONWORD;
-	Table = ht_new(&estdmm, HTSIZ, CAT_KT_STR, 0, 0);
+	Table = cht_new(HTSIZ, NULL, NULL, 1);
 	ring_init(&Buffer, emalloc(BUFLEN), BUFLEN);
 
 	sprintf(fmt, "%%%ds", (int)sizeof(word)-1);

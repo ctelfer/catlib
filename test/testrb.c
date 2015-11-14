@@ -9,22 +9,11 @@
 #include <stdlib.h>
 #include <cat/rbtree.h>
 #include <cat/stduse.h>
+#include <cat/emalloc.h>
 #include <sys/time.h>
 
 #define NUMSTR 4
 #define NA	200
-
-
-char *sdup(const char *s)
-{
-	size_t ls = strlen(s);
-	char *ns = malloc(ls + 1);
-	if (ns == NULL)
-		return NULL;
-	memcpy(ns, s, ls);
-	ns[ls] = '\0';
-	return ns;
-}
 
 
 int vrfy(struct rbnode *n)
@@ -55,6 +44,7 @@ int vrfy(struct rbnode *n)
 void printrb(struct rbnode *n, int d)
 {
   int i;
+  struct crbnode *crn = container(n, struct crbnode, node);
 
   if ( n->rb_right ) 
     printrb(n->rb_right, d+1);
@@ -62,8 +52,8 @@ void printrb(struct rbnode *n, int d)
   for ( i = 0 ; i < d ; ++i ) 
     printf("  ");
 
-  printf("[%s:%s->%s]\n", (char *)n->key, (char *)n->data, n->col == CRB_BLACK ? 
-	 "black" : "red");
+  printf("[%s:%s->%s]\n", (char *)n->key, (char *)crn->data,
+	 n->col == CRB_BLACK ? "black" : "red");
 
   if ( n->rb_left ) 
     printrb(n->rb_left, d+1);
@@ -73,12 +63,12 @@ void printrb(struct rbnode *n, int d)
 
 
 
-void printrbt(struct rbtree *t)
+void printrbt(struct crbtree *t)
 {
-  if ( t->rb_root == NULL ) 
+  if ( t->tree.rb_root == NULL ) 
     printf("tree is empty\n");
   else
-    printrb(t->rb_root, 0);
+    printrb(t->tree.rb_root, 0);
 }
 
 
@@ -101,7 +91,7 @@ void timeit()
   double dbl;
 
   for (i = 0; i < NOPS; i++)
-    rb_ninit(&nodes[i], str_fmt_a("node%d", i), NULL);
+    rb_ninit(&nodes[i], str_fmt_a("node%d", i));
   rb_init(&t, cmp_str);
 
   gettimeofday(&start, NULL);
@@ -160,35 +150,35 @@ char *strs[NUMSTR][2] =
                     {"Key 3!", "By now! this is over."},
                     {"key 1", "Overwrite."}
                   };
-struct rbtree *t; 
+struct crbtree *t; 
 char *s;
 struct rbnode *np;
 
-  t = rb_new(&estdmm, CAT_KT_STR, 0, 0);
+  t = crb_new(&crb_std_attr_skey, 1);
 
   for (i = 0; i < NUMSTR; i++)
   {
-    rb_put(t, strs[i][0], strs[i][1]);
-    np = rb_lkup(t, strs[i][0], 0);
-    printf("Put (%s) at key (%s): %p\n", strs[i][1], strs[i][0], np);
+    crb_put(t, strs[i][0], strs[i][1]);
+    s = crb_get(t, strs[i][0]);
+    printf("Put (%s) at key (%s): %p\n", s, strs[i][0], s);
     fflush(stdout);
   }
 
-  if (rb_get_dptr(t, "bye")) 
+  if (crb_get(t, "bye")) 
     printf("found something I shouldn't have!\n"); 
   fflush(stdout);
 
-  s = rb_get_dptr(t, strs[1][0]);
+  s = crb_get(t, strs[1][0]);
   printf("Under key %s is the string %s\n", strs[1][0], s);
   printf("address is %p\n\n", s); 
   fflush(stdout);
 
-  s = rb_get_dptr(t, strs[2][0]);
+  s = crb_get(t, strs[2][0]);
   printf("Under key %s is the string %s\n", strs[2][0], s);
   printf("address is %p\n\n", s); 
   fflush(stdout);
 
-  s = rb_get_dptr(t, strs[0][0]);
+  s = crb_get(t, strs[0][0]);
   printf("Under key %s is the string %s\n", strs[0][0], s); 
   printf("address is %p\n\n", s); 
   fflush(stdout);
@@ -196,29 +186,25 @@ struct rbnode *np;
   printrbt(t);
   fflush(stdout);
 
-  s = rb_get_dptr(t, strs[1][0]);
-  rb_clr(t, strs[1][0]);
+  s = crb_del(t, strs[1][0]);
   printf("Deleted %s\n", s); 
   printf("address is %p\n\n", s); 
   fflush(stdout);
 
-  np = rb_lkup(t, strs[2][0], NULL);
-  s = np->data;
-  rb_rem(np);
-  free(np);
+  s = crb_del(t, strs[2][0]);
   printf("Deleted %s\n", s); 
   printf("address is %p\n\n", s); 
   fflush(stdout);
 
-  if (rb_get_dptr(t, strs[1][0]))
+  if (crb_get(t, strs[1][0]))
     printf("Error!  Thing not deleted! : %s\n", 
-	   (char *)rb_get_dptr(t, strs[1][0]));
+	   (char *)crb_get(t, strs[1][0]));
   fflush(stdout);
 
   printrbt(t);
   printf("\n");
-  rb_free(t); 	/* get rid of "Overwrite!" */
-  t = rb_new(&estdmm, CAT_KT_STR, 0, 0);
+  crb_free(t); 	/* get rid of "Overwrite!" */
+  t = crb_new(&crb_std_attr_skey, 1);
 
   for ( i = 0 ; i < NA ; ++i ) 
     arr[i] = i;
@@ -242,8 +228,8 @@ struct rbnode *np;
 */
     sprintf(nstr, "k%03d", arr[i]);
     sprintf(vstr, "v%03d", arr[i]);
-    rb_put(t, nstr, sdup(vstr));
-    if ( vrfy(t->rb_root) < 0 )
+    crb_put(t, nstr, estrdup(vstr));
+    if ( vrfy(t->tree.rb_root) < 0 )
     {
       printrbt(t);
       exit(-1);
@@ -275,10 +261,9 @@ struct rbnode *np;
 */
 
     sprintf(nstr, "k%03d", arr[i]);
-    s = rb_get_dptr(t, nstr);
-    rb_clr(t, nstr);
+    s = crb_del(t, nstr);
     free(s);
-    if ( vrfy(t->rb_root) < 0 )
+    if ( vrfy(t->tree.rb_root) < 0 )
     {
       printrbt(t);
       exit(-1);
@@ -290,8 +275,8 @@ struct rbnode *np;
   printrbt(t);
   fflush(stdout);
 
-  rb_apply(t, ourfree, NULL);
-  rb_free(t); 
+  crb_apply(t, ourfree, NULL);
+  crb_free(t); 
 
   printf("Freed\n");
 

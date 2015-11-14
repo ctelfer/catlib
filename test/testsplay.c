@@ -9,25 +9,16 @@
 #include <stdlib.h>
 #include <cat/splay.h>
 #include <cat/stduse.h>
+#include <cat/emalloc.h>
 #include <sys/time.h>
 
 #define NUMSTR	4
 #define NA	200
 
-char *sdup(const char *s)
-{
-        size_t ls = strlen(s);
-        char *ns = malloc(ls + 1);
-        if (ns == NULL)
-                return NULL;
-        memcpy(ns, s, ls);
-        ns[ls] = '\0';
-        return ns;
-}
-
 void printst(struct stnode *n, int d)
 {
   int i;
+  struct cstnode *csn = container(n, struct cstnode, node);
 
   if ( n->st_right ) 
     printst(n->st_right, d+1);
@@ -35,7 +26,7 @@ void printst(struct stnode *n, int d)
   for ( i = 0 ; i < d ; ++i ) 
     printf("  ");
 
-  printf("[%s:%s]\n", (char *)n->key, (char *)n->data);
+  printf("[%s:%s]\n", (char *)n->key, (char *)csn->data);
 
   if ( n->st_left ) 
     printst(n->st_left, d+1);
@@ -45,7 +36,7 @@ void printst(struct stnode *n, int d)
 
 
 
-void print_splay(struct splay *t)
+void print_splay(struct sptree *t)
 {
   struct stnode *top = t->root.p[CST_P];
   if ( top == NULL ) 
@@ -72,11 +63,11 @@ void timeit()
   struct stnode nodes[NOPS], *finder;
   struct timeval start, end;
   int i, j, dir;
-  struct splay t;
+  struct sptree t;
   double dbl;
 
   for (i = 0; i < NOPS; i++)
-    st_ninit(&nodes[i], str_fmt_a("node%d", i), NULL);
+    st_ninit(&nodes[i], str_fmt_a("node%d", i));
   st_init(&t, cmp_str);
 
   gettimeofday(&start, NULL);
@@ -134,65 +125,61 @@ char *strs[NUMSTR][2] =
                     {"Key 3!", "By now! this is over."},
                     {"key 1", "Overwrite."}
                   };
-struct splay *t; 
+struct cstree *t; 
 char *s;
 struct stnode *np;
 
-  t = st_new(&estdmm, CAT_KT_STR, 0, 0);
+  t = cst_new(&cst_std_attr_skey, 1);
 
   for (i = 0; i < NUMSTR; i++)
   {
-    st_put(t, strs[i][0], strs[i][1]);
-    np = st_lkup(t, strs[i][0]);
-    printf("Put (%s) at key (%s): %p\n", strs[i][1], strs[i][0], np->data);
+    cst_put(t, strs[i][0], strs[i][1]);
+    s = cst_get(t, strs[i][0]);
+    printf("Put (%s) at key (%s): %p\n", s, strs[i][0], s);
     fflush(stdout);
   }
 
-  if (st_get_dptr(t, "bye")) 
+  if (cst_get(t, "bye")) 
     printf("found something I shouldn't have!\n"); 
   fflush(stdout);
 
-  s = st_get_dptr(t, strs[1][0]);
+  s = cst_get(t, strs[1][0]);
   printf("Under key %s is the string %s\n", strs[1][0], s);
   printf("address is %p\n\n", s); 
   fflush(stdout);
 
-  s = st_get_dptr(t, strs[2][0]);
+  s = cst_get(t, strs[2][0]);
   printf("Under key %s is the string %s\n", strs[2][0], s);
   printf("address is %p\n\n", s); 
   fflush(stdout);
 
-  s = st_get_dptr(t, strs[0][0]);
+  s = cst_get(t, strs[0][0]);
   printf("Under key %s is the string %s\n", strs[0][0], s); 
   printf("address is %p\n\n", s); 
   fflush(stdout);
 
-  print_splay(t);
+  print_splay(&t->tree);
   fflush(stdout);
 
-  s = st_get_dptr(t, strs[1][0]);
-  st_clr(t, strs[1][0]);
+  s = cst_del(t, strs[1][0]);
   printf("Deleted %s\n", s); 
   printf("address is %p\n\n", s); 
   fflush(stdout);
 
-  np = st_lkup(t, strs[2][0]);
-  s = np->data;
-  st_rem(np);
-  free(np);
+  s = cst_del(t, strs[2][0]);
   printf("Deleted %s\n", s); 
   printf("address is %p\n\n", s); 
   fflush(stdout);
 
-  if (st_get_dptr(t, strs[1][0]))
+  if (cst_get(t, strs[1][0]))
     printf("Error!  Thing not deleted! : %s\n", 
-           (char *)st_get_dptr(t, strs[1][0]));
+           (char *)cst_get(t, strs[1][0]));
   fflush(stdout);
 
-  print_splay(t);
+  print_splay(&t->tree);
   printf("\n");
-  st_free(t); 	/* get rid of "Overwrite!" */
-  t = st_new(&estdmm, CAT_KT_STR, 0, 0);
+  cst_free(t); 	/* get rid of "Overwrite!" */
+  t = cst_new(&cst_std_attr_skey, 1);
 
   for ( i = 0 ; i < NA ; ++i ) 
     arr[i] = i;
@@ -216,11 +203,11 @@ struct stnode *np;
 */
     sprintf(nstr, "k%03d", arr[i]);
     sprintf(vstr, "v%03d", arr[i]);
-    st_put(t, nstr, sdup(vstr));
+    cst_put(t, nstr, estrdup(vstr));
   }
   printf("\n\n");
 
-  print_splay(t);
+  print_splay(&t->tree);
 
   printf("\n\n");
   fflush(stdout);
@@ -244,18 +231,17 @@ struct stnode *np;
 */
 
     sprintf(nstr, "k%03d", arr[i]);
-    s = st_get_dptr(t, nstr);
-    st_clr(t, nstr);
+    s = cst_del(t, nstr);
     free(s);
   }
   printf("\n\n");
   fflush(stdout);
 
-  print_splay(t);
+  print_splay(&t->tree);
   fflush(stdout);
 
-  st_apply(t, ourfree, NULL);
-  st_free(t); 
+  cst_apply(t, ourfree, NULL);
+  cst_free(t); 
 
   printf("Freed\n");
 

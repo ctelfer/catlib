@@ -69,7 +69,7 @@ void *dbg_mem_get(struct memmgr *mm, size_t amt)
 	dh->dh_amt = amt;
 	
 	p = TOMEM(dh);
-	ht_ninit(&dh->dh_hnode, p, dh);
+	ht_ninit(&dh->dh_hnode, p);
 	ht_ins_h(&dbg_htab, &dh->dh_hnode);
 
 	return p;
@@ -114,7 +114,7 @@ void *dbg_mem_resize(struct memmgr *mm, void *p, size_t newsize)
 	dh = p2;
 	dh->dh_amt = newsize;
 	p = TOMEM(dh);
-	ht_ninit(&dh->dh_hnode, p, dh);
+	ht_ninit(&dh->dh_hnode, p);
 	ht_ins_h(&dbg_htab, &dh->dh_hnode);
 
 	return p;

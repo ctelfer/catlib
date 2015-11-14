@@ -261,14 +261,18 @@ int main() { return 0; }
 HASLLONG
 if $CC -o /dev/null has_llong.c $NOSTD $CCXFLAGS > /dev/null 2>&1 
 then
+	echo "#if !CAT_ANSI89" >> config.h
 	echo "#ifndef CAT_HAS_LONGLONG" >> config.h
 	echo "#define CAT_HAS_LONGLONG 1" >> config.h
 	echo "#endif /* CAT_HAS_LONGLONG */" >> config.h
+	echo "#endif /* !CAT_ANSI89" */ >> config.h
 	HAS_LONG_LONG=1
 else
+	echo "#if !CAT_ANSI89" >> config.h
 	echo "#ifndef CAT_HAS_LONGLONG" >> config.h
 	echo "#define CAT_HAS_LONGLONG 0" >> config.h
 	echo "#endif /* CAT_HAS_LONGLONG */" >> config.h
+	echo "#endif /* !CAT_ANSI89" */ >> config.h
 	HAS_LONG_LONG=0
 fi
 

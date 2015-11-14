@@ -10,6 +10,7 @@
 #ifndef __cat_cat_h
 #define __cat_cat_h
 
+#include <stddef.h>
 #include <cat/config.h>
 
 #ifndef CAT_USE_STDLIB
@@ -28,7 +29,8 @@
 #define CAT_USE_INLINE		1
 #endif /* CAT_USE_INLINE */
 
-#ifndef CAT_HAS_LONGLONG
+#if !defined(CAT_HAS_LONGLONG) || CAT_ANSI89
+#undef CAT_HAS_LONGLONG
 #define CAT_HAS_LONGLONG	0
 #endif /* CAT_HAS_LONGLONG */
 
@@ -61,38 +63,7 @@
 #define __STATIC_BUGNAME(name, line) __bug_on_##name##_##line
 #define STATIC_BUGNAME(name, line) __STATIC_BUGNAME(name, line)
 #define STATIC_BUG_ON(name, test) \
-	enum { STATIC_BUGNAME(name, __LINE__) = 1 / !(test) };
-
-/* CAT_ALIGN is a union representing the most restrictive alignment type */
-#ifndef CAT_ALIGN
-typedef union { 
-	long			l;
-	void *			vp;
-	char *			cp;
-	double 			d;
-#if CAT_HAS_LONGLONG
-	long long		ll;
-#endif /* CAT_HAS_LONGLONG */
-} cat_align_t;
-#define CAT_ALIGN	cat_align_t
-#else /* CAT_ALIGN */
-typedef CAT_ALIGN	cat_align_t;
-#endif /* CAT_ALIGN */
-
-
-/* ASSUMPTION: 
- * all types in cat_align_t are worst case alignments: (e.g. ll is on 8-byte
- * boundaries).  This does not generally hold but is safer than guessing
- * incorrectly.  If a programmer knows * specifically otherwise the coder can 
- * #define CAT_ALIGN.
- */
-#define CAT_ALIGN_SIZE(x) \
-	(((x)+(sizeof(cat_align_t)-1))/sizeof(cat_align_t)*sizeof(cat_align_t))
-#define CAT_DECLARE_ALIGNED_DATA(name, len) \
-	CAT_DECLARE_ALIGNED_DATA_Q(,name,len)
-/* qual - (e.g. static volatile), name - variable name, len - in bytes */
-#define CAT_DECLARE_ALIGNED_DATA_Q(qual, name, len) \
-	qual CAT_ALIGN name[CAT_ALIGN_SIZE(len) / sizeof(CAT_ALIGN)]
+	enum { STATIC_BUGNAME(name, __LINE__) = 1 / !(test) }
 
 typedef unsigned char byte_t;
 typedef signed char schar;
@@ -113,8 +84,6 @@ typedef unsigned long ulong;
 typedef unsigned long long ullong;
 #endif /* CAT_HAS_LONGLONG */
 #endif /* CAT_NEED_UTYPEDEFS */
-
-#include <stddef.h>
 
 #ifdef CAT_USE_STDINT_TYPES
 #include <stdint.h>
@@ -205,18 +174,50 @@ typedef CAT_U32_T uintptr_t;
 #endif /* CAT_64BIT */
 #endif /* !CAT_HAS_UINTPTR_T */
 
-STATIC_BUG_ON(int8_t_size_not_equal_to_1, sizeof(int8_t) != 1)
-STATIC_BUG_ON(uint8_t_size_not_equal_to_1, sizeof(uint8_t) != 1)
-STATIC_BUG_ON(int16_t_size_not_equal_to_2, sizeof(int16_t) != 2)
-STATIC_BUG_ON(uint16_t_size_not_equal_to_2, sizeof(uint16_t) != 2)
-STATIC_BUG_ON(int32_t_size_not_equal_to_4, sizeof(int32_t) != 4)
-STATIC_BUG_ON(uint32_t_size_not_equal_to_4, sizeof(uint32_t) != 4)
+STATIC_BUG_ON(int8_t_size_not_equal_to_1, sizeof(int8_t) != 1);
+STATIC_BUG_ON(uint8_t_size_not_equal_to_1, sizeof(uint8_t) != 1);
+STATIC_BUG_ON(int16_t_size_not_equal_to_2, sizeof(int16_t) != 2);
+STATIC_BUG_ON(uint16_t_size_not_equal_to_2, sizeof(uint16_t) != 2);
+STATIC_BUG_ON(int32_t_size_not_equal_to_4, sizeof(int32_t) != 4);
+STATIC_BUG_ON(uint32_t_size_not_equal_to_4, sizeof(uint32_t) != 4);
 #if CAT_64BIT
-STATIC_BUG_ON(int64_t_size_not_equal_to_8, sizeof(int64_t) != 8)
-STATIC_BUG_ON(uint64_t_size_not_equal_to_8, sizeof(uint64_t) != 8)
+STATIC_BUG_ON(int64_t_size_not_equal_to_8, sizeof(int64_t) != 8);
+STATIC_BUG_ON(uint64_t_size_not_equal_to_8, sizeof(uint64_t) != 8);
 #endif /* CAT_64BIT */
-STATIC_BUG_ON(intptr_t_lt_sizeof_voidptr, sizeof(intptr_t) < sizeof(void *))
-STATIC_BUG_ON(uintptr_t_lt_sizeof_voidptr, sizeof(uintptr_t) < sizeof(void *))
+STATIC_BUG_ON(intptr_t_lt_sizeof_voidptr, sizeof(intptr_t) < sizeof(void *));
+STATIC_BUG_ON(uintptr_t_lt_sizeof_voidptr, sizeof(uintptr_t) < sizeof(void *));
+
+
+/* CAT_ALIGN is a union representing the most restrictive alignment type */
+#ifndef CAT_ALIGN
+typedef union { 
+	long			l;
+	void *			p;
+	double 			d;
+#if CAT_HAS_LONGLONG
+	long long		ll;
+#endif /* CAT_HAS_LONGLONG */
+} cat_align_t;
+#define CAT_ALIGN	cat_align_t
+#else /* CAT_ALIGN */
+typedef CAT_ALIGN	cat_align_t;
+#endif /* CAT_ALIGN */
+
+/* ASSUMPTION: 
+ * all types in cat_align_t are worst case alignments: (e.g. ll is on 8-byte
+ * boundaries).  This does not generally hold but is safer than guessing
+ * incorrectly.  If a programmer knows specifically otherwise the coder can 
+ * #define CAT_ALIGN.
+ */
+#define CAT_ALIGN_SIZE(_x) \
+	(((_x)+(sizeof(cat_align_t)-1))/sizeof(cat_align_t)*sizeof(cat_align_t))
+#define CAT_ALIGN_PTR_OFF(_p, _off) \
+	((void *)((byte_t *)(_p) + CAT_ALIGN_SIZE(_off)))
+#define CAT_DECLARE_ALIGNED_DATA(_name, _len) \
+	CAT_DECLARE_ALIGNED_DATA_Q(,_name,_len)
+/* qual - (e.g. static volatile), name - variable name, len - in bytes */
+#define CAT_DECLARE_ALIGNED_DATA_Q(_qual, _name, _len) \
+	qual CAT_ALIGN name[CAT_ALIGN_SIZE(_len) / sizeof(CAT_ALIGN)]
 
 
 /* We redefined this here because we might be including a c89 stddef.h */
@@ -230,6 +231,77 @@ STATIC_BUG_ON(uintptr_t_lt_sizeof_voidptr, sizeof(uintptr_t) < sizeof(void *))
 #define ptr2int(p)	((intptr_t)(void *)(p))
 #define ptr2uint(p)	((uintptr_t)(void *)(p))
 #define int2ptr(i)	((void *)(uintptr_t)(i))
+
+/* Preprocessor LOG2() operations */
+
+#define FLOG2(x) ((x) < 1 ? -1 : \
+		  (x) < 2 ? 0 : \
+		  (x) < 4 ? 1 : \
+		  (x) < 8 ? 2 : \
+		  (x) < 16 ? 3 : \
+		  (x) < 32 ? 4 : \
+		  (x) < 64 ? 5 : \
+		  (x) < 128 ? 6 : \
+		  (x) < 256 ? 7 : \
+		  (x) < 512 ? 8 : \
+		  (x) < 1024 ? 9 : \
+		  (x) <= 2 * 1024 ? 10 : \
+		  (x) <= 4 * 1024 ? 11 : \
+		  (x) <= 8 * 1024 ? 12 : \
+		  (x) <= 16 * 1024 ? 13 : \
+		  (x) <= 32 * 1024 ? 14 : \
+		  (x) <= 64 * 1024 ? 15 : \
+		  (x) <= 128 * 1024 ? 16 : \
+		  (x) <= 256 * 1024 ? 17 : \
+		  (x) <= 512 * 1024 ? 18 : \
+		  (x) <= 1024 * 1024 ? 19 : \
+		  (x) <= 2 * 1024 * 1024 ? 20 : \
+		  (x) <= 4 * 1024 * 1024 ? 21 : \
+		  (x) <= 8 * 1024 * 1024 ? 22 : \
+		  (x) <= 16 * 1024 * 1024 ? 23 : \
+		  (x) <= 32 * 1024 * 1024 ? 24 : \
+		  (x) <= 64 * 1024 * 1024 ? 25 : \
+		  (x) <= 128 * 1024 * 1024 ? 26 : \
+		  (x) <= 256 * 1024 * 1024 ? 27 : \
+		  (x) <= 512 * 1024 * 1024 ? 28 : \
+		  (x) <= 1024 * 1024 * 1024 ? 29 : \
+		  (x) <= 2 * 1024 * 1024 * 1024 ? 30 : \
+		  31)
+
+#define CLOG2(x) ((x) < 1 ? -1 : \
+		  (x) == 1 ? 0 : \
+		  (x) <= 2 ? 1 : \
+		  (x) <= 4 ? 2 : \
+		  (x) <= 8 ? 3 : \
+		  (x) <= 16 ? 4 : \
+		  (x) <= 32 ? 5 : \
+		  (x) <= 64 ? 6 : \
+		  (x) <= 128 ? 7 : \
+		  (x) <= 256 ? 8 : \
+		  (x) <= 512 ? 9 : \
+		  (x) <= 1024 ? 10 : \
+		  (x) <= 2 * 1024 ? 11 : \
+		  (x) <= 4 * 1024 ? 12 : \
+		  (x) <= 8 * 1024 ? 13 : \
+		  (x) <= 16 * 1024 ? 14 : \
+		  (x) <= 32 * 1024 ? 15 : \
+		  (x) <= 64 * 1024 ? 16 : \
+		  (x) <= 128 * 1024 ? 17 : \
+		  (x) <= 256 * 1024 ? 18 : \
+		  (x) <= 512 * 1024 ? 19 : \
+		  (x) <= 1024 * 1024 ? 20 : \
+		  (x) <= 2 * 1024 * 1024 ? 21 : \
+		  (x) <= 4 * 1024 * 1024 ? 22 : \
+		  (x) <= 8 * 1024 * 1024 ? 23 : \
+		  (x) <= 16 * 1024 * 1024 ? 24 : \
+		  (x) <= 32 * 1024 * 1024 ? 25 : \
+		  (x) <= 64 * 1024 * 1024 ? 26 : \
+		  (x) <= 128 * 1024 * 1024 ? 27 : \
+		  (x) <= 256 * 1024 * 1024 ? 28 : \
+		  (x) <= 512 * 1024 * 1024 ? 29 : \
+		  (x) <= 1024 * 1024 * 1024 ? 30 : \
+		  (x) <= 2 * 1024 * 1024 * 1024 ? 31 : \
+		  32)
 
 /* generic binary data container */
 struct raw {
@@ -256,6 +328,7 @@ union attrib_u {
 	long double	ldbl_val;
 	double		dbl_val;
 	float		float_val;
+	struct raw	raw_val;
 	byte_t		bytes[1];
 	cat_align_t	align[1];
 };

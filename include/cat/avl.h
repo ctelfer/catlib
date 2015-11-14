@@ -22,16 +22,15 @@ struct anode {
 
 	signed char	b;	/* - == left and + == right */
 	uchar	        pdir;	/* on the parent's left or right ? */
-	struct avl *	tree;
+	struct avltree *tree;
 	void *		key;
-	void *		data;
-} ;
+};
 
 
-struct avl {
+struct avltree {
 	cmp_f		cmp;
 	struct anode	root;
-} ; 
+}; 
 
 
 #define avl_left	p[CA_L]
@@ -51,25 +50,26 @@ struct avl {
 
 
 /* main functions */
-DECL void avl_init(struct avl *t, cmp_f cmp);
-DECL void avl_ninit(struct anode *n, void *k, void *d);
+DECL void avl_init(struct avltree *t, cmp_f cmp);
+DECL void avl_ninit(struct anode *n, void *k);
 
-DECL struct anode * avl_lkup(struct avl *t, const void *key, int *dir);
-DECL struct anode * avl_ins(struct avl *t, struct anode *n, struct anode *loc, 
-		            int dir);
+DECL struct anode * avl_lkup(struct avltree *ttree, const void *key, int *dir);
+DECL struct anode * avl_ins(struct avltree *t, struct anode *n,
+			    struct anode *loc, int dir);
 DECL void           avl_rem(struct anode *node);
-DECL void avl_apply(struct avl *t, apply_f func, void * ctx);
-DECL int	    avl_isempty(struct avl *t);
-DECL struct anode * avl_getroot(struct avl *t);
-DECL struct anode * avl_getmin(struct avl *t);
-DECL struct anode * avl_getmax(struct avl *t);
+DECL void avl_apply(struct avltree *t, apply_f func, void * ctx);
+DECL int	    avl_isempty(struct avltree *t);
+DECL struct anode * avl_getroot(struct avltree *t);
+DECL struct anode * avl_getmin(struct avltree *t);
+DECL struct anode * avl_getmax(struct avltree *t);
 
 
 
 /* Auxiliary (helper) functions (don't use) */
 DECL void avl_fix(struct anode *p, struct anode *c, int dir);
-DECL void avl_findloc(struct avl *t, const void *key, struct anode **p, int *d);
-DECL void avl_ins_at(struct avl *t, struct anode *node, struct anode *par, 
+DECL void avl_findloc(struct avltree *t, const void *key, struct anode **p,
+		      int *d);
+DECL void avl_ins_at(struct avltree *t, struct anode *node, struct anode *par,
 		     int dir);
 DECL void avl_rleft(struct anode *n1, struct anode *n2, int ins);
 DECL void avl_rright(struct anode *n1, struct anode *n2, int ins);
@@ -81,28 +81,27 @@ DECL struct anode *avl_findrep(struct anode *node);
 /* actual implementation */
 #if defined(CAT_AVL_DO_DECL) && CAT_AVL_DO_DECL
 
-DECL void avl_init(struct avl *t, cmp_f cmp)
+DECL void avl_init(struct avltree *t, cmp_f cmp)
 {
 	abort_unless(t);
 	abort_unless(cmp);
 	t->cmp = cmp;
-	avl_ninit(&t->root, NULL, NULL);
+	avl_ninit(&t->root, NULL);
 	t->root.pdir = CA_P;
 }
 
 
-DECL void avl_ninit(struct anode *n, void *k, void *d)
+DECL void avl_ninit(struct anode *n, void *k)
 {
 	abort_unless(n);
 	n->p[0] = n->p[1] = n->p[2] = NULL;
 	n->pdir = CA_P;
 	n->b = 0;
 	n->key = k;
-	n->data = d;
 }
 
 
-DECL struct anode *avl_lkup(struct avl *t, const void *key, int *rdir)
+DECL struct anode *avl_lkup(struct avltree *t, const void *key, int *rdir)
 {
 	struct anode *p;
 	int dir;
@@ -121,8 +120,8 @@ DECL struct anode *avl_lkup(struct avl *t, const void *key, int *rdir)
 }
 
 
-DECL struct anode *avl_ins(struct avl *t, struct anode *node, struct anode *loc,
-		           int atdir)
+DECL struct anode *avl_ins(struct avltree *t, struct anode *node,
+			   struct anode *loc, int atdir)
 {
 	struct anode *p;
 	int dir;
@@ -149,7 +148,7 @@ DECL struct anode *avl_ins(struct avl *t, struct anode *node, struct anode *loc,
 		avl_fix(p->p[CA_P], node, p->pdir);
 		node->tree = t;
 		p->tree = NULL;
-		avl_ninit(p, p->key, p->data);
+		avl_ninit(p, p->key);
 		return p;
 	} else {
 		avl_ins_at(t, node, p, dir);
@@ -159,21 +158,21 @@ DECL struct anode *avl_ins(struct avl *t, struct anode *node, struct anode *loc,
 }
 
 
-DECL int avl_isempty(struct avl *t)
+DECL int avl_isempty(struct avltree *t)
 {
 	abort_unless(t);
 	return t->avl_root == NULL;
 }
 
 
-DECL struct anode *avl_getroot(struct avl *t)
+DECL struct anode *avl_getroot(struct avltree *t)
 {
 	abort_unless(t);
 	return t->avl_root;
 }
 
 
-DECL struct anode * avl_getmin(struct avl *t)
+DECL struct anode * avl_getmin(struct avltree *t)
 {
 	struct anode *trav;
 	abort_unless(t);
@@ -186,7 +185,7 @@ DECL struct anode * avl_getmin(struct avl *t)
 }
 
 
-DECL struct anode * avl_getmax(struct avl *t)
+DECL struct anode * avl_getmax(struct avltree *t)
 {
 	struct anode *trav;
 	abort_unless(t);
@@ -200,7 +199,7 @@ DECL struct anode * avl_getmax(struct avl *t)
 
 
 /* currently an inorder traversal:  we could add an arg to change this */
-DECL void avl_apply(struct avl *t, apply_f func, void * ctx)
+DECL void avl_apply(struct avltree *t, apply_f func, void * ctx)
 {
 	struct anode *trav;
 	int dir = CA_P;
@@ -218,7 +217,7 @@ DECL void avl_apply(struct avl *t, apply_f func, void * ctx)
 			else if ( trav->p[CA_R] )
 				trav = trav->p[CA_R];	/* dir stays the same */
 			else {
-				func(trav->data, ctx);
+				func(trav, ctx);
 				dir  = trav->pdir;
 				trav = trav->p[CA_P];
 			}
@@ -229,14 +228,14 @@ DECL void avl_apply(struct avl *t, apply_f func, void * ctx)
 				dir  = CA_P;
 				trav = trav->p[CA_R];	/* dir stays the same */
 			} else {
-				func(trav->data, ctx);
+				func(trav, ctx);
 				dir  = trav->pdir;
 				trav = trav->p[CA_P];
 			}
 			break;
 
 		case CA_R:
-			func(trav->data, ctx);
+			func(trav, ctx);
 			dir  = trav->pdir;
 			trav = trav->p[CA_P];
 			break;
@@ -245,7 +244,7 @@ DECL void avl_apply(struct avl *t, apply_f func, void * ctx)
 }
 
 
-DECL void avl_findloc(struct avl *t, const void *key, struct anode **pn,
+DECL void avl_findloc(struct avltree *t, const void *key, struct anode **pn,
 		      int *pd)
 {
 	struct anode *tmp, *par;
@@ -275,7 +274,7 @@ DECL void avl_findloc(struct avl *t, const void *key, struct anode **pn,
 }
 
 
-DECL void avl_ins_at(struct avl *t, struct anode *node, struct anode *par, 
+DECL void avl_ins_at(struct avltree *t, struct anode *node, struct anode *par, 
 		     int dir)
 {
 	struct anode *tmp;

@@ -16,6 +16,8 @@
 extern int cmp_ptr(const void *, const void *);
 extern int cmp_str(const void *, const void *);
 extern int cmp_raw(const void *, const void *);
+extern int cmp_intptr(const void *, const void *);
+extern int cmp_uintptr(const void *, const void *);
 
 
 ulong uldivmod(ulong dend, ulong dsor, int div);

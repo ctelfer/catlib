@@ -198,26 +198,20 @@ static unsigned edgehash(const void *key, void *notused)
 }
 
 
-static struct hnode *newedge(void *k, void *d, void *c)
+static struct hnode *newedge(struct sfxedgekey *ek, struct memmgr *mm)
 {
 	struct sfxedge *edge;
-	struct memmgr *mm = c;
-	struct sfxedgekey *ek = k, *nk;
+	struct sfxedgekey *nk;
 
 	edge = mem_get(mm, sizeof(struct sfxedge) + sizeof(struct sfxedgekey));
 	nk = (struct sfxedgekey *)(edge + 1);
 	memset(nk, 0, sizeof(*nk));
 	nk->node = ek->node;
 	nk->character = ek->character;
-	ht_ninit(&edge->hentry, nk, d);
+	ht_ninit(&edge->hentry, nk);
+	edge->node = NULL;
 
 	return &edge->hentry;
-}
-
-
-static void freeedge(struct hnode *n, void *ctx)
-{
-	mem_free(ctx, n);
 }
 
 
@@ -237,14 +231,15 @@ static struct sfxedge *getedge(struct sfxtree *t, struct sfxnode *par, int ch,
 	if ( !(node = ht_lkup(ht, &ek, &hash)) ) {
 		if ( !*create )
 			return NULL;
-		if ( !(node = newedge(&ek, NULL, t->mm)) ) {
+		if ( !(node = newedge(&ek, t->mm)) ) {
 			*create = 0;
 			return NULL;
 		}
 		*create = 1;
 		ht_ins(ht, node, hash);
-	} else
+	} else {
 		*create = 0;
+	}
 
 	return (struct sfxedge *)node;
 }
@@ -277,8 +272,8 @@ static struct sfxnode *split(struct sfxtree *sfx, struct sfxedge *edge,
 	}
 	newint->sptr = ((struct sfxedgekey *)edge->hentry.key)->node;
 	abort_unless(create);
-	e1->hentry.data = edge->hentry.data;
-	edge->hentry.data = newint;
+	e1->node = edge->node;
+	edge->node = newint;
 	e1->start = edge->start + off;
 	e1->end = edge->end;
 	edge->end = edge->start + off - 1;
@@ -291,7 +286,7 @@ static struct sfxnode *split(struct sfxtree *sfx, struct sfxedge *edge,
 		return NULL;
 	e2->start = index;
 	e2->end = sfx->str.len - 1;
-	e2->hentry.data = newleaf;
+	e2->node = newleaf;
 
 	return newint;
 }
@@ -311,7 +306,7 @@ static void canonical(struct sfxtree *t, struct suffix *s)
 		span = edge->end - edge->start + 1;
 		while ( span <= s->end - s->start + 1 ) {
 			s->start += span;
-			s->node = edge->hentry.data;
+			s->node = edge->node;
 			if ( s->start <= s->end ) {
 				edge = getedge(t, s->node, text[s->start], &no);
 				span = edge->end - edge->start + 1;
@@ -346,7 +341,7 @@ static int sfx_build(struct sfxtree *sfx)
 					return -1;
 				if ( !create )
 					break;
-				if ( !(edge->hentry.data = newnode(sfx)) )
+				if ( !(edge->node = newnode(sfx)) )
 					return -1;
 				edge->start = i;
 				edge->end = sfx->str.len - 1;
@@ -396,7 +391,7 @@ int sfx_init(struct sfxtree *sfx, struct raw *str, struct memmgr *mm)
 	sfx->mm = mm;
 	sfx->str = *str;
 	/* XXX fix size? */
-	if ( ((ulong)~0) / sizeof(struct list) < str->len )
+	if ( ((size_t)~0) / sizeof(struct hnode *) < str->len )
 		return -1;
 	if ( !(buckets = mem_get(mm, sizeof(struct hnode *) * str->len)) )
 		return -1;
@@ -439,7 +434,7 @@ int sfx_match(struct sfxtree *sfx, struct raw *pat, ulong *loc)
 		if ( memcmp(sfx->str.data + edge->start, cp, len) )
 			return 0;
 		cp += len;
-		cur = edge->hentry.data;
+		cur = edge->node;
 	}
 
 	if ( cp != end )
@@ -460,12 +455,12 @@ int sfx_match(struct sfxtree *sfx, struct raw *pat, ulong *loc)
 
 static void ap_edgefree(void *data, void *ctx)
 {
-	struct hnode *node = data;
+	struct sfxedge *edge = container(data, struct sfxedge, hentry);
 	struct sfxtree *t = ctx;
-	ht_rem(node);
-	if ( node->data )
-		mem_free(t->mm, node->data);
-	freeedge(node, t->mm);
+	ht_rem(&edge->hentry);
+	if ( edge->node != NULL )
+		mem_free(t->mm, edge->node);
+	mem_free(t->mm, edge);
 }
 
 

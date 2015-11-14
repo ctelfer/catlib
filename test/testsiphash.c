@@ -35,7 +35,7 @@ void time_ht()
   ht_init(&t, buckets, nbuckets, &cmp_str, &ht_sh24_shash, &hctx);
 
   for (i = 0; i < NOPS; i++)
-    ht_ninit(&nodes[i], str_fmt_a("node%d", i), NULL);
+    ht_ninit(&nodes[i], str_fmt_a("node%d", i));
 
   gettimeofday(&start, NULL);
   for (j = 0; j < NITER / NOPS; j++) {

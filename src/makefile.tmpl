@@ -205,9 +205,7 @@ IFLAGS= $(ICOMMON)
 # Choose one option from the next two for libcata
 # Option 1: ANSI compliant
 ADEFS= -DCAT_USE_INLINE=0 -DCAT_ANSI89=1 -DCAT_HAS_LONGLONG=0 -D_BSD_SOURCE \
-       -D_POSIX_SOURCE
-#	-D_POSIX_C_SOURCE=200112L
-#	-D_XOPEN_SOURCE=600
+       -D_POSIX_SOURCE -D_XOPEN_SOURCE=600 -D_POSIX_C_SOURCE=200112L
 ACFLAGS= -Wall -ansi -pedantic -Wno-sign-compare -Wno-pointer-sign $(ADEFS)
 AIFLAGS= $(ICOMMON)
 
@@ -217,11 +215,10 @@ DBG_CFLAGS= -Wall -g -pg -Wno-sign-compare -Wno-pointer-sign $(DBG_DEFS)
 DBG_IFLAGS= $(ICOMMON)
 
 # Compile without libc
-ISYS=$(ISYSTEM)
 NOLIBC_DEFS=-DCAT_HAS_POSIX=0 -DCAT_USE_STDLIB=0 -DCAT_HAS_LONGLONG=0
 NOLIBC_CFLAGS=-Wall -pedantic -Wno-sign-compare -Wno-pointer-sign $(NOSTD) \
 	$(NOLIBC_DEFS)
-NOLIBC_IFLAGS= -isystem ../include/std $(ISYS) $(ICOMMON)
+NOLIBC_IFLAGS= -isystem ../include/std $(ISYSTEM) $(ICOMMON)
 
 all: $(TARGETS)
 
