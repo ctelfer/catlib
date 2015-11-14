@@ -26,7 +26,7 @@ CAT_LIB= -L../lib -lcat
 # Use base library
 CATA_LIBDEP=../lib/libcata.a
 CATA_CF= -g -DCAT_USE_INLINE=0 -DCAT_HAS_LONGLONG=0 -ansi -pedantic \
-    -D_POSIX_C_SOURCE=200112L -D_USE_BSD
+    -D_POSIX_C_SOURCE=200112L -D_BSD_SOURCE -D_POSIX_SOURCE -D_XOPEN_SOURCE=600 
 CATA_LIB= -L../lib -lcata
 
 # Debug library
