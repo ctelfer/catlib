@@ -114,7 +114,7 @@ STATIC_DECL uint _modulo(uint dend, uint dsor)
         int i;
 
         if ( dsor == 0 )
-                return (uint)-1
+                return (uint)-1;
 
         for ( i = 0; i < sizeof(uint)*8 ; ++i ) {
                 r = (r << 1) | (dend >> (sizeof(uint) * 8 - 1));
@@ -148,7 +148,7 @@ DECL struct hnode * ht_lkup(struct htab *t, const void *key, uint *hp)
 		node = t->bkts[h % t->nbkts];
 #else /* CAT_HAS_DIV */
 		h = _modulo(h, t->nbkts);
-		node = t->pkts[h];
+		node = t->bkts[h];
 #endif /* CAT_HAS_DIV */
 	}
 
