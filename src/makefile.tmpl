@@ -3,79 +3,80 @@ CFILES=	cat.c aux.c err.c cb.c crc.c grow.c io.c mem.c net.c pack.c ring.c \
 	shell.c str.c dbgmem.c emit.c emit_format.c stdclio.c emalloc.c \
 	catstr.c bitops.c list.c hash.c avl.c heap.c dlist.c pool.c rbtree.c \
 	time.c splay.c bitset.c catlibc.c pspawn.c dynmem.c lex.c sort.c \
-	optparse.c inport.c crypto.c socks5.c buffer.c
+	optparse.c inport.c crypto.c socks5.c buffer.c peg.c
 
 LCATODIR=  ../build/libcat
 LCATOF= $(LCATODIR)/cat.o \
-	$(LCATODIR)/aux.o  \
-	$(LCATODIR)/err.o  \
-	$(LCATODIR)/cb.o  \
-	$(LCATODIR)/crc.o  \
-	$(LCATODIR)/grow.o  \
-	$(LCATODIR)/io.o  \
-	$(LCATODIR)/mem.o  \
-	$(LCATODIR)/net.o  \
-	$(LCATODIR)/pack.o  \
-	$(LCATODIR)/buffer.o  \
-	$(LCATODIR)/ring.o  \
-	$(LCATODIR)/pcache.o  \
-	$(LCATODIR)/uevent.o  \
-	$(LCATODIR)/raw.o  \
-	$(LCATODIR)/match.o  \
-	$(LCATODIR)/csv.o  \
-	$(LCATODIR)/stduse.o  \
-	$(LCATODIR)/stdcsv.o  \
-	$(LCATODIR)/graph.o  \
-	$(LCATODIR)/shell.o  \
-	$(LCATODIR)/str.o  \
-	$(LCATODIR)/dbgmem.o  \
-	$(LCATODIR)/emit.o  \
-	$(LCATODIR)/emit_format.o  \
-	$(LCATODIR)/stdclio.o  \
-	$(LCATODIR)/emalloc.o  \
-	$(LCATODIR)/catstr.o  \
+	$(LCATODIR)/aux.o \
+	$(LCATODIR)/err.o \
+	$(LCATODIR)/cb.o \
+	$(LCATODIR)/crc.o \
+	$(LCATODIR)/grow.o \
+	$(LCATODIR)/io.o \
+	$(LCATODIR)/mem.o \
+	$(LCATODIR)/net.o \
+	$(LCATODIR)/pack.o \
+	$(LCATODIR)/buffer.o \
+	$(LCATODIR)/ring.o \
+	$(LCATODIR)/pcache.o \
+	$(LCATODIR)/uevent.o \
+	$(LCATODIR)/raw.o \
+	$(LCATODIR)/match.o \
+	$(LCATODIR)/csv.o \
+	$(LCATODIR)/stduse.o \
+	$(LCATODIR)/stdcsv.o \
+	$(LCATODIR)/graph.o \
+	$(LCATODIR)/shell.o \
+	$(LCATODIR)/str.o \
+	$(LCATODIR)/dbgmem.o \
+	$(LCATODIR)/emit.o \
+	$(LCATODIR)/emit_format.o \
+	$(LCATODIR)/stdclio.o \
+	$(LCATODIR)/emalloc.o \
+	$(LCATODIR)/catstr.o \
 	$(LCATODIR)/bitops.o \
 	$(LCATODIR)/pspawn.o \
 	$(LCATODIR)/dynmem.o \
-	$(LCATODIR)/lex.o  \
+	$(LCATODIR)/lex.o \
 	$(LCATODIR)/sort.o \
 	$(LCATODIR)/optparse.o \
 	$(LCATODIR)/inport.o \
 	$(LCATODIR)/crypto.o \
-	$(LCATODIR)/socks5.o
+	$(LCATODIR)/socks5.o \
+	$(LCATODIR)/peg.o
 
 
 
 LCATAODIR=  ../build/libcata
 LCATAOF=$(LCATAODIR)/cat.o \
-	$(LCATAODIR)/aux.o  \
-	$(LCATAODIR)/err.o  \
-	$(LCATAODIR)/cb.o  \
-	$(LCATAODIR)/crc.o  \
-	$(LCATAODIR)/grow.o  \
-	$(LCATAODIR)/io.o  \
-	$(LCATAODIR)/mem.o  \
-	$(LCATAODIR)/net.o  \
-	$(LCATAODIR)/pack.o  \
-	$(LCATAODIR)/buffer.o  \
-	$(LCATAODIR)/ring.o  \
-	$(LCATAODIR)/pcache.o  \
-	$(LCATAODIR)/uevent.o  \
-	$(LCATAODIR)/raw.o  \
-	$(LCATAODIR)/match.o  \
-	$(LCATAODIR)/csv.o  \
-	$(LCATAODIR)/stduse.o  \
-	$(LCATAODIR)/stdcsv.o  \
-	$(LCATAODIR)/graph.o  \
-	$(LCATAODIR)/shell.o  \
-	$(LCATAODIR)/str.o  \
-	$(LCATAODIR)/dbgmem.o  \
-	$(LCATAODIR)/emit.o  \
-	$(LCATAODIR)/emit_format.o  \
-	$(LCATAODIR)/stdclio.o  \
-	$(LCATAODIR)/emalloc.o  \
-	$(LCATAODIR)/catstr.o  \
-	$(LCATAODIR)/bitset.o  \
+	$(LCATAODIR)/aux.o \
+	$(LCATAODIR)/err.o \
+	$(LCATAODIR)/cb.o \
+	$(LCATAODIR)/crc.o \
+	$(LCATAODIR)/grow.o \
+	$(LCATAODIR)/io.o \
+	$(LCATAODIR)/mem.o \
+	$(LCATAODIR)/net.o \
+	$(LCATAODIR)/pack.o \
+	$(LCATAODIR)/buffer.o \
+	$(LCATAODIR)/ring.o \
+	$(LCATAODIR)/pcache.o \
+	$(LCATAODIR)/uevent.o \
+	$(LCATAODIR)/raw.o \
+	$(LCATAODIR)/match.o \
+	$(LCATAODIR)/csv.o \
+	$(LCATAODIR)/stduse.o \
+	$(LCATAODIR)/stdcsv.o \
+	$(LCATAODIR)/graph.o \
+	$(LCATAODIR)/shell.o \
+	$(LCATAODIR)/str.o \
+	$(LCATAODIR)/dbgmem.o \
+	$(LCATAODIR)/emit.o \
+	$(LCATAODIR)/emit_format.o \
+	$(LCATAODIR)/stdclio.o \
+	$(LCATAODIR)/emalloc.o \
+	$(LCATAODIR)/catstr.o \
+	$(LCATAODIR)/bitset.o \
 	$(LCATAODIR)/bitops.o \
 	$(LCATAODIR)/list.o \
 	$(LCATAODIR)/hash.o \
@@ -94,39 +95,40 @@ LCATAOF=$(LCATAODIR)/cat.o \
 	$(LCATAODIR)/optparse.o \
 	$(LCATAODIR)/inport.o \
 	$(LCATAODIR)/crypto.o \
-	$(LCATAODIR)/socks5.o 
+	$(LCATAODIR)/socks5.o \
+	$(LCATAODIR)/peg.o
 
 
 LCAT_DBG_ODIR= ../build/libcat_dbg
 LCAT_DBG_OF=$(LCAT_DBG_ODIR)/cat.o \
-	$(LCAT_DBG_ODIR)/aux.o  \
-	$(LCAT_DBG_ODIR)/err.o  \
-	$(LCAT_DBG_ODIR)/cb.o  \
-	$(LCAT_DBG_ODIR)/crc.o  \
-	$(LCAT_DBG_ODIR)/grow.o  \
-	$(LCAT_DBG_ODIR)/io.o  \
-	$(LCAT_DBG_ODIR)/mem.o  \
-	$(LCAT_DBG_ODIR)/net.o  \
-	$(LCAT_DBG_ODIR)/pack.o  \
-	$(LCAT_DBG_ODIR)/buffer.o  \
-	$(LCAT_DBG_ODIR)/ring.o  \
-	$(LCAT_DBG_ODIR)/pcache.o  \
-	$(LCAT_DBG_ODIR)/uevent.o  \
-	$(LCAT_DBG_ODIR)/raw.o  \
-	$(LCAT_DBG_ODIR)/match.o  \
-	$(LCAT_DBG_ODIR)/csv.o  \
-	$(LCAT_DBG_ODIR)/stduse.o  \
-	$(LCAT_DBG_ODIR)/stdcsv.o  \
-	$(LCAT_DBG_ODIR)/graph.o  \
-	$(LCAT_DBG_ODIR)/shell.o  \
-	$(LCAT_DBG_ODIR)/str.o  \
-	$(LCAT_DBG_ODIR)/dbgmem.o  \
-	$(LCAT_DBG_ODIR)/emit.o  \
-	$(LCAT_DBG_ODIR)/emit_format.o  \
-	$(LCAT_DBG_ODIR)/stdclio.o  \
-	$(LCAT_DBG_ODIR)/emalloc.o  \
-	$(LCAT_DBG_ODIR)/catstr.o  \
-	$(LCAT_DBG_ODIR)/bitset.o  \
+	$(LCAT_DBG_ODIR)/aux.o \
+	$(LCAT_DBG_ODIR)/err.o \
+	$(LCAT_DBG_ODIR)/cb.o \
+	$(LCAT_DBG_ODIR)/crc.o \
+	$(LCAT_DBG_ODIR)/grow.o \
+	$(LCAT_DBG_ODIR)/io.o \
+	$(LCAT_DBG_ODIR)/mem.o \
+	$(LCAT_DBG_ODIR)/net.o \
+	$(LCAT_DBG_ODIR)/pack.o \
+	$(LCAT_DBG_ODIR)/buffer.o \
+	$(LCAT_DBG_ODIR)/ring.o \
+	$(LCAT_DBG_ODIR)/pcache.o \
+	$(LCAT_DBG_ODIR)/uevent.o \
+	$(LCAT_DBG_ODIR)/raw.o \
+	$(LCAT_DBG_ODIR)/match.o \
+	$(LCAT_DBG_ODIR)/csv.o \
+	$(LCAT_DBG_ODIR)/stduse.o \
+	$(LCAT_DBG_ODIR)/stdcsv.o \
+	$(LCAT_DBG_ODIR)/graph.o \
+	$(LCAT_DBG_ODIR)/shell.o \
+	$(LCAT_DBG_ODIR)/str.o \
+	$(LCAT_DBG_ODIR)/dbgmem.o \
+	$(LCAT_DBG_ODIR)/emit.o \
+	$(LCAT_DBG_ODIR)/emit_format.o \
+	$(LCAT_DBG_ODIR)/stdclio.o \
+	$(LCAT_DBG_ODIR)/emalloc.o \
+	$(LCAT_DBG_ODIR)/catstr.o \
+	$(LCAT_DBG_ODIR)/bitset.o \
 	$(LCAT_DBG_ODIR)/bitops.o \
 	$(LCAT_DBG_ODIR)/list.o \
 	$(LCAT_DBG_ODIR)/hash.o \
@@ -145,37 +147,38 @@ LCAT_DBG_OF=$(LCAT_DBG_ODIR)/cat.o \
 	$(LCAT_DBG_ODIR)/optparse.o \
 	$(LCAT_DBG_ODIR)/inport.o  \
 	$(LCAT_DBG_ODIR)/crypto.o \
-	$(LCAT_DBG_ODIR)/socks5.o 
+	$(LCAT_DBG_ODIR)/socks5.o \
+	$(LCAT_DBG_ODIR)/peg.o
 	
 
 LCAT_NO_LIBC_ODIR=  ../build/libcat_nolibc
 LCAT_NO_LIBC_OF= \
 	$(LCAT_NO_LIBC_ODIR)/catlibc.o \
 	$(LCAT_NO_LIBC_ODIR)/cat.o \
-	$(LCAT_NO_LIBC_ODIR)/aux.o  \
-	$(LCAT_NO_LIBC_ODIR)/err.o  \
-	$(LCAT_NO_LIBC_ODIR)/cb.o  \
-	$(LCAT_NO_LIBC_ODIR)/crc.o  \
-	$(LCAT_NO_LIBC_ODIR)/grow.o  \
-	$(LCAT_NO_LIBC_ODIR)/io.o  \
-	$(LCAT_NO_LIBC_ODIR)/mem.o  \
-	$(LCAT_NO_LIBC_ODIR)/pack.o  \
-	$(LCAT_NO_LIBC_ODIR)/buffer.o  \
-	$(LCAT_NO_LIBC_ODIR)/ring.o  \
-	$(LCAT_NO_LIBC_ODIR)/pcache.o  \
-	$(LCAT_NO_LIBC_ODIR)/raw.o  \
-	$(LCAT_NO_LIBC_ODIR)/match.o  \
-	$(LCAT_NO_LIBC_ODIR)/csv.o  \
-	$(LCAT_NO_LIBC_ODIR)/stdcsv.o  \
-	$(LCAT_NO_LIBC_ODIR)/graph.o  \
-	$(LCAT_NO_LIBC_ODIR)/str.o  \
-	$(LCAT_NO_LIBC_ODIR)/dbgmem.o  \
-	$(LCAT_NO_LIBC_ODIR)/emit.o  \
-	$(LCAT_NO_LIBC_ODIR)/emit_format.o  \
-	$(LCAT_NO_LIBC_ODIR)/stdclio.o  \
-	$(LCAT_NO_LIBC_ODIR)/emalloc.o  \
-	$(LCAT_NO_LIBC_ODIR)/catstr.o  \
-	$(LCAT_NO_LIBC_ODIR)/bitset.o  \
+	$(LCAT_NO_LIBC_ODIR)/aux.o \
+	$(LCAT_NO_LIBC_ODIR)/err.o \
+	$(LCAT_NO_LIBC_ODIR)/cb.o \
+	$(LCAT_NO_LIBC_ODIR)/crc.o \
+	$(LCAT_NO_LIBC_ODIR)/grow.o \
+	$(LCAT_NO_LIBC_ODIR)/io.o \
+	$(LCAT_NO_LIBC_ODIR)/mem.o \
+	$(LCAT_NO_LIBC_ODIR)/pack.o \
+	$(LCAT_NO_LIBC_ODIR)/buffer.o \
+	$(LCAT_NO_LIBC_ODIR)/ring.o \
+	$(LCAT_NO_LIBC_ODIR)/pcache.o \
+	$(LCAT_NO_LIBC_ODIR)/raw.o \
+	$(LCAT_NO_LIBC_ODIR)/match.o \
+	$(LCAT_NO_LIBC_ODIR)/csv.o \
+	$(LCAT_NO_LIBC_ODIR)/stdcsv.o \
+	$(LCAT_NO_LIBC_ODIR)/graph.o \
+	$(LCAT_NO_LIBC_ODIR)/str.o \
+	$(LCAT_NO_LIBC_ODIR)/dbgmem.o \
+	$(LCAT_NO_LIBC_ODIR)/emit.o \
+	$(LCAT_NO_LIBC_ODIR)/emit_format.o \
+	$(LCAT_NO_LIBC_ODIR)/stdclio.o \
+	$(LCAT_NO_LIBC_ODIR)/emalloc.o \
+	$(LCAT_NO_LIBC_ODIR)/catstr.o \
+	$(LCAT_NO_LIBC_ODIR)/bitset.o \
 	$(LCAT_NO_LIBC_ODIR)/list.o \
 	$(LCAT_NO_LIBC_ODIR)/hash.o \
 	$(LCAT_NO_LIBC_ODIR)/avl.o \
@@ -193,7 +196,8 @@ LCAT_NO_LIBC_OF= \
 	$(LCAT_NO_LIBC_ODIR)/inport.o \
 	$(LCAT_NO_LIBC_ODIR)/crypto.o \
 	$(LCAT_NO_LIBC_ODIR)/bitops.o \
-	$(LCAT_NO_LIBC_ODIR)/socks5.o
+	$(LCAT_NO_LIBC_ODIR)/socks5.o \
+	$(LCAT_NO_LIBC_ODIR)/peg.o
 
 ICOMMON=-I../include $(CCXFLAGS)
 
