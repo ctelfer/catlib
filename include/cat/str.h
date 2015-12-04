@@ -23,8 +23,8 @@ void   cset_clear(byte_t set[32]);
 void   cset_fill(byte_t set[32]);
 void   cset_init_accept(byte_t set[32], const char *accept);
 void   cset_init_reject(byte_t set[32], const char *reject);
-void   cset_add_char(byte_t set[32], uchar ch);
-void   cset_rem_char(byte_t set[32], uchar ch);
+void   cset_add(byte_t set[32], uchar ch);
+void   cset_rem(byte_t set[32], uchar ch);
 int    cset_contains(byte_t set[32], uchar ch);
 
 size_t str_spn(const char *src, byte_t set[32]);

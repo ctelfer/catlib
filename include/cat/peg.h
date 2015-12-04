@@ -3,6 +3,7 @@
 
 #include <cat/list.h>
 #include <cat/rbtree.h>
+#include <stdio.h>
 
 enum {
 	PEG_ERR_NONE = 0,
@@ -42,6 +43,7 @@ struct peg_grammar {
 	size_t inlen;
 	struct list def_list;
 	struct rbtree def_table;
+	struct list id_list;
 	struct peg_def *start;
 	int err;
 	struct peg_cursor eloc;
@@ -105,6 +107,7 @@ struct peg_primary {
 
 struct peg_id {
 	struct peg_node node;
+	struct list le;
 	struct raw name;
 	struct peg_def *def;
 };
@@ -135,8 +138,6 @@ union peg_node_u {
 };
 
 
-void peg_init(struct peg_grammar *peg);
-
 int peg_parse(struct peg_grammar *peg, const char *string);
 
 void peg_free_nodes(struct peg_grammar *peg);
@@ -144,5 +145,7 @@ void peg_free_nodes(struct peg_grammar *peg);
 void peg_reset(struct peg_grammar *peg);
 
 const char *peg_err_message(int err);
+
+void peg_print(struct peg_grammar *peg, FILE *out);
 
 #endif /* __peg_h */

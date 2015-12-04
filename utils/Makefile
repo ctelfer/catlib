@@ -1,6 +1,6 @@
-PROGS=	netpipe vernam
+PROGS=	netpipe vernam peg-print
 	
-CPROGS= netpipe.c
+CPROGS= netpipe.c vernam.c peg-print.c
 
 CC=gcc
 
@@ -26,3 +26,7 @@ netpipe: netpipe.c $(LIBDEP)
 
 vernam: vernam.c $(LIBDEP)
 	$(CC) $(CF) -o vernam vernam.c $(INC) $(LIB)
+
+peg-print: peg-print.c $(LIBDEP)
+	#$(CC) $(CF) -o peg-print peg-print.c $(INC) $(LIB)
+	$(CC) -g -o peg-print peg-print.c $(INC) -L../lib -lcat_dbg
