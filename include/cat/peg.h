@@ -22,7 +22,6 @@ enum {
 	PEG_ERR_LAST = PEG_ERR_BAD_CODE
 };
 
-
 struct peg_cursor {
 	uint pos;
 	uint line;
@@ -40,13 +39,14 @@ struct peg_code;
 
 struct peg_grammar {
 	const char *input;
-	size_t inlen;
+	uint inlen;
 	struct list def_list;
 	struct rbtree def_table;
 	struct list id_list;
 	struct peg_def *start;
 	int err;
 	struct peg_cursor eloc;
+	uint next_id;
 };
 
 enum {
@@ -66,6 +66,7 @@ struct peg_node {
 	struct peg_cursor loc;
 	uint len;
 	uint nlines;
+	uint id;
 };
 
 struct peg_def {
@@ -84,7 +85,6 @@ struct peg_expr {
 struct peg_seq {
 	struct peg_node node;
 	struct peg_primary *pri;
-	struct peg_code *code;
 	struct peg_seq *next;
 };
 
@@ -102,6 +102,7 @@ struct peg_primary {
 	int prefix;
 	union peg_node_u *match;
 	int suffix;
+	struct peg_code *code;
 	struct peg_primary *next;
 };
 

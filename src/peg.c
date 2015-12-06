@@ -11,11 +11,11 @@
  * # Hierarchical syntax
  * Grammar <- Spacing Definition+ EndOfFile
  * Definition <- Identifier LEFTARROW Expression
- *                  # XXX Codeblock? added: see below XXX
- * Expression <- Sequence Codeblock? (SLASH Sequence Codeblock?)*
+ * Expression <- Sequence (SLASH Sequence)*
  * Sequence <- Prefix*
- * Prefix <- (AND / NOT)? Suffix
- * Suffix <- Primary (QUESTION / STAR / PLUS)?
+ * Prefix <- (AND / NOT)? Suffix 
+ *    # XXX Codeblock? added: see below XXX
+ * Suffix <- Primary (QUESTION / STAR / PLUS)? Codeblock?
  * Primary <- Identifier !LEFTARROW
  *            / OPEN Expression CLOSE
  *            / Literal / Class / DOT
@@ -78,6 +78,9 @@ static byte_t cs_ccode[32];
 
 static void peg_node_free(union peg_node_u *n)
 {
+	if ( n == NULL )
+		return;
+
 	abort_unless(n->node.type >= PEG_DEFINITION &&
 		     n->node.type <= PEG_CODE);
 
@@ -93,12 +96,12 @@ static void peg_node_free(union peg_node_u *n)
 		break;
 	case PEG_SEQUENCE:
 		peg_node_free((union peg_node_u *)n->seq.pri);
-		peg_node_free((union peg_node_u *)n->seq.code);
 		peg_node_free((union peg_node_u *)n->seq.next);
 		break;
 	case PEG_PRIMARY:
 		peg_node_free((union peg_node_u *)n->pri.match);
 		peg_node_free((union peg_node_u *)n->pri.next);
+		peg_node_free((union peg_node_u *)n->pri.code);
 		break;
 	case PEG_IDENTIFIER:
 		l_rem(&n->id.le);
@@ -108,8 +111,8 @@ static void peg_node_free(union peg_node_u *n)
 }
 
 
-static void *peg_node_new(int type, struct peg_cursor *pc, uint len,
-			  uint nlines)
+static void *peg_node_new(struct peg_grammar *peg, int type,
+			  struct peg_cursor *pc, uint len, uint nlines)
 {
 	union peg_node_u *n;
 	n = calloc(sizeof(*n), 1);
@@ -119,6 +122,7 @@ static void *peg_node_new(int type, struct peg_cursor *pc, uint len,
 	n->node.loc = *pc;
 	n->node.len = len;
 	n->node.nlines = nlines;
+	n->node.id = peg->next_id++;
 	return n;
 }
 
@@ -167,7 +171,7 @@ static int parse_id(struct peg_grammar *peg, struct peg_cursor *pc,
 	if ( !cset_contains(cs_id_start, CHAR(peg, pc)) )
 		return 0;
 
-	id = peg_node_new(PEG_IDENTIFIER, pc, 1, 1);
+	id = peg_node_new(peg, PEG_IDENTIFIER, pc, 1, 1);
 	if ( id == NULL ) {
 		peg->err = PEG_ERR_NOMEM;
 		return -1;
@@ -345,7 +349,7 @@ static int parse_literal(struct peg_grammar *peg, struct peg_cursor *pc,
 		}
 	} while ( c != quote );
 
-	lit = peg_node_new(PEG_LITERAL, pc, npc.pos - pc->pos, 
+	lit = peg_node_new(peg, PEG_LITERAL, pc, npc.pos - pc->pos, 
 			   npc.line - pc->line + 1);
 	if ( lit == NULL ) {
 		peg->err = PEG_ERR_NOMEM;
@@ -416,7 +420,7 @@ static int parse_class(struct peg_grammar *peg, struct peg_cursor *pc,
 	if ( CHAR(peg, &npc) != '[' && CHAR(peg, &npc) != '.' )
 		return 0;
 
-	cls = peg_node_new(PEG_CLASS, pc, 1, 1);
+	cls = peg_node_new(peg, PEG_CLASS, pc, 1, 1);
 	if ( cls == NULL ) {
 		peg->err = PEG_ERR_NOMEM;
 		return -1;
@@ -455,6 +459,150 @@ err:
 }
 
 
+static int parse_slash_char(struct peg_grammar *peg, struct peg_cursor *pc)
+{
+	int c = CHAR(peg, pc);
+
+	if ( !cset_contains(cs_digit0to7, c) ) {
+		if ( c == '\0' )
+			return -1;
+		pc->pos += 1;
+	} else {
+		if ( cset_contains(cs_digit0to2, c) && 
+		     cset_contains(cs_digit0to7, CHARI(peg, pc, 1)) && 
+		     cset_contains(cs_digit0to7, CHARI(peg, pc, 2)) ) {
+			pc->pos += 3;
+		} else if ( cset_contains(cs_digit0to7, CHARI(peg, pc, 1)) ) {
+			pc->pos += 2;
+		} else {
+			pc->pos += 1;
+		}
+	}
+
+	return 0;
+}
+
+
+static int parse_code(struct peg_grammar *peg, struct peg_cursor *pc,
+		      struct peg_code **codep)
+{
+	struct peg_cursor npc = *pc;
+	struct peg_code *code;
+	uint n;
+	uint brace_depth;
+
+	if ( CHAR(peg, &npc) != '{' )
+		return 0;
+	npc.pos += 1;
+
+	code = peg_node_new(peg, PEG_CODE, pc, 1, 1);
+	if ( code == NULL ) {
+		peg->err = PEG_ERR_NOMEM;
+		return -1;
+	}
+	brace_depth = 1;
+
+	do {
+		n = str_spn(STR(peg, &npc), cs_ccode);
+		npc.pos += n;
+
+		if ( CHAR(peg, &npc) == '"' ) {
+			/* parse double quote */
+			npc.pos += 1;
+			while ( CHAR(peg, &npc) != '"' ) {
+				if ( CHAR(peg, &npc) == '\r' ) {
+					npc.pos += 1;
+					npc.line += 1;
+					if ( CHAR(peg, &npc) == '\n' )
+						npc.pos += 1;
+				} else if ( CHAR(peg, &npc) == '\n' ) {
+					npc.pos += 1;
+					npc.line += 1;
+				} else if ( CHAR(peg, &npc) == '\\' ) {
+					npc.pos += 1;
+					if ( parse_slash_char(peg, &npc) < 0 )
+						goto err;
+				} else if ( CHAR(peg, &npc) == '\0' ) {
+					goto err;
+				} else {
+					npc.pos += 1;
+				}
+			}
+			npc.pos += 1;
+		} else if ( CHAR(peg, &npc) == '\'' ) {
+			/* parse single quote char */
+			npc.pos += 1;
+			if ( CHAR(peg, &npc) == '\\' ) {
+				npc.pos += 1;
+				if ( parse_slash_char(peg, &npc) < 0 )
+					goto err;
+			} else {
+				npc.pos += 1;
+			}
+			if ( CHAR(peg, &npc) != '\'' )
+				goto err;
+			npc.pos += 1;
+		} else if ( CHAR(peg, &npc) == '/' ) {
+			if ( CHARI(peg, &npc, 1) != '*' ) {
+				npc.pos += 1;
+				continue;
+			}
+			/* parse comment */
+			npc.pos += 2;
+			while ( CHAR(peg, &npc) != '*' || 
+			        CHARI(peg, &npc, 1) != '/' ) {
+				if ( CHAR(peg, &npc) == '\r' ) {
+					npc.pos += 1;
+					npc.line += 1;
+					if ( CHAR(peg, &npc) == '\n' )
+						npc.pos += 1;
+				} else if ( CHAR(peg, &npc) == '\n' ) {
+					npc.pos += 1;
+					npc.line += 1;
+				} else if ( CHAR(peg, &npc) == '\0' ) {
+					goto err;
+				} else {
+					npc.pos += 1;
+				}
+			}
+			npc.pos += 2;
+		} else if ( CHAR(peg, &npc) == '\r' ) {
+			npc.pos += 1;
+			npc.line += 1;
+			if ( CHAR(peg, &npc) == '\n' )
+				npc.pos += 1;
+		} else if ( CHAR(peg, &npc) == '\n' ) {
+			npc.pos += 1;
+			npc.line += 1;
+		} else if ( CHAR(peg, &npc) == '\0' ) {
+			goto err;
+		} else if ( CHAR(peg, &npc) == '{' ) {
+			brace_depth += 1;
+			npc.pos += 1;
+		} else if ( CHAR(peg, &npc) == '}' ) {
+			brace_depth -= 1;
+			npc.pos += 1;
+		} else {
+			abort_unless(0); /* should never happen! */
+		}
+	} while ( brace_depth > 0 );
+
+	npc.pos += 1;
+	code->node.len = npc.pos - pc->pos;
+	code->node.nlines = npc.line - pc->line + 1;
+	*pc = npc;
+	*codep = code;
+	skip_space(peg, pc);
+	return 1;
+
+err:
+	peg->err = PEG_ERR_BAD_CODE;
+	peg->eloc = npc;
+	peg_node_free((union peg_node_u *)code);
+	return -1;
+}
+
+
 static int parse_primary(struct peg_grammar *peg, struct peg_cursor *pc,
 			 struct peg_primary **prip)
 {
@@ -464,6 +612,7 @@ static int parse_primary(struct peg_grammar *peg, struct peg_cursor *pc,
 	struct peg_literal *lit;
 	struct peg_class *cls;
 	struct peg_cursor npc = *pc;
+	struct peg_code *code;
 	int rv;
 	int prefix = PEG_ATTR_NONE;
 	union peg_node_u *match = NULL;
@@ -499,7 +648,7 @@ static int parse_primary(struct peg_grammar *peg, struct peg_cursor *pc,
 		return -1;
 	}
 
-	pri = peg_node_new(PEG_PRIMARY, pc, 0, 1);
+	pri = peg_node_new(peg, PEG_PRIMARY, pc, 0, 1);
 	if ( pri == NULL ) {
 		peg->err = PEG_ERR_NOMEM;
 		goto err;
@@ -509,6 +658,7 @@ static int parse_primary(struct peg_grammar *peg, struct peg_cursor *pc,
 	pri->match = match;
 	pri->suffix = PEG_ATTR_NONE;
 	pri->next = NULL;
+	pri->code = NULL;
 
 	if ( string_match(peg, "?", &npc) )
 		pri->suffix = PEG_ATTR_QUESTION;
@@ -516,6 +666,12 @@ static int parse_primary(struct peg_grammar *peg, struct peg_cursor *pc,
 		pri->suffix = PEG_ATTR_STAR;
 	else if ( string_match(peg, "+", &npc) )
 		pri->suffix = PEG_ATTR_PLUS;
+
+	rv = parse_code(peg, &npc, &code);
+	if ( rv < 0 )
+		goto err;
+	if ( rv > 0 )
+		pri->code = code;
 
 	pri->node.len = npc.pos - pc->pos;
 	pri->node.nlines = npc.line - pc->line + 1;
@@ -539,7 +695,7 @@ static int parse_seq(struct peg_grammar *peg, struct peg_cursor *pc,
 	struct peg_cursor npc = *pc;
 	int rv;
 
-	seq = peg_node_new(PEG_SEQUENCE, pc, 0, 1);
+	seq = peg_node_new(peg, PEG_SEQUENCE, pc, 0, 1);
 	if ( seq == NULL ) {
 		peg->err = PEG_ERR_NOMEM;
 		return -1;
@@ -578,138 +734,6 @@ err:
 }
 
 
-static int parse_slash_char(struct peg_grammar *peg, struct peg_cursor *pc)
-{
-	int c = CHAR(peg, pc);
-
-	if ( !cset_contains(cs_digit0to7, c) ) {
-		if ( c == '\0' )
-			return -1;
-		pc->pos += 1;
-	} else {
-		if ( cset_contains(cs_digit0to2, c) && 
-		     cset_contains(cs_digit0to7, CHARI(peg, pc, 1)) && 
-		     cset_contains(cs_digit0to7, CHARI(peg, pc, 2)) ) {
-			pc->pos += 3;
-		} else if ( cset_contains(cs_digit0to7, CHARI(peg, pc, 1)) ) {
-			pc->pos += 2;
-		} else {
-			pc->pos += 1;
-		}
-	}
-
-	return 0;
-}
-
-
-static int parse_code(struct peg_grammar *peg, struct peg_cursor *pc,
-		      struct peg_code **codep)
-{
-	struct peg_cursor npc = *pc;
-	struct peg_code *code;
-	uint n;
-
-	if ( !string_match(peg, "{", &npc) )
-		return 0;
-	npc.pos += 1;
-
-	code = peg_node_new(PEG_CODE, pc, 1, 1);
-	if ( code == NULL ) {
-		peg->err = PEG_ERR_NOMEM;
-		return -1;
-	}
-
-	do {
-		n = str_spn(STR(peg, &npc), cs_ccode);
-		npc.pos += n;
-
-		if ( CHAR(peg, &npc) == '"' ) {
-			/* parse double quote */
-			npc.pos += 1;
-			while ( CHAR(peg, &npc) != '"' ) {
-				if ( CHAR(peg, &npc) == '\r' ) {
-					npc.pos += 1;
-					npc.line += 1;
-					if ( CHAR(peg, &npc) == '\n' )
-						npc.pos += 1;
-				} else if ( CHAR(peg, &npc) == '\n' ) {
-					npc.pos += 1;
-					npc.line += 1;
-				} else if ( CHAR(peg, &npc) == '\\' ) {
-					npc.pos += 1;
-					if ( parse_slash_char(peg, &npc) < 0 )
-						goto err;
-				} else if ( CHAR(peg, &npc) == '\0' ) {
-					goto err;
-				} else {
-					npc.pos += 1;
-				}
-			}
-		} else if ( CHAR(peg, &npc) == '\'' ) {
-			/* parse single quote char */
-			npc.pos += 1;
-			if ( CHAR(peg, &npc) == '\\' ) {
-				npc.pos += 1;
-				if ( parse_slash_char(peg, &npc) < 0 )
-					goto err;
-			} else {
-				npc.pos += 1;
-			}
-			if ( CHAR(peg, &npc) == '\'' )
-				goto err;
-			npc.pos += 1;
-		} else if ( CHAR(peg, &npc) == '/' &&
-			    CHARI(peg, &npc, 1) == '*' ) {
-			/* parse comment */
-			npc.pos += 2;
-			while ( CHAR(peg, &npc) != '*' || 
-			        CHARI(peg, &npc, 1) != '/' ) {
-				if ( CHAR(peg, &npc) == '\r' ) {
-					npc.pos += 1;
-					npc.line += 1;
-					if ( CHAR(peg, &npc) == '\n' )
-						npc.pos += 1;
-				} else if ( CHAR(peg, &npc) == '\n' ) {
-					npc.pos += 1;
-					npc.line += 1;
-				} else if ( CHAR(peg, &npc) == '\0' ) {
-					goto err;
-				} else {
-					npc.pos += 1;
-				}
-			}
-		} else if ( CHAR(peg, &npc) == '\r' ) {
-			npc.pos += 1;
-			npc.line += 1;
-			if ( CHAR(peg, &npc) == '\n' )
-				npc.pos += 1;
-		} else if ( CHAR(peg, &npc) == '\n' ) {
-			npc.pos += 1;
-			npc.line += 1;
-		} else if ( CHAR(peg, &npc) == '\0' ) {
-			goto err;
-		} else if ( CHAR(peg, &npc) != '}' ) {
-			/* should never happen! */
-			abort_unless(0);
-		}
-	} while ( CHAR(peg, &npc) != '}' );
-
-	npc.pos += 1;
-	code->node.len = npc.pos - pc->pos;
-	code->node.nlines = npc.line - pc->line + 1;
-	*pc = npc;
-	*codep = code;
-	skip_space(peg, pc);
-	return 1;
-
-err:
-	peg->err = PEG_ERR_BAD_CODE;
-	peg->eloc = npc;
-	peg_node_free((union peg_node_u *)code);
-	return -1;
-}
-
-
 static int parse_expr(struct peg_grammar *peg, struct peg_cursor *pc,
 		      struct peg_expr **exprp)
 {
@@ -717,7 +741,6 @@ static int parse_expr(struct peg_grammar *peg, struct peg_cursor *pc,
 	struct peg_expr *expr;
 	struct peg_seq *seq;
 	struct peg_seq *nseq;
-	struct peg_code *code;
 	int rv;
 
 	rv = parse_seq(peg, &npc, &seq);
@@ -725,19 +748,13 @@ static int parse_expr(struct peg_grammar *peg, struct peg_cursor *pc,
 		return rv;
 
 	rv = -1;
-	expr = peg_node_new(PEG_EXPRESSION, pc, 1, 1);
+	expr = peg_node_new(peg, PEG_EXPRESSION, pc, 1, 1);
 	if ( expr == NULL ) {
 		peg->err = PEG_ERR_NOMEM;
 		peg_node_free((union peg_node_u *)seq);
 		return -1;
 	}
 	expr->seq = seq;
-
-	rv = parse_code(peg, &npc, &code);
-	if ( rv < 0 )
-		goto err;
-	if ( rv > 0 )
-		seq->code = code;
 
 	while ( string_match(peg, "/", &npc) ) {
 		rv = parse_seq(peg, &npc, &nseq);
@@ -747,11 +764,6 @@ static int parse_expr(struct peg_grammar *peg, struct peg_cursor *pc,
 			peg->err = PEG_ERR_BAD_EXPR;
 			goto err;
 		}
-		rv = parse_code(peg, &npc, &code);
-		if ( rv < 0 )
-			goto err;
-		if ( rv > 0 )
-			nseq->code = code;
 		seq->next = nseq;
 		seq = nseq;
 	}
@@ -796,7 +808,7 @@ static int parse_def(struct peg_grammar *peg, struct peg_cursor *pc,
 		goto err;
 	}
 
-	def = peg_node_new(PEG_DEFINITION, pc, npc.pos - pc->pos,
+	def = peg_node_new(peg, PEG_DEFINITION, pc, npc.pos - pc->pos,
 			   npc.line - pc->line + 1);
 	if ( def == NULL ) {
 		peg->err = PEG_ERR_NOMEM;
@@ -871,7 +883,7 @@ int peg_parse(struct peg_grammar *peg, const char *string)
 		cset_init_accept(cs_special, "nrt'\"[]\\");
 		cset_init_accept(cs_digit0to2, "012");
 		cset_init_accept(cs_digit0to7, "01234567");
-		cset_init_reject(cs_ccode, "\"\'/}\r\n");
+		cset_init_reject(cs_ccode, "\"\'/{}\r\n");
 		cset_rem(cs_ccode, '\0');
 		initialized = 1;
 	}
@@ -881,6 +893,7 @@ int peg_parse(struct peg_grammar *peg, const char *string)
 	l_init(&peg->def_list);
 	rb_init(&peg->def_table, &cmp_raw);
 	l_init(&peg->id_list);
+	peg->next_id = 1;
 
 	skip_space(peg, &pc);
 
@@ -991,16 +1004,15 @@ static void print_node(struct peg_grammar *peg, union peg_node_u *n, int seq,
 		       int depth, FILE *out)
 {
 
-	char name[80];
-	char pad[80];
+	char sbuf[256];
 
 	if ( n == NULL )
 		return;
 
 	switch ( n->node.type ) {
 	case PEG_DEFINITION:
-		fprintf(out, "%s <- ", node2str(name, sizeof(name),
-					          peg, &n->def.id->node));
+		fprintf(out, "%s <- ", node2str(sbuf, sizeof(sbuf),
+					        peg, &n->def.id->node));
 		print_node(peg, (union peg_node_u *)n->def.expr, 0, 1, out);
 		fprintf(out, "\n");
 		break;
@@ -1011,13 +1023,10 @@ static void print_node(struct peg_grammar *peg, union peg_node_u *n, int seq,
 
 	case PEG_SEQUENCE:
 		fprintf(out, "\n");
-		fprintf(out, "%s", indent(pad, sizeof(pad), depth));
+		fprintf(out, "%s", indent(sbuf, sizeof(sbuf), depth));
 		if ( seq > 0 ) fprintf(out, "/ ");
 		print_node(peg, (union peg_node_u *)n->seq.pri, seq, depth + 1,
 			   out);
-		if ( n->seq.code != NULL )
-			print_node(peg, (union peg_node_u *)n->seq.code, seq,
-				   depth + 1, out);
 		print_node(peg, (union peg_node_u *)n->seq.next, seq + 1,
 			   depth, out);
 		break;
@@ -1035,6 +1044,9 @@ static void print_node(struct peg_grammar *peg, union peg_node_u *n, int seq,
 				   "BAD_SUFFIX!");
 		fprintf(out, "%s", (n->pri.prefix == PEG_ATTR_NONE) ? " " : 
 				   ") ");
+		if ( n->pri.code != NULL )
+			print_node(peg, (union peg_node_u *)n->pri.code, seq,
+				   depth + 1, out);
 		print_node(peg, (union peg_node_u *)n->pri.next, seq, depth,
 			   out);
 		break;
@@ -1042,16 +1054,17 @@ static void print_node(struct peg_grammar *peg, union peg_node_u *n, int seq,
 	case PEG_IDENTIFIER:
 	case PEG_LITERAL:
 	case PEG_CLASS:
-		fprintf(out, "%s ", node2str(name, sizeof(name), peg,
+		fprintf(out, "%s ", node2str(sbuf, sizeof(sbuf), peg,
 					     &n->node));
 		break;
 
 	case PEG_CODE:
 		fprintf(out, "\n");
-		fprintf(out, "%s", indent(pad, sizeof(pad), depth));
-		fprintf(out, "CODE BLOCK: ");
-		fprintf(out, "%s ", node2str(name, sizeof(name), peg,
-					     &n->node));
+		fprintf(out, "%s", indent(sbuf, sizeof(sbuf), depth));
+		fprintf(out, "CODE BLOCK:\n");
+		fprintf(out, "%s", indent(sbuf, sizeof(sbuf), depth));
+		fprintf(out, "%s", node2str(sbuf, sizeof(sbuf), peg,
+					    &n->node));
 		break;
 	}
 

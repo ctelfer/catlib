@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
 
 	if ( peg_parse(&peg, buf) < 0 ) {
 		err("Error parsing %s at line %u/byte %u: %s\n",
-		    argv[1], peg.eloc.pos, peg.eloc.line,
+		    argv[1], peg.eloc.line, peg.eloc.pos,
 		    peg_err_message(peg.err));
 	}
 
