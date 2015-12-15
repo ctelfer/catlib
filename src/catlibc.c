@@ -232,6 +232,12 @@ int isspace(int c)
 }
 
 
+int isprint(int c)
+{
+	return (c >= ' ' && c <= '~');
+}
+
+
 int isalpha(int c)
 {
 	int uc = toupper(c);
