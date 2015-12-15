@@ -6,7 +6,7 @@
 #include <stdlib.h>
 
 
-char *readfile(const char *filename)
+char *readfile(const char *filename, uint *fs)
 {
 	FILE *fp;
 	long fsize;
@@ -23,6 +23,7 @@ char *readfile(const char *filename)
 	nread = fread(buf, 1, fsize, fp);
 	if ( fsize != nread )
 		errsys("error reading file: ");
+	*fs = fsize;
 	return buf;
 }
 
@@ -31,12 +32,13 @@ int main(int argc, char *argv[])
 {
 	char *buf;
 	struct peg_grammar peg;
+	uint fsize;
 
 	if ( argc < 2 )
 		err("usage: %s filename\n", argv[0]);
-	buf = readfile(argv[1]);
+	buf = readfile(argv[1], &fsize);
 
-	if ( peg_parse(&peg, buf) < 0 ) {
+	if ( peg_parse(&peg, buf, fsize) < 0 ) {
 		err("Error parsing %s at line %u/byte %u: %s\n",
 		    argv[1], peg.eloc.line, peg.eloc.pos,
 		    peg_err_message(peg.err));

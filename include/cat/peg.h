@@ -35,13 +35,14 @@ struct peg_primary;
 struct peg_id;
 struct peg_literal;
 struct peg_class;
-struct peg_code;
+struct peg_action;
 
 struct peg_grammar {
 	const char *input;
-	uint inlen;
+	uint len;
+	uint nlines;
 	struct list def_list;
-	struct rbtree def_table;
+	struct rbtree id_table;
 	struct list id_list;
 	struct peg_def *start;
 	int err;
@@ -71,8 +72,7 @@ struct peg_node {
 
 struct peg_def {
 	struct peg_node node;
-	struct rbnode rbe;
-	struct list le;
+	struct list ln;
 	struct peg_id *id;
 	struct peg_expr *expr;
 };
@@ -102,19 +102,22 @@ struct peg_primary {
 	int prefix;
 	union peg_node_u *match;
 	int suffix;
-	struct peg_code *code;
+	struct peg_action *action;
 	struct peg_primary *next;
 };
 
 struct peg_id {
 	struct peg_node node;
-	struct list le;
+	struct rbnode rbn;
+	struct list ln;
 	struct raw name;
+	int refcnt;
 	struct peg_def *def;
 };
 
 struct peg_literal {
 	struct peg_node node;
+	struct raw value;
 };
 
 struct peg_class {
@@ -122,8 +125,12 @@ struct peg_class {
 	byte_t cset[32];
 };
 
-struct peg_code {
+struct peg_action {
 	struct peg_node node;
+	union {
+		struct raw code;
+		int (*cb)(struct peg_primary *p, void *aux);
+	} action;
 };
 
 union peg_node_u {
@@ -135,11 +142,11 @@ union peg_node_u {
 	struct peg_id id;
 	struct peg_literal lit;
 	struct peg_class cls;
-	struct peg_code code;
+	struct peg_action act;
 };
 
 
-int peg_parse(struct peg_grammar *peg, const char *string);
+int peg_parse(struct peg_grammar *peg, const char *string, uint len);
 
 void peg_free_nodes(struct peg_grammar *peg);
 
