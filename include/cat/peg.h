@@ -58,8 +58,7 @@ enum {
 	PEG_PRIMARY,
 	PEG_IDENTIFIER,
 	PEG_LITERAL,
-	PEG_CLASS,
-	PEG_CODE
+	PEG_CLASS
 };
 
 struct peg_node {
@@ -97,12 +96,21 @@ enum {
 	PEG_ATTR_PLUS
 };
 
+enum {
+	PEG_ACT_NONE = 0,
+	PEG_ACT_CODE,
+	PEG_ACT_LABEL,
+	PEG_ACT_CALLBACK
+};
+
 struct peg_primary {
 	struct peg_node node;
 	int prefix;
 	union peg_node_u *match;
 	int suffix;
-	struct peg_action *action;
+	int action_type;
+	struct raw action_str;
+	int (*action_cb)(struct peg_primary *p, struct raw *match, void *aux);
 	struct peg_primary *next;
 };
 
@@ -125,14 +133,6 @@ struct peg_class {
 	byte_t cset[32];
 };
 
-struct peg_action {
-	struct peg_node node;
-	union {
-		struct raw code;
-		int (*cb)(struct peg_primary *p, void *aux);
-	} action;
-};
-
 union peg_node_u {
 	struct peg_node node;
 	struct peg_def def;
@@ -142,7 +142,6 @@ union peg_node_u {
 	struct peg_id id;
 	struct peg_literal lit;
 	struct peg_class cls;
-	struct peg_action act;
 };
 
 
