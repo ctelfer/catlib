@@ -29,7 +29,6 @@ struct peg_cursor {
 
 struct peg_node;
 struct peg_def;
-struct peg_expr;
 struct peg_seq;
 struct peg_primary;
 struct peg_id;
@@ -41,10 +40,9 @@ struct peg_grammar {
 	const char *input;
 	uint len;
 	uint nlines;
-	struct list def_list;
+	struct list node_list;
 	struct rbtree id_table;
-	struct list id_list;
-	struct peg_def *start;
+	struct peg_id *start;
 	int err;
 	struct peg_cursor eloc;
 	uint next_id;
@@ -53,7 +51,6 @@ struct peg_grammar {
 enum {
 	PEG_NONE,
 	PEG_DEFINITION,
-	PEG_EXPRESSION,
 	PEG_SEQUENCE,
 	PEG_PRIMARY,
 	PEG_IDENTIFIER,
@@ -63,6 +60,7 @@ enum {
 
 struct peg_node {
 	int type;
+	struct list ln;
 	struct peg_cursor loc;
 	uint len;
 	uint nlines;
@@ -71,14 +69,8 @@ struct peg_node {
 
 struct peg_def {
 	struct peg_node node;
-	struct list ln;
 	struct peg_id *id;
-	struct peg_expr *expr;
-};
-
-struct peg_expr {
-	struct peg_node node;
-	struct peg_seq *seq;
+	struct peg_seq *expr;
 };
 
 struct peg_seq {
@@ -103,6 +95,8 @@ enum {
 	PEG_ACT_CALLBACK
 };
 
+typedef int (*peg_action_f)(struct peg_primary *, struct raw *, void *);
+
 struct peg_primary {
 	struct peg_node node;
 	int prefix;
@@ -110,14 +104,13 @@ struct peg_primary {
 	int suffix;
 	int action_type;
 	struct raw action_str;
-	int (*action_cb)(struct peg_primary *p, struct raw *match, void *aux);
+	peg_action_f action_cb;
 	struct peg_primary *next;
 };
 
 struct peg_id {
 	struct peg_node node;
 	struct rbnode rbn;
-	struct list ln;
 	struct raw name;
 	int refcnt;
 	struct peg_def *def;
@@ -136,7 +129,6 @@ struct peg_class {
 union peg_node_u {
 	struct peg_node node;
 	struct peg_def def;
-	struct peg_expr expr;
 	struct peg_seq seq;
 	struct peg_primary pri;
 	struct peg_id id;
@@ -154,5 +146,7 @@ void peg_reset(struct peg_grammar *peg);
 const char *peg_err_message(int err);
 
 void peg_print(struct peg_grammar *peg, FILE *out);
+
+int peg_action_set(struct peg_grammar *peg, char *label, peg_action_f cb);
 
 #endif /* __peg_h */
