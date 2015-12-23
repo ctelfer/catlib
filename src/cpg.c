@@ -1,4 +1,5 @@
 #include <cat/cpg.h>
+#include <cat/str.h>
 #include <stdio.h> 
 #include <stdlib.h>
 #include <string.h>
@@ -125,11 +126,10 @@ static int cpg_match_primary(struct cpg_state *state, int pri, void *aux)
 	struct peg_grammar *peg = state->peg;
 	struct cpg_cursor oc = state->cur;
 	struct peg_node *pn;
-	struct peg_node *mn;
 	uint nmatch = 0;
 	int repeat;
 	int mtype;
-	int rv;
+	int rv = -1;
 	struct raw r;
 	int act_rv;
 

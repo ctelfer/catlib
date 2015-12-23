@@ -3,7 +3,7 @@ CFILES=	cat.c aux.c err.c cb.c crc.c grow.c io.c mem.c net.c pack.c ring.c \
 	shell.c str.c dbgmem.c emit.c emit_format.c stdclio.c emalloc.c \
 	catstr.c bitops.c list.c hash.c avl.c heap.c dlist.c pool.c rbtree.c \
 	time.c splay.c bitset.c catlibc.c pspawn.c dynmem.c lex.c sort.c \
-	optparse.c inport.c crypto.c socks5.c buffer.c peg.c
+	optparse.c inport.c crypto.c socks5.c buffer.c peg.c cpg.c
 
 LCATODIR=  ../build/libcat
 LCATOF= $(LCATODIR)/cat.o \
@@ -43,7 +43,8 @@ LCATOF= $(LCATODIR)/cat.o \
 	$(LCATODIR)/inport.o \
 	$(LCATODIR)/crypto.o \
 	$(LCATODIR)/socks5.o \
-	$(LCATODIR)/peg.o
+	$(LCATODIR)/peg.o \
+	$(LCATODIR)/cpg.o
 
 
 
@@ -96,7 +97,8 @@ LCATAOF=$(LCATAODIR)/cat.o \
 	$(LCATAODIR)/inport.o \
 	$(LCATAODIR)/crypto.o \
 	$(LCATAODIR)/socks5.o \
-	$(LCATAODIR)/peg.o
+	$(LCATAODIR)/peg.o \
+	$(LCATAODIR)/cpg.o
 
 
 LCAT_DBG_ODIR= ../build/libcat_dbg
@@ -148,7 +150,8 @@ LCAT_DBG_OF=$(LCAT_DBG_ODIR)/cat.o \
 	$(LCAT_DBG_ODIR)/inport.o  \
 	$(LCAT_DBG_ODIR)/crypto.o \
 	$(LCAT_DBG_ODIR)/socks5.o \
-	$(LCAT_DBG_ODIR)/peg.o
+	$(LCAT_DBG_ODIR)/peg.o \
+	$(LCAT_DBG_ODIR)/cpg.o
 	
 
 LCAT_NO_LIBC_ODIR=  ../build/libcat_nolibc
@@ -197,6 +200,7 @@ LCAT_NO_LIBC_OF= \
 	$(LCAT_NO_LIBC_ODIR)/crypto.o \
 	$(LCAT_NO_LIBC_ODIR)/bitops.o \
 	$(LCAT_NO_LIBC_ODIR)/socks5.o \
+	$(LCAT_NO_LIBC_ODIR)/cpg.o \
 	$(LCAT_NO_LIBC_ODIR)/peg.o
 
 ICOMMON=-I../include $(CCXFLAGS)

@@ -1,9 +1,58 @@
 #ifndef __peg_h
 #define __peg_h
 
-#include <cat/list.h>
-#include <cat/rbtree.h>
+#include <cat/cat.h>
 #include <stdio.h>
+
+struct peg_node;
+struct peg_grammar;
+
+typedef int (*peg_action_f)(int, struct raw *, void *);
+
+struct peg_node {
+	int pn_type;
+	struct raw pn_str;
+	int pn_next;
+	int pn_subnode;
+	ushort pn_status;
+	uchar pn_flag1;
+	uchar pn_flag2;
+	peg_action_f pn_action_cb;
+};
+
+#define pn_is_type(_peg, _idx, _type) \
+	((_idx) >= 0 && (_idx < (_peg)->max_nodes) && \
+	 (_peg)->nodes[(_idx)].pn_type == (_type))
+
+#define pd_id pn_subnode
+#define pd_expr pn_next	/* defs aren't in lists */
+
+#define ps_pri pn_subnode
+
+#define pp_match pn_subnode
+#define pp_action pn_status
+#define pp_label pn_str
+#define pp_code  pn_str
+#define pp_prefix pn_flag1
+#define pp_suffix pn_flag2
+
+#define pi_name pn_str
+#define pi_refcnt pn_status
+#define pi_def pn_subnode
+
+#define pl_value pn_str
+
+#define pc_cset_raw pn_str
+#define pc_cset pn_str.data
+#define pc_cset_size pn_str.len
+
+struct peg_grammar {
+	struct peg_node *nodes;
+	uint max_nodes;
+	uint num_nodes;
+	uint start_node;
+	int dynamic;
+};
 
 enum {
 	PEG_ERR_NONE = 0,
@@ -14,7 +63,7 @@ enum {
 	PEG_ERR_BAD_PRIMARY = 5,
 	PEG_ERR_BAD_PAREXPR = 6,
 	PEG_ERR_BAD_LITERAL = 7,
-	PEG_ERR_UNDEF_LITERAL = 8,
+	PEG_ERR_UNDEF_ID = 8,
 	PEG_ERR_BAD_CLASS = 9,
 	PEG_ERR_BAD_CHAR = 10,
 	PEG_ERR_BAD_RANGE = 11,
@@ -27,25 +76,14 @@ struct peg_cursor {
 	uint line;
 };
 
-struct peg_node;
-struct peg_def;
-struct peg_seq;
-struct peg_primary;
-struct peg_id;
-struct peg_literal;
-struct peg_class;
-struct peg_action;
-
-struct peg_grammar {
+struct peg_grammar_parser {
 	const char *input;
+	uint input_len;
 	uint len;
 	uint nlines;
-	struct list node_list;
-	struct rbtree id_table;
-	struct peg_id *start;
+	struct peg_grammar *peg;
 	int err;
 	struct peg_cursor eloc;
-	uint next_id;
 };
 
 enum {
@@ -56,27 +94,6 @@ enum {
 	PEG_IDENTIFIER,
 	PEG_LITERAL,
 	PEG_CLASS
-};
-
-struct peg_node {
-	int type;
-	struct list ln;
-	struct peg_cursor loc;
-	uint len;
-	uint nlines;
-	uint id;
-};
-
-struct peg_def {
-	struct peg_node node;
-	struct peg_id *id;
-	struct peg_seq *expr;
-};
-
-struct peg_seq {
-	struct peg_node node;
-	struct peg_primary *pri;
-	struct peg_seq *next;
 };
 
 enum {
@@ -95,55 +112,12 @@ enum {
 	PEG_ACT_CALLBACK
 };
 
-typedef int (*peg_action_f)(struct peg_primary *, struct raw *, void *);
-
-struct peg_primary {
-	struct peg_node node;
-	int prefix;
-	union peg_node_u *match;
-	int suffix;
-	int action_type;
-	struct raw action_str;
-	peg_action_f action_cb;
-	struct peg_primary *next;
-};
-
-struct peg_id {
-	struct peg_node node;
-	struct rbnode rbn;
-	struct raw name;
-	int refcnt;
-	struct peg_def *def;
-};
-
-struct peg_literal {
-	struct peg_node node;
-	struct raw value;
-};
-
-struct peg_class {
-	struct peg_node node;
-	byte_t cset[32];
-};
-
-union peg_node_u {
-	struct peg_node node;
-	struct peg_def def;
-	struct peg_seq seq;
-	struct peg_primary pri;
-	struct peg_id id;
-	struct peg_literal lit;
-	struct peg_class cls;
-};
-
-
-int peg_parse(struct peg_grammar *peg, const char *string, uint len);
+int peg_parse(struct peg_grammar_parser *pgp, struct peg_grammar *peg,
+	      const char *string, uint len);
 
 void peg_free_nodes(struct peg_grammar *peg);
 
-void peg_reset(struct peg_grammar *peg);
-
-const char *peg_err_message(int err);
+char *peg_err_string(struct peg_grammar_parser *pgp, char *buf, size_t blen);
 
 void peg_print(struct peg_grammar *peg, FILE *out);
 
