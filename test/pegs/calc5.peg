@@ -1,0 +1,19 @@
+out <- expr { printf("result: %d\n", $$); }
+       
+expr <- '(' expr ')' { /* TEST " */ }
+      / mul_expr { '\\'; }
+      / add_expr { /* " foo \''' */ "\n'"; }
+      / unexpr
+      / number
+
+mul_expr <- expr '*' expr { $$ = $1 * $2; }
+          / expr '/' expr { $$ = $1 / $2; }
+
+add_expr <- expr '+' expr { $$ = $1 + $2; }
+          / expr '-' expr { $$ = $1 - $2; }
+
+unexpr <- '-' expr { $$ = - $1; }
+
+number <- '0x' [0-9a-fA-F]+ { $$ = atoi($!); }
+        / '0' [0-7]+ { $$ = atoi($!); }
+        / [0-9]+ { $$ = atoi($!); }

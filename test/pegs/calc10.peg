@@ -1,0 +1,75 @@
+#include <cat/err.h>
+#include <stdio.h>
+
+int stack[256];
+int tos = 0;
+
+
+void push(int val)
+{
+	if ( tos >= array_length(stack) ) err("Stack overflow\n");
+	stack[tos++] = val;
+}
+
+
+int pop(void)
+{
+	if ( tos <= 0 ) err("Stack underflow\n");
+	return stack[--tos];
+}
+
+
+%%
+
+output   <- spacing expr_list 
+
+expr_list <- (add_expr EOL {printf("result = %d\n", pop()); fflush(stdout);} )* 
+
+add_expr <- mul_expr ( PLUS  add_expr { push(pop() + pop()); }
+	  	     / MINUS add_expr { int x = pop(); push(pop() - x); }
+		     )*
+
+mul_expr <- un_expr ( TIMES mul_expr { push(pop() * pop()); }
+	  	    / DIV   mul_expr { int x = pop(); push(pop() / x); }
+		    )*
+
+un_expr  <- MINUS add_expr { push(-pop()); }
+	  / value
+
+value <- LPAREN add_expr RPAREN
+	 / number {
+	char buf[64];
+	if ( cpeg_text->len >= sizeof(buf) ) err("number is too long");
+	memcpy(buf, cpeg_text->data, cpeg_text->len);
+	buf[cpeg_text->len] = '\0';
+	push(atoi(buf));
+	return 0;
+}
+
+
+LPAREN <- '(' spacing
+RPAREN <- ')' spacing
+PLUS <- '+' spacing
+MINUS <- '-' spacing
+TIMES <- '*' spacing
+DIV <- '/' spacing
+EQUALS <- '=' spacing
+
+number <- ([1-9][0-9]* 
+           / '0x' [0-9a-fA-F]+
+	   / '0' [0-7]+
+	   / '0') spacing
+
+spacing <- [ \t]*
+EOL <- '\r\n' / '\r' / '\n'
+
+%%
+
+int main(int argc, char *argv[])
+{
+	struct cpeg_parser parser;
+	cpeg_init(&parser, NULL);
+	cpeg_parse(&parser, stdin, NULL);
+	cpeg_fini(&parser);
+	return 0;
+}

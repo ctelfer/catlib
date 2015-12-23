@@ -1,0 +1,17 @@
+expr <- '(' expr ')'
+      / mul_expr
+      / add_expr
+      / unexpr
+      / number
+
+mul_expr <- expr '*' expr
+          / expr '/' expr
+
+add_expr <- expr '+' expr
+          / expr '-' expr
+
+unexpr <- '-' expr
+
+number <- '0x' [0-9a-fA-F]+
+        / '0' [0-7]+
+        / [0-9]+

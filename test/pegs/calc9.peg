@@ -1,0 +1,34 @@
+output   <- spacing expr_list 
+
+expr_list <- (add_expr EOL :output)* 
+
+add_expr <- mul_expr ( PLUS  add_expr :do_plus
+	  	     / MINUS add_expr :do_minus
+		     )*
+
+mul_expr <- un_expr ( TIMES mul_expr :do_multiply
+	  	    / DIV   mul_expr :do_divide
+		    )*
+
+un_expr  <- MINUS add_expr :do_negate
+	  / value
+
+value <- LPAREN add_expr RPAREN
+	 / number :push_num
+
+
+LPAREN <- '(' spacing
+RPAREN <- ')' spacing
+PLUS <- '+' spacing
+MINUS <- '-' spacing
+TIMES <- '*' spacing
+DIV <- '/' spacing
+EQUALS <- '=' spacing
+
+number <- ([1-9][0-9]* 
+           / '0x' [0-9a-fA-F]+
+	   / '0' [0-7]+
+	   / '0') spacing
+
+spacing <- [ \t]*
+EOL <- '\r\n' / '\r' / '\n'

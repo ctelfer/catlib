@@ -1,0 +1,23 @@
+result <- spacing expr
+
+expr <- mul_expr
+      / add_expr
+      / unexpr
+      / val 
+
+mul_expr <- val '*' spacing expr
+          / val '/' spacing expr
+
+add_expr <- val '+' spacing expr
+          / val '-' spacing expr
+
+unexpr <- '-' val
+
+val <- '(' spacing expr ')' spacing
+       / number spacing
+
+number <- '0x' [0-9a-fA-F]+
+        / '0' [0-7]+
+        / [0-9]+
+
+spacing <- [ \t\r\n]*

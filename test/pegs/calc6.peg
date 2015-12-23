@@ -1,0 +1,19 @@
+out <- expr : print_result
+       
+expr <- '(' expr ')'
+      / mul_expr
+      / add_expr
+      / unexpr
+      / number
+
+mul_expr <- expr '*' expr : do_multiply
+          / expr '/' expr : do_divide
+
+add_expr <- expr '+' expr : do_add
+          / expr '-' expr : do_sub
+
+unexpr <- '-' expr : do_negate
+
+number <- '0x' [0-9a-fA-F]+ : parse_num
+        / '0' [0-7]+        : parse_num
+        / [0-9]+            : parse_num

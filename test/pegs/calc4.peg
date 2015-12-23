@@ -1,0 +1,21 @@
+out <- expr { printf("result: %d\n", pop(YYSTATE)); }
+       
+expr <- '(' expr ')'
+      / mul_expr
+      / add_expr
+      / unexpr
+      / number
+
+mul_expr <- expr '*' expr { push(YYSTATE, pop(YYSTATE) * pop(YYSTATE)); }
+          / expr '/' expr { int right = pop(YYSTATE);
+                            push(YYSTATE, pop(YYSTATE) / right); }
+
+add_expr <- expr '+' expr { push(YYSTATE, pop(YYSTATE) + pop(YYSTATE)); }
+          / expr '-' expr { int right = pop(YYSTATE);
+                            push(YYSTATE, pop(YYSTATE) - right); }
+
+unexpr <- '-' expr { push(YYSTATE, -pop(YYSTATE)); }
+
+number <- '0x' [0-9a-fA-F]+ { push(YYSTATE, strtoul(yytext, NULL, 16)); }
+        / '0' [0-7]+        { push(YYSTATE, strtoul(yytext, NULL, 8)); }
+        / [0-9]+            { push(YYSTATE, strtoul(yytext, NULL, 10)); }

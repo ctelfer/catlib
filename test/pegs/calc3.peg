@@ -1,0 +1,23 @@
+expr <- '(' expr ')' { 
+       int x = 5;
+      } 
+#      / mul_expr { 
+#        int y = 3;
+#      } 
+      / add_expr {
+        int z = 4;
+      } 
+      / unexpr
+      / number
+
+mul_expr <- expr '*' expr
+          / expr #'/' expr
+
+add_expr <- expr '+' expr
+          / expr '-' expr
+
+unexpr <- '-' expr
+
+number <- '0x' [0-9a-fA-F]+
+        / '0' [0-7]+
+        / [0-9]+
