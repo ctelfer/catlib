@@ -259,7 +259,7 @@ char *pwalk_next(struct path_walker *pw, const char *sfx, char *out,
 		return NULL;
 
 	pl = str_copy_spn(out, pw->next, osize, pw->rej);
-	if ( pl >= osize )
+	if ( pl >= osize - 1 )
 		return NULL;
 	out[pl] = pw->dsep;
 	osize -= pl + 1;

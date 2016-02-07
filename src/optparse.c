@@ -33,7 +33,6 @@ int optparse_reset(struct clopt_parser *clp, int argc, char *argv[])
 	clp->argv = argv;
 	clp->vidx = 1;
 	clp->non_opt = 1;
-	clp->used_arg = 0;
 	clp->chptr = NULL;
 
 	return 0;
@@ -185,29 +184,45 @@ static int parse_short_opts(struct clopt_parser *clp, struct clopt **optp)
 	}
 	*optp = opt;
 	if ( opt->type != CLOPT_NOARG ) {
-		if ( clp->vidx >= clp->argc - 1 || clp->used_arg ) {
-			clp->argc = -1;
-			snprintf(clp->errbuf, sizeof(clp->errbuf), 
-				 "No parameter for option %s", 
-				 clopt_name(opt, onamestr, sizeof(onamestr)));
-			return CLORET_NOPARAM;
-		}
-		if ( read_arg(opt, clp->argv[clp->vidx+1]) < 0 ) {
-			clp->argc = -1;
-			snprintf(clp->errbuf, sizeof(clp->errbuf), 
-				 "Bad parameter for option %s: %s", 
-				 clopt_name(opt, onamestr, sizeof(onamestr)),
-				 clp->argv[clp->vidx+1]);
-			opt->val.str_val = clp->argv[clp->vidx+1];
-			return CLORET_BADPARAM;
-		}
-		clp->used_arg = 1;
-	}
-	if ( *++clp->chptr == '\0' ) {
-		movedown(clp->argv, clp->non_opt++, clp->vidx++);
-		if ( clp->used_arg )
+		if ( cp[1] != '\0' ) { /* argument is remainder of the string */
+			if ( read_arg(opt, cp + 1) < 0 ) {
+				clp->argc = -1;
+				snprintf(clp->errbuf, sizeof(clp->errbuf), 
+					 "Bad parameter for option %s: %s", 
+					 clopt_name(opt, onamestr,
+					 sizeof(onamestr)), cp + 1);
+				opt->val.str_val = (char *)cp + 1;
+				return CLORET_BADPARAM;
+			}
+		} else {
+			if ( clp->vidx >= clp->argc - 1 ) {
+				clp->argc = -1;
+				snprintf(clp->errbuf, sizeof(clp->errbuf), 
+					 "No parameter for option %s", 
+					 clopt_name(opt, onamestr,
+						    sizeof(onamestr)));
+				return CLORET_NOPARAM;
+			}
+			if ( read_arg(opt, clp->argv[clp->vidx+1]) < 0 ) {
+				clp->argc = -1;
+				snprintf(clp->errbuf, sizeof(clp->errbuf), 
+					 "Bad parameter for option %s: %s", 
+					 clopt_name(opt, onamestr,
+						    sizeof(onamestr)),
+					 clp->argv[clp->vidx+1]);
+				opt->val.str_val = clp->argv[clp->vidx+1];
+				return CLORET_BADPARAM;
+			}
 			movedown(clp->argv, clp->non_opt++, clp->vidx++);
+		}
+
+		movedown(clp->argv, clp->non_opt++, clp->vidx++);
 		clp->chptr = NULL;
+	} else {
+		if ( *++clp->chptr == '\0' ) {
+			movedown(clp->argv, clp->non_opt++, clp->vidx++);
+			clp->chptr = NULL;
+		}
 	}
 
 	return 0;
@@ -250,7 +265,6 @@ int optparse_next(struct clopt_parser *clp, struct clopt **optp)
 	if ( strncmp(argv[i], "--", 2) == 0 ) {
 		return parse_long_opt(clp, optp);
 	} else {
-		clp->used_arg = 0;
 		clp->chptr = &argv[i][1];
 		return parse_short_opts(clp, optp);
 	}
