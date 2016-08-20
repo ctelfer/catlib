@@ -51,7 +51,7 @@ static int cpg_getc(struct cpg_state *state)
 		if ( newbuf == NULL ) 
 			return -2;
 		state->buf = newbuf;
-		memset(newbuf + state->buflen, '\0', 4096);
+		memset((uchar *)newbuf + state->buflen, '\0', 4096);
 		state->buflen += 4096;
 	}
 
