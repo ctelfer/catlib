@@ -286,7 +286,8 @@ char * str_cat_a(const char *first, const char *second)
 
 	newstr = emalloc(tlen);
 	memmove(newstr, first, len1);
-	return memmove(newstr + len1, second, len2 + 1);
+	memmove(newstr + len1, second, len2 + 1);
+	return newstr;
 }
 
 
