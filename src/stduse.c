@@ -164,15 +164,6 @@ size_t cl_fill(struct clist *list)
 }
 
 
-struct clist_node *cl_node_new(struct clist *list, void *val)
-{
-	struct clist_node *n = (*list->node_alloc)(list);
-	if ( n == NULL && list->abort_on_fail )
-		err("cl_node_new: unable to allocate node\n");
-	return n;
-}
-
-
 int cl_ins(struct clist *list, struct clist_node *prev, void *val)
 {
 	struct clist_node *node;
