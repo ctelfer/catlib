@@ -102,7 +102,7 @@ else
 		echo "NOSTD=\"$NOSTD\"" >> build_system.conf
 	fi
 
-	if [ ! -z "$CXXFLAGS" ]; then
+	if [ ! -z "$CCXFLAGS" ]; then
 		echo "CCXFLAGS=\"$CCXFLAGS\"" >> build_system.conf
 	fi
 
