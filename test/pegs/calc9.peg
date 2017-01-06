@@ -1,6 +1,8 @@
 output   <- spacing expr_list 
 
-expr_list <- (add_expr EOL :output)* 
+expr_list <- ( add_expr EOL :output
+             / EOL
+             )* 
 
 add_expr <- mul_expr ( PLUS  add_expr :do_plus
 	  	     / MINUS add_expr :do_minus

@@ -8,6 +8,7 @@ test/*
 !test/*.awk
 !test/*.pl
 !test/Makefile
+!test/pegs
 
 conf/build_system.conf
 conf/config.h
