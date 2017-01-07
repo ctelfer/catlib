@@ -93,6 +93,18 @@ struct raw *erawdup(struct raw const * const r)
 }
 
 
+char *erawsdup(struct raw const * const r)
+{
+	char *s;
+	if ( r == NULL || r->data == NULL || r->len + 1 < r->len )
+		err("erawdup: invalid raw provided\n");
+	s = emalloc(r->len + 1);
+	memmove(s, r->data, r->len);
+	s[r->len] = '\0';
+	return s;
+}
+
+
 /* List operations */
 
 

@@ -205,12 +205,16 @@ int ps_cleanup(struct pspawn *ps, int wait);
 /* ex modes: "012", "e0", "n1", "el0n1+2", "1+2", "12"... */ 
 /* if the mode starts with 'e', then the first arg must be the */
 /* environment array to use.  Otherwise it wipes the current environment */
-/* 'n' stands for non-blocking stdio and 'l' stands for line-buffered */
+/* 'n' stands for non-buffered stdio and 'l' stands for line-buffered */
 /* 1+2 means redirect stdout and stderr to the same stream */
 /* note that unless handling signals in your program yourself you should */
 /* call ps_ignore_sigcld() (only once is necessary) before calling ps_launch */
 struct pspawn *ps_spawn(const char *mode, ...);
 
+
+/* Same as above but passes environment and cmd explicitly. no "e" in mode */
+struct pspawn *ps_spawn_x(const char *mode, char * const *cmd,
+                          char * const *envp); 
 
 #endif /* CAT_HAS_POSIX */
 #endif /* __spawn_h */

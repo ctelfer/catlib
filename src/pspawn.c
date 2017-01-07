@@ -490,7 +490,7 @@ static void ps_launch_child(struct pspawn *ps, int retpipe[2],
 	if ( envp == NULL )
 		envp = tenv;
 
-				close(retpipe[0]);
+	close(retpipe[0]);
 	if ( open_rdr_files(ps) < 0 ) { 
 		rerrno = ps->error;
 		goto err;
@@ -792,10 +792,63 @@ static int modech_ok(int ch)
 struct pspawn *ps_spawn(const char *mode, ...)
 {
 	va_list ap;
-	uint i, narg = 1, type, bmode;
-	int minfd = -1, fd;
-	char **args = NULL, *argarr[PS_ARGARR_SIZE];
+	uint i, narg = 1;
+	char **args = NULL;
 	char * const * envp = NULL;
+	struct pspawn *ps = NULL;
+	int esave;
+
+	if ( mode == NULL )
+		mode = "";
+
+	/* count arguments */
+	va_start(ap, mode);
+	while ( va_arg(ap, const char *) != NULL )
+		++narg;
+	va_end(ap);
+
+	/* decrement by 1 if the environment is the first argument */
+	if ( *mode == 'e' )
+		--narg;
+
+	/* ensure that we have at least 2 arguments (command and NULL) */
+	if ( narg < 2 ) {
+		errno = EINVAL;
+		return NULL;
+	}
+
+	/* allocate fresh array for arguments */
+	if ( UINT_MAX / sizeof(char *) < narg ) {
+		errno = EINVAL;
+		return NULL;
+	}
+	if ( (args = malloc(sizeof(char *) * narg)) == NULL )
+		return NULL;
+
+	/* copy arguments to local array */
+	va_start(ap, mode);
+	if ( *mode == 'e' ) {
+		/* Grab environment array if present */
+		envp = va_arg(ap, char **);
+		++mode;
+	}
+	for ( i = 0; i < narg; i++ )
+		args[i] = va_arg(ap, char *);
+	va_end(ap);
+
+	ps = ps_spawn_x(mode, args, envp);
+	esave = errno;
+	free(args);
+	errno = esave;
+	return ps;
+}
+
+
+struct pspawn *ps_spawn_x(const char *mode, char * const *args,
+                          char * const *envp)	
+{
+	uint i, type, bmode;
+	int minfd = -1, fd;
 	int rerrno = 0;
 	int keepfds[3] = { 1, 1, 1 };
 	struct ps_spec spec;
@@ -804,35 +857,6 @@ struct pspawn *ps_spawn(const char *mode, ...)
 
 	if ( mode == NULL )
 		mode = "";
-
-	va_start(ap, mode);
-	while ( va_arg(ap, const char *) != NULL )
-		++narg;
-	va_end(ap);
-	if ( *mode == 'e' )
-		--narg;
-	if ( narg < 2 ) {
-		errno = EINVAL;
-		return NULL;
-	}
-	if ( narg > PS_ARGARR_SIZE ) {
-		if ( UINT_MAX / sizeof(char *) > narg ) {
-			errno = EINVAL;
-			return NULL;
-		}
-		if ( (args = malloc(sizeof(char *) * narg)) == NULL )
-			return NULL;
-	} else { 
-		args = argarr;
-	}
-	va_start(ap, mode);
-	if ( *mode == 'e' ) {
-		envp = va_arg(ap, char **);
-		++mode;
-	}
-	for ( i = 0; i < narg; i++ )
-		args[i] = va_arg(ap, char *);
-	va_end(ap);
 
 	ps_spec_init(&spec);
 
@@ -896,8 +920,6 @@ struct pspawn *ps_spawn(const char *mode, ...)
 		rerrno = errno;
 
 out:
-	if ( args != argarr )
-		free(args);
 	ps_spec_cleanup(&spec);
 	if ( rerrno != 0 )
 		errno = rerrno;

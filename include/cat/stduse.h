@@ -20,6 +20,8 @@ extern struct memmgr estdmm;
 
 struct raw *erawdup(struct raw const * const r);
 
+char *erawsdup(struct raw const * const r);
+
 
 #define DECLARE_BINARY_CMPF(_fn, _t) \
 static int _fn(const void *a, const void *b) {return memcmp(a, b, sizeof(_t));}

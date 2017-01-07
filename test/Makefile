@@ -132,8 +132,8 @@ teststr: teststr.c $(CATA_LIBDEP)
 testbitops: testbitops.c $(CAT_LIBDEP)
 	$(CC) $(CAT_CF) -o testbitops testbitops.c $(INC) $(CAT_LIB)
 
-testpspawn: testpspawn.c $(CAT_LIBDEP)
-	$(CC) $(CAT_CF) -o testpspawn testpspawn.c $(INC) $(CAT_LIB)
+testpspawn: testpspawn.c $(CAT_DBG_LIBDEP)
+	$(CC) $(CAT_DBG_CF) -o testpspawn testpspawn.c $(INC) $(CAT_DBG_LIB)
 
 testdynmem: testdynmem.c $(CAT_DBG_LIBDEP)
 	$(CC) $(CAT_DBG_CF) -o testdynmem testdynmem.c $(INC) $(CAT_DBG_LIB)
