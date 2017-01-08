@@ -15,6 +15,8 @@
 struct clopt options[] = {
 	CLOPT_I_NOARG('h', NULL, "print help"),
 	CLOPT_I_NOARG('H', NULL, "generate header file"),
+	CLOPT_I_STRING('o', NULL, "outfn",
+		       "Output file name base (defaults \"cpeg\")"),
 	CLOPT_I_STRING('d', NULL, "outdir",
 		       "Output directory (defaults to input base path)"),
 	CLOPT_I_STRING('p', NULL, "prefix",
@@ -28,6 +30,7 @@ const char *in_fname;
 int has_dname_param = 0;
 int create_header = 0;
 char out_dname[256] = "";
+char out_froot[256] = "cpeg";
 char out_fname_c[256];
 char out_fname_h[256];
 const char *prefix = "cpeg";
@@ -75,13 +78,13 @@ void get_filenames(void)
 
 	size = sizeof(out_fname_c);
 	if ( str_copy(out_fname_c, out_dname, size) >= size ||
-	     str_cat(out_fname_c, prefix, size) >= size || 
+	     str_cat(out_fname_c, out_froot, size) >= size || 
 	     str_cat(out_fname_c, ".c", size) >= size )
 		err("Output filename too long");
 
 	size = sizeof(out_fname_h);
 	if ( str_copy(out_fname_h, out_dname, size) >= size ||
-	     str_cat(out_fname_h, prefix, size) >= size || 
+	     str_cat(out_fname_h, out_froot, size) >= size || 
 	     str_cat(out_fname_h, ".h", size) >= size )
 		err("Output filename too long");
 }
@@ -113,6 +116,12 @@ void parse_args(int argc, char *argv[])
 			break;
 		case 'H':
 			create_header = 1;
+			break;
+		case 'o':
+			n = str_copy(out_froot, opt->val.str_val,
+				     sizeof(out_froot));
+			if ( n >= sizeof(out_froot) )
+				err("output file name too long\n");
 			break;
 		case 'p':
 			prefix = opt->val.str_val;

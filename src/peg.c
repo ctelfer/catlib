@@ -565,10 +565,10 @@ static int parse_class(struct peg_grammar_parser *pgp, struct peg_cursor *pc,
 		return -1;
 	}
 
+match:
 	cls = NODE(peg, nn);
 	cls->pc_cset = cset;
 	cls->pc_cset_size = 32;
-match:
 	npc.pos += 1;
 	*pc = npc;
 	*clsp = nn;

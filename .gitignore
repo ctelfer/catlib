@@ -18,5 +18,7 @@ src/.depend
 
 utils/*
 !utils/*.c
+!utils/*.pp
 !utils/Makefile
+utils/rwatch.c
 

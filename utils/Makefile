@@ -1,20 +1,21 @@
-PROGS=	netpipe vernam pegcc
+PROGS=	netpipe vernam pegcc rwatch
 	
 CC=gcc
 
-INC= -I../include
-CF= -O3
-LIBDEP=../lib/libcata.a
-LIB= -L../lib -lcata
+INC=-I../include
 
-# for use with inline functions
-#LIBDEP=../lib/libcat.a
-#LIB= -L../lib -lcat
+CF= -O3
+LIBDEP=../lib/libcat.a
+LIB= -L../lib -lcat
+
+#CF=-g
+#LIBDEP=../lib/libcat_dbg.a
+#LIB= -L../lib -lcat_dbg
 
 all: $(PROGS)
 
 clean:
-	rm -f $(PROGS) *.core
+	rm -f $(PROGS) *.core rwatch.c
 
 $(LIBDEP):
 	( cd ../src ; make )
@@ -27,3 +28,10 @@ vernam: vernam.c $(LIBDEP)
 
 pegcc: pegcc.c $(LIBDEP)
 	$(CC) $(CF) -o pegcc pegcc.c $(INC) $(LIB)
+
+
+rwatch.c: pegcc rwatch.pp
+	./pegcc -o rwatch rwatch.pp
+
+rwatch: rwatch.c
+	$(CC) $(CF) -o rwatch rwatch.c $(INC) $(LIB)
