@@ -14,6 +14,7 @@ struct peg_node {
 	struct raw pn_str;
 	int pn_next;
 	int pn_subnode;
+	uint pn_line;
 	ushort pn_status;
 	uchar pn_flag1;
 	uchar pn_flag2;

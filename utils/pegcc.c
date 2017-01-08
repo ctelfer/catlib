@@ -37,6 +37,7 @@ const char *prefix = "cpeg";
 FILE *infile;
 FILE *outfile_c;
 FILE *outfile_h;
+uint hlines;
 
 
 void usage(const char *estr)
@@ -177,7 +178,7 @@ void read_file(FILE *fp, struct raw *r)
 }
 
 
-void parse_header(struct raw *fstr, struct raw *head, char **gstrp, uint *hl)
+void parse_header(struct raw *fstr, struct raw *head, char **gstrp)
 {
 	char *s, *lp;
 
@@ -189,14 +190,14 @@ void parse_header(struct raw *fstr, struct raw *head, char **gstrp, uint *hl)
 	s += 3;
 	*gstrp = s;
 
-	*hl = 1;
+	hlines = 1;
 	for ( lp = strchr(fstr->data, '\n'); lp != *gstrp - 1;
 	      lp = strchr(lp + 1, '\n') )
-		*hl++;
+		++hlines;
 }
 
 
-void parse_grammar_and_tail(struct raw *fstr, char *start, uint hl,
+void parse_grammar_and_tail(struct raw *fstr, char *start,
 			    struct peg_grammar_parser *pgp,
 			    struct peg_grammar *peg, struct raw *tail)
 {
@@ -207,7 +208,7 @@ void parse_grammar_and_tail(struct raw *fstr, char *start, uint hl,
 	rv = peg_parse(pgp, peg, start, fstr->len - hdr_num_chars);
 	if ( rv < 0 ) {
 		pgp->eloc.pos += hdr_num_chars;
-		pgp->eloc.line += hl;
+		pgp->eloc.line += hlines;
 		err("%s\n", peg_err_string(pgp, ebuf, sizeof(ebuf)));
 	}
 
@@ -219,7 +220,7 @@ void parse_grammar_and_tail(struct raw *fstr, char *start, uint hl,
 		if ( strncmp(tail->data, "%%\n", 3) != 0 )
 			err("Grammar did not end in %%%% on its own line.\n"
 			    "Successful parse only to line %u\n",
-			    hl + pgp->nlines);
+			    hlines + pgp->nlines);
 		tail->data += 3;
 		tail->len = fstr->len - (tail->data - fstr->data);
 	}
@@ -233,6 +234,7 @@ void emit_action(struct peg_grammar *peg, int nn)
 		"static int __%s_peg_action%d(int __%s_node, "
 		"struct raw *%s_text, void *%s_ctx)\n",
 		prefix, nn, prefix, prefix, prefix);
+	fprintf(outfile_c, "#line %u \"%s\"\n", pn->pn_line + hlines, in_fname);
 	fwrite(pn->pp_code.data, 1, pn->pp_code.len, outfile_c);
 	fprintf(outfile_c, "\n\n");
 }
@@ -265,7 +267,8 @@ void emit_initializer(struct peg_grammar *peg, int nn)
 		fprintf(outfile_c, "0, NULL}, ", pn->pn_type);
 	}
 
-	fprintf(outfile_c, "%d, %d, ", pn->pn_next, pn->pn_subnode);
+	fprintf(outfile_c, "%d, %d, %d, ", pn->pn_next, pn->pn_subnode,
+		pn->pn_line + hlines);
 
 	if ( pn->pn_type == PEG_PRIMARY && pn->pp_action == PEG_ACT_CODE ) {
 		fprintf(outfile_c, "%d, %d, %d, &%s},\n", PEG_ACT_CALLBACK,
@@ -350,17 +353,25 @@ void emit_parse_functions(void)
 void generate_parser(struct raw *head, struct peg_grammar *peg,
 		     struct raw *tail)
 {
+	uint tl = 1;
+	uchar *lp;
 	fprintf(outfile_c, "#include <cat/peg.h>\n"
 			   "#include <cat/cpg.h>\n"
 			   "#include <stdio.h>\n"
 			   "#include <string.h>\n");
 	if ( create_header )
 		fprintf(outfile_c, "#include \"pp.h\"\n");
+	fprintf(outfile_c, "#line 0 \"%s\"\n", in_fname);
 	fwrite(head->data, 1, head->len, outfile_c);
 	emit_prolog(peg);
 	emit_parse_functions();
-	if ( tail->len > 0 )
+	if ( tail->len > 0 ) {
+		for ( lp = strchr(head->data, '\n'); lp != tail->data - 1;
+		      lp = strchr(lp + 1, '\n') )
+			tl++;
+		fprintf(outfile_c, "#line %u \"%s\"\n", tl, in_fname);
 		fwrite(tail->data, 1, tail->len, outfile_c);
+	}
 	fclose(outfile_c);
 }
 
@@ -379,14 +390,13 @@ int main(int argc, char *argv[])
 	struct raw fstr;
 	struct raw head;
 	struct raw tail;
-	uint hl;
 	struct peg_grammar_parser pgp;
 	struct peg_grammar peg;
 
 	parse_args(argc, argv);
 	read_file(infile, &fstr);
-	parse_header(&fstr, &head, &gstr, &hl);
-	parse_grammar_and_tail(&fstr, gstr, hl, &pgp, &peg, &tail);
+	parse_header(&fstr, &head, &gstr);
+	parse_grammar_and_tail(&fstr, gstr, &pgp, &peg, &tail);
 	generate_parser(&head, &peg, &tail);
 	if ( create_header )
 		generate_header();

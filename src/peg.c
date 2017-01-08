@@ -144,7 +144,7 @@ static void peg_node_free(struct peg_grammar *peg, int nn)
 }
 
 
-static int peg_node_new(struct peg_grammar *peg, int type)
+static int peg_node_new(struct peg_grammar *peg, int type, uint line)
 {
 	struct peg_node *new_nodes;
 	struct peg_node *pn;
@@ -178,6 +178,7 @@ static int peg_node_new(struct peg_grammar *peg, int type)
 	i = peg->num_nodes++;
 	pn = NODE(peg, i);
 	pn->pn_type = type;
+	pn->pn_line = line;
 	pn->pn_next = -1;
 	pn->pn_subnode = -1;
 	pn->pn_status = 0;
@@ -254,7 +255,7 @@ static int parse_id(struct peg_grammar_parser *pgp, struct peg_cursor *pc,
         if ( pn != NULL ) {
 		++pn->pi_refcnt;
         } else {
-                id = peg_node_new(peg, PEG_IDENTIFIER);
+                id = peg_node_new(peg, PEG_IDENTIFIER, pc->line);
                 if ( id < 0 ) {
                         pgp->err = PEG_ERR_NOMEM;
                         return -1;
@@ -436,7 +437,7 @@ static int parse_literal(struct peg_grammar_parser *pgp, struct peg_cursor *pc,
 		value.len += 1;
 	} while ( c != quote );
 
-	nn = peg_node_new(peg, PEG_LITERAL);
+	nn = peg_node_new(peg, PEG_LITERAL, pc->line);
 	if ( nn < 0 ) {
 		pgp->err = PEG_ERR_NOMEM;
 		return -1;
@@ -531,7 +532,7 @@ static int parse_class(struct peg_grammar_parser *pgp, struct peg_cursor *pc,
 	if ( CHAR(pgp, &npc) != '[' && CHAR(pgp, &npc) != '.' )
 		return 0;
 
-	nn = peg_node_new(peg, PEG_CLASS);
+	nn = peg_node_new(peg, PEG_CLASS, pc->line);
 	if ( nn < 0 ) {
 		pgp->err = PEG_ERR_NOMEM;
 		return -1;
@@ -776,7 +777,7 @@ static int parse_primary(struct peg_grammar_parser *pgp, struct peg_cursor *pc,
 		return -1;
 	}
 
-	pri = peg_node_new(peg, PEG_PRIMARY);
+	pri = peg_node_new(peg, PEG_PRIMARY, pc->line);
 	if ( pri < 0 ) {
 		pgp->err = PEG_ERR_NOMEM;
 		goto err;
@@ -833,7 +834,7 @@ static int parse_seq(struct peg_grammar_parser *pgp, struct peg_cursor *pc,
 	struct peg_cursor npc = *pc;
 	int rv;
 
-	seq = peg_node_new(peg, PEG_SEQUENCE);
+	seq = peg_node_new(peg, PEG_SEQUENCE, pc->line);
 	if ( seq < 0 ) {
 		pgp->err = PEG_ERR_NOMEM;
 		return -1;
@@ -935,7 +936,7 @@ static int parse_def(struct peg_grammar_parser *pgp, struct peg_cursor *pc,
 		return -1;
 	}
 
-	def = peg_node_new(peg, PEG_DEFINITION);
+	def = peg_node_new(peg, PEG_DEFINITION, pc->line);
 	if ( def < 0 ) {
 		peg_node_free(peg, id);
 		peg_node_free(peg, expr);
