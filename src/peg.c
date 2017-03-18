@@ -1109,6 +1109,23 @@ static char *indent(char *buf, uint bsize, uint depth)
 }
 
 
+void printchar(FILE *out, int i)
+{
+	if ( isprint(i) && !isspace(i) )
+		fprintf(out, "%c", i);
+	else if ( i == '\n' )
+		fprintf(out, "\\n");
+	else if ( i == '\r' )
+		fprintf(out, "\\r");
+	else if ( i == '\t' )
+		fprintf(out, "\\t");
+	else if ( i == ' ' )
+		fprintf(out, " ");
+	else
+		fprintf(out, "\\%03o", i);
+}
+
+
 static void print_class(FILE *out, struct peg_node *cls)
 {
 	int i;
@@ -1118,20 +1135,14 @@ static void print_class(FILE *out, struct peg_node *cls)
 	for ( l = -1, i = 0; i < 256; ++i ) {
 		if ( cset_contains(cls->pc_cset, i) ) {
 			if ( l == -1 ) {
-				if ( isprint(i) && !isspace(i) )
-					fprintf(out, "%c", i);
-				else
-					fprintf(out, "\\%0d", i);
+				printchar(out, i);
 				l = i;
 			}
 		} else {
 			if ( l >= 0 && i > l + 1 ) {
 				if ( i > l + 2 )
 					fprintf(out, "-");
-				if ( isprint(i - 1) && !isspace(i - 1) )
-					fprintf(out, "%c", i - 1);
-				else
-					fprintf(out, "\\%0d", i - 1);
+				printchar(out, i - 1);
 			}
 			l = -1;
 		}
@@ -1143,7 +1154,8 @@ static void print_class(FILE *out, struct peg_node *cls)
 static void print_node(struct peg_grammar *peg, int i, int seq,
 		       int depth, FILE *out)
 {
-
+	int j;
+	int aggregate;
 	char sbuf[256];
 	struct peg_node *pn;
 
@@ -1153,32 +1165,41 @@ static void print_node(struct peg_grammar *peg, int i, int seq,
 	pn = NODE(peg, i);
 	switch ( pn->pn_type ) {
 	case PEG_DEFINITION:
-		fprintf(out, "%s <- ", NODE(peg, pn->pd_id)->pi_name.data); 
+		fprintf(out, "%s <-\n", NODE(peg, pn->pd_id)->pi_name.data); 
+		fprintf(out, "%s", indent(sbuf, sizeof(sbuf), 1));
 		print_node(peg, pn->pd_expr, 0, 1, out);
 		fprintf(out, "\n");
 		break;
 
 	case PEG_SEQUENCE:
-		fprintf(out, "\n");
-		fprintf(out, "%s", indent(sbuf, sizeof(sbuf), depth));
-		if ( seq > 0 ) fprintf(out, "/ ");
+		if ( seq > 0 ) {
+			fprintf(out, "\n");
+			fprintf(out, "%s", indent(sbuf, sizeof(sbuf), depth));
+			fprintf(out, "/ ");
+		}
 		print_node(peg, pn->ps_pri, seq, depth + 1, out);
 		print_node(peg, pn->pn_next, seq + 1, depth, out);
 		break;
 
 	case PEG_PRIMARY:
+		aggregate = 0;
+		if ( seq == 0 &&
+		     (NODE(peg, pn->pp_match)->pn_type == PEG_SEQUENCE) )
+			aggregate = 1;
 		fprintf(out, "%s", (pn->pp_prefix == PEG_ATTR_NONE) ? "" : 
-		                   (pn->pp_prefix == PEG_ATTR_AND) ? "&( " : 
-		                   (pn->pp_prefix == PEG_ATTR_NOT) ? "!( " :
+		                   (pn->pp_prefix == PEG_ATTR_AND) ? "&" : 
+		                   (pn->pp_prefix == PEG_ATTR_NOT) ? "!" :
 				   "BAD_PREFIX!"); 
+		if ( aggregate )
+			fprintf(out, "( ");
 		print_node(peg, pn->pp_match, seq, depth, out);
-		fprintf(out, "%s", (pn->pp_suffix == PEG_ATTR_NONE) ? "" : 
-		                   (pn->pp_suffix== PEG_ATTR_QUESTION) ? "?" : 
-		                   (pn->pp_suffix == PEG_ATTR_STAR) ? "*" :
-		                   (pn->pp_suffix == PEG_ATTR_PLUS) ? "+" :
+		if ( aggregate )
+			fprintf(out, " )");
+		fprintf(out, "%s", (pn->pp_suffix == PEG_ATTR_NONE) ? " " : 
+		                   (pn->pp_suffix== PEG_ATTR_QUESTION) ? "? " : 
+		                   (pn->pp_suffix == PEG_ATTR_STAR) ? "* " :
+		                   (pn->pp_suffix == PEG_ATTR_PLUS) ? "+ " :
 				   "BAD_SUFFIX!");
-		fprintf(out, "%s",
-			(pn->pp_prefix == PEG_ATTR_NONE) ? " " : ") ");
 		if ( pn->pp_action != PEG_ACT_NONE ) {
 			if ( pn->pp_action == PEG_ACT_CODE ) {
 				fprintf(out, "\n");
@@ -1201,7 +1222,10 @@ static void print_node(struct peg_grammar *peg, int i, int seq,
 		break;
 
 	case PEG_LITERAL:
-		fprintf(out, "'%s' ", pn->pl_value.data);
+		fprintf(out, "'");
+		for ( j = 0; j < pn->pl_value.len; ++j )
+			printchar(out, pn->pl_value.data[j]);
+		fprintf(out, "' ");
 		break;
 
 	case PEG_CLASS:
