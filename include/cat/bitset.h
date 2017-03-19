@@ -3,7 +3,7 @@
  *
  * by Christopher Adam Telfer
  *
- * Copyright 2003-2012 -- See accompanying license
+ * Copyright 2003-2017 -- See accompanying license
  *
  */
 #ifndef __bitset_h
@@ -27,19 +27,39 @@
 typedef uint bitset_t;
 
 #define CAT_UINT_BIT (sizeof(bitset_t) * CAT_CHAR_BIT)
+
+/* Calculate the number of elements in the bitset array */
 #define BITSET_LEN(nbits) (((nbits) + (CAT_UINT_BIT-1)) / CAT_UINT_BIT)
+
+/* Declare a bit set named 'name' with 'nbits' bits */
 #define DECLARE_BITSET(name, nbits) bitset_t name[BITSET_LEN(nbits)]
 
+/* Clear all entries in a bitset of length 'nbits' */
 DECL void bset_zero(bitset_t *set, unsigned nbits);
+
+/* Set all entries in a bitset of length 'nbits' */
 DECL void bset_fill(bitset_t *set, unsigned nbits);
+
+/* Copy 'src' to 'dst'.  These two bitsets should have the same size: 'nbits' */
 DECL void bset_copy(bitset_t *dst, bitset_t *src, unsigned nbits);
+
+/* Return non-zero if bit 'index' is set in 'set' or zero otherwise */
 DECL int  bset_test(bitset_t *set, unsigned index);
+
+/* Set bit 'index' in 'set' */
 DECL void bset_set(bitset_t *set, unsigned index);
+
+/* Clear bit 'index' in 'set' */
 DECL void bset_clr(bitset_t *set, unsigned index);
+
+/* Invert bit 'index' in 'set' */
 DECL void bset_flip(bitset_t *set, unsigned index);
+
+/* Set bit 'index' in 'set' to 0 if 'val' is 0 or 1 otherwise */
 DECL void bset_set_to(bitset_t *set, unsigned index, int val);
 
 
+/* ----- Implementation ----- */
 #if defined(CAT_BITSET_DO_DECL) && CAT_BITSET_DO_DECL
 
 

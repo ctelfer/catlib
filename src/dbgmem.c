@@ -101,8 +101,7 @@ void *dbg_mem_resize(struct memmgr *mm, void *p, size_t newsize)
 	}
 
 	p2 = realloc(dh, ramt);
-	abort_unless(ramt > 0 || p2 == NULL);
-	if ( p == NULL ) {
+	if ( p2 == NULL || ramt == 0 ) {
 		if ( ramt == 0 ) {
 			dbg_alloc_amt -= osize;
 			--dbg_num_alloc;

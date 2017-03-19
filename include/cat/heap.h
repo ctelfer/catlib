@@ -3,7 +3,7 @@
  *
  * by Christopher Adam Telfer
  *
- * Copyright 2003-2012 -- See accompanying license
+ * Copyright 2003-2017 -- See accompanying license
  *
  */
 
@@ -25,23 +25,48 @@
 #endif /* CAT_USE_INLINE */
 
 
+/* Heap data structure */
 struct heap {
-	int			size;
-	int			fill;
-	void **			elem;
-	cmp_f			cmp;
-	struct memmgr *		mm;
+	int			size;  /* current maximum number of elements */
+	int			fill;  /* Number of elements populated */
+	void **			elem;  /* Pointer to array of elem pointers */
+	cmp_f			cmp;   /* Comparison function for the heap */
+	struct memmgr *		mm;    /* Memory manager for dynamic resize */
 };
 
 
-DECL void   hp_init(struct heap *hp, void **elem, int size, int fill, 
-		    cmp_f cmp, struct memmgr *mm);
-DECL int    hp_add(struct heap *hp, void *elem, int *pos);
-DECL int    hp_find(struct heap *hp, void *data);
+/*
+ * Initialize a heap 'hp' so 'elem' points to an initial array of
+ * 'size' element pointers.  'fill' points to the number of elements
+ * that 'elem' currently has populated.  'cmp' is the comparison function.
+ * If 'mm' is non-null, then it will be used to resize 'elem' as the heap
+ * grows.  Otherwise the heap is treated as having a fixed maximum size.
+ * The initialization process "sorts" the initial elements in the heap.
+ */
+DECL void hp_init(struct heap *hp, void **elem, int size, int fill, 
+		  cmp_f cmp, struct memmgr *mm);
+
+/* 
+ * Add 'elem' into 'hp'.  Returns 0 on success or -1 if the heap is
+ * full and can't be expanded.  On success, if 'pos' is non-NULL,
+ * then on return *pos will return the position of 'elem' hp->elem.
+ */
+DECL int hp_add(struct heap *hp, void *elem, int *pos);
+
+/* Return the index in 'hp->elem' of 'data' */
+DECL int hp_find(struct heap *hp, void *data);
+
+/* 
+ * Extract (remove) the element at the top of the heap and return it. 
+ * Return NULL if the heap is empty.
+ */
 DECL void * hp_extract(struct heap *hp);
+
+/* Remove the element at position 'elem' from the heap. */
 DECL void * hp_rem(struct heap *hp, int elem);
 
 
+/* ----- Implementation ----- */
 #if defined(CAT_HEAP_DO_DECL) && CAT_HEAP_DO_DECL
 
 LOCAL int reheapup(struct heap *hp, int pos)

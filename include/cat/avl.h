@@ -3,7 +3,7 @@
  *
  * by Christopher Adam Telfer
  *
- * Copyright 2003-2012 -- See accompanying license
+ * Copyright 2003-2017 -- See accompanying license
  *
  */
 
@@ -13,20 +13,22 @@
 #include <cat/cat.h>
 #include <cat/aux.h>
 
+/* Structure for an AVL-tree node: to be embedded in other structures */
 struct anode {
 	struct anode *	p[3];
+	signed char	b;	/* - == left and + == right */
+	uchar	        pdir;	/* on the parent's left or right ? */
+	struct avltree *tree;   /* tree that owns this node */
+	void *		key;    /* the node's key */
+};
+
 #define CA_L 0	/* left node */
 #define CA_R 2	/* right node */
 #define CA_P 1  /* parent node */
 #define CA_N 3  /* Used to denote an exact node when given a (p,dir) pair */
 
-	signed char	b;	/* - == left and + == right */
-	uchar	        pdir;	/* on the parent's left or right ? */
-	struct avltree *tree;
-	void *		key;
-};
 
-
+/* Structure for an AVL tree and root node */
 struct avltree {
 	cmp_f		cmp;
 	struct anode	root;
@@ -49,23 +51,63 @@ struct avltree {
 #endif /* CAT_USE_INLINE */
 
 
-/* main functions */
+/* ----- Main Functions ----- */
+
+/* Initialize an AVL tree. 'cmp' is the function to compare nodes with. */
 DECL void avl_init(struct avltree *t, cmp_f cmp);
+
+/* Initialize a node of an AVL tree.  'k' is the node's key. */
 DECL void avl_ninit(struct anode *n, void *k);
 
-DECL struct anode * avl_lkup(struct avltree *ttree, const void *key, int *dir);
+/*
+ * Find a node in an AVL tree 't' with key matching 'key'.  This function
+ * can be used in two modes depending on whether 'dir' is NULL.
+ *
+ * Mode 1:  dir != NULL (lookup before insert)
+ *   - always returns a pointer to an AVL tree node
+ *   - if on return *dir == CA_N, then the return value of the function
+ *     points to the node in the tree whose key matches 'key'.
+ *   - otherwise, returns a node in the tree that would be the parent
+ *     of a new node inserted with a key of 'key' into the tree and 
+ *     *dir is set to the pointer in said node that will point to said node.
+ *   - if *dir != CA_N, and loc = avl_lkup(); then one can call 
+ *     avl_ins(t, n, loc, dir) where 'n' is a new node with a key equal
+ *     to the original search key to insert 'n' into the tree.
+ *
+ * Mode 2: dir == NULL (pure lookup)
+ *   - returns a pointer to the node in the tree that matches 'key' on
+ *     success, or a NULL if 'key' was not found in the tree.
+ */
+DECL struct anode * avl_lkup(struct avltree *t, const void *key, int *dir);
+
+/*
+ * Insert a new node 'n' into an AVL tree 't' with 'loc' as the parent, and 
+ * dir indicating which pointer in 'loc' will point to 'n'.  See avl_lkup()
+ * for how to find the correct 'loc' and 'dir' values.
+ */
 DECL struct anode * avl_ins(struct avltree *t, struct anode *n,
 			    struct anode *loc, int dir);
-DECL void           avl_rem(struct anode *node);
+
+/* Remove a node from an AVL tree */
+DECL void avl_rem(struct anode *node);
+
+/* Apply 'func' to every node in 't' passing 'ctx' as state to func */
 DECL void avl_apply(struct avltree *t, apply_f func, void * ctx);
-DECL int	    avl_isempty(struct avltree *t);
+
+/* Returns non-zero if 't' is empty or 0 if 't' is non-empty */
+DECL int avl_isempty(struct avltree *t);
+
+/* Return the root node of the 't' or NULL if the tree is empty. */
 DECL struct anode * avl_getroot(struct avltree *t);
+
+/* Return a pointer to the minimum node in 't' or NULL if the tree is empty */
 DECL struct anode * avl_getmin(struct avltree *t);
+
+/* Return a pointer to the maximum node in 't' or NULL if the tree is empty */
 DECL struct anode * avl_getmax(struct avltree *t);
 
 
-
-/* Auxiliary (helper) functions (don't use) */
+/* ----- Auxiliary (helper) functions (don't use) ----- */
 DECL void avl_fix(struct anode *p, struct anode *c, int dir);
 DECL void avl_findloc(struct avltree *t, const void *key, struct anode **p,
 		      int *d);
@@ -78,7 +120,7 @@ DECL void avl_zright(struct anode *n1, struct anode *n2, struct anode *n3);
 DECL struct anode *avl_findrep(struct anode *node);
 
 
-/* actual implementation */
+/* ----- Implementation ----- */
 #if defined(CAT_AVL_DO_DECL) && CAT_AVL_DO_DECL
 
 DECL void avl_init(struct avltree *t, cmp_f cmp)

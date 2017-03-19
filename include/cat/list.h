@@ -3,7 +3,7 @@
  *
  * by Christopher Adam Telfer
  *
- * Copyright 2003-2012 -- See accompanying license
+ * Copyright 2003-2017 -- See accompanying license
  *
  */
 
@@ -19,70 +19,171 @@
 #define DECL
 #endif /* CAT_USE_INLINE */
 
+/* 
+ * This structure is both a list head/tail structure and nodes to
+ * embed in other structures to put on a list.
+ */
 struct list {
 	struct list *next;
 	struct list *prev;
 };
 
+/* Declare a list an initialize it as empty */
 #define LIST_INITALIZER(name)	{ &(name), &(name) }
 #define LIST_DECLARE(name)	struct list name = LIST_INITIALIZER(name);
 
+/* ----- Accessor macros ----- */
 #define l_head(listp)	(listp)->next
 #define l_tail(listp)	(listp)->prev
 #define l_end(listp)	(listp)
 #define l_next(entp)	(entp)->next
 #define l_prev(entp)	(entp)->prev
 
-/* basic operations */
-DECL void l_init(struct list *head);
+
+/* ----- basic operations ----- */
+
+/* Initialize a fresh list. */
+DECL void l_init(struct list *list);
+
+/*
+ * Insert an elem into a list after prev.  Prev can be an element in the list
+ * or the list head itself to insert at the beginning of the list.
+ */
 DECL void l_ins(struct list *prev, struct list *elem);
+
+/* Remove an element from its list */
 DECL void l_rem(struct list *elem);
-DECL int  l_isempty(struct list *list);
-DECL int  l_onlist(struct list *elem);
+
+/* Return a non-zero value if list is empty, otherwise return 0. */
+DECL int l_isempty(struct list *list);
+
+/* Return a non-zero value if an element is on a list otherwise return 0. */
+DECL int l_onlist(struct list *elem);
+
+/* Return the number of entries on a list.  (by linear count) */
 DECL ulong l_length(struct list *list);
 
-/* stack and queue functions */
-DECL void          l_enq(struct list *list, struct list *elem);
-DECL struct list * l_deq(struct list *list);
-DECL void          l_push(struct list *list, struct list *elem);
-DECL struct list * l_pop(struct list *list);
-DECL void          l_apply(struct list *list, apply_f f, void *arg);
 
-/* functions to move whole chunks from one list to another */
-DECL void l_move(struct list *lsrc, struct list *ldst);
-DECL void l_cut(struct list *lsrc, struct list *prev, struct list *last, 
-		struct list *ldst);
+/* ----- Stack and queue functions ----- */
+
+/* enqueue an element to the end of a list */
+DECL void l_enq(struct list *list, struct list *elem);
+
+/* 
+ * Dequeue an element from the front of a list and return a pointer to it.
+ * Return NULL if the list is empty.
+ */
+DECL struct list * l_deq(struct list *list);
+
+/* push an element to the front of a list */
+DECL void l_push(struct list *list, struct list *elem);
+
+/* 
+ * Pop an element from the front of a list and return a pointer to it.
+ * Return NULL if the list is empty.
+ */
+DECL struct list * l_pop(struct list *list);
+
+/* Apply 'f' to each element of a list passing 'arg' to 'f' as state */
+DECL void l_apply(struct list *list, apply_f f, void *arg);
+
+
+/* ----- Functions to move whole chunks from one list to another ----- */
+
+/* 
+ * Move the elements of 'src' to 'dst'.  dst must start empty and src will
+ * be empty after the operation.
+ */
+DECL void l_move(struct list *dst, struct list *src);
+
+/*
+ * Move the nodes in a list from first to last into a new list dst.  dst
+ * must be initially empty.  There is no way to specify to cut an empty
+ * list other than to not call the function.
+ */
+DECL void l_cut(struct list *dst, struct list *first, struct list *last);
+
+/*
+ * Append the elements of list2 to list1.  list2 will be empty after
+ * the operation.
+ */
 DECL void l_append(struct list *list1, struct list *list2);
+
+/*
+ * Insert the elements of list2 into a given list after prev which
+ * like l_ins() may be an element in the list or the list head to
+ * splice the contents to the beginning of the list.  list2 will be
+ * empty after the operation.
+ */
 DECL void l_splice(struct list *prev, struct list *list2);
 
-/* merge sort */
-DECL void l_merge(struct list *l1, struct list *l2, cmp_f cmp);
-DECL void l_sort(struct list *l, cmp_f cmp);
+/* ----- merge sort ----- */
 
+/* 
+ * Merge the sorted list1 and list2 elements into list1 in sorted order.
+ * Use cmp to compare two elements for sorting.  As always, cmp(x,y) must
+ * return (< 0) if x < y, (== 0) if x == y or (> 0) if x > y.
+ */
+DECL void l_merge(struct list *list1, struct list *list2, cmp_f cmp);
+
+/*
+ * Run merge sort to sort a list of elements.  cmp must behave as specified
+ * in l_merge() above.
+ */
+DECL void l_sort(struct list *list, cmp_f cmp);
+
+/*
+ * Return the next object in a list of objects with a list node where:
+ *  - ptr is the pointer to the current object
+ *  - type is the type of the object
+ *  - member is the name of the member of type that is a list node
+ */
 #define l_next_obj(ptr, type, member) \
 	container((ptr)->member.next, type, member)
 
+/*
+ * Return the previous object in a list of objects with a list node where:
+ *  - ptr is the pointer to the current object
+ *  - type is the type of the object
+ *  - member is the name of the member of type that is a list node
+ */
 #define l_prev_obj(ptr, type, member) \
 	container((ptr)->member.prev, type, member)
 
+/*
+ * Iterate forwards over a list setting node to each one in turn.
+ */
 #define l_for_each(node, list) \
 	for ( (node) = l_head(list) ; (node) != l_end(list) ; \
 	      (node) = (node)->next )
 
+/*
+ * Iterate forwards over each node in a list, but use an xtra to hold
+ * list position in case the list gets altered during a list iteration.
+ */
 #define l_for_each_safe(node, xtra, list) \
 	for ( (node) = l_head(list) ; \
 	      (xtra) = (node)->next, (node) != l_end(list) ; \
 	      (node) = (xtra) )
 
+/*
+ * Iterate backwards over a list setting node to each one in turn.
+ */
 #define l_for_each_rev(node, list) \
 	for ( (node) = l_tail(list) ; (node) != l_end(list) ; \
 	      (node) = (node)->prev )
 
+/*
+ * Iterate backwards over each node in a list, but use an xtra to hold
+ * list position in case the list gets altered during a list iteration.
+ */
 #define l_for_each_rev_safe(node, xtra, list) \
 	for ( (node) = l_tail(list) ; \
 	      (xtra) = (node)->prev, (node) != l_end(list) ; \
 	      (node) = (xtra) )
 
+
+/* ----- Implementation ----- */
 #if defined(CAT_LIST_DO_DECL) && CAT_LIST_DO_DECL
 
 
@@ -211,10 +312,10 @@ DECL void l_apply(struct list *list, apply_f f, void *arg)
 }
 
 
-DECL void l_move(struct list *src, struct list *dst)
+DECL void l_move(struct list *dst, struct list *src)
 {
-	abort_unless(src);
 	abort_unless(dst);
+	abort_unless(src);
 
 	dst->next = src->next;
 	dst->prev = src->prev;
@@ -225,23 +326,20 @@ DECL void l_move(struct list *src, struct list *dst)
 }
 
 
-DECL void l_cut(struct list *lsrc, struct list *prev, struct list *last, 
-		struct list *ldst)
+DECL void l_cut(struct list *dst, struct list *first, struct list *last)
 {
-	struct list *start, *after;
-	abort_unless(prev);
-	abort_unless(last && last != lsrc);
-	abort_unless(ldst && l_isempty(ldst));
+	struct list *prev, *after;
+	abort_unless(first);
+	abort_unless(last);
+	abort_unless(dst && l_isempty(dst));
 
-	if ( prev == last )
-		return;
-	start = prev->next;
+	prev = first->prev;
 	after = last->next;
 
-	ldst->next = start;
-	ldst->prev = last;
-	start->prev = ldst;
-	last->next = ldst;
+	dst->next = first;
+	dst->prev = last;
+	first->prev = dst;
+	last->next = dst;
 
 	prev->next = after;
 	after->prev = prev;
@@ -296,7 +394,7 @@ DECL void l_merge(struct list *l1, struct list *l2, cmp_f cmp)
 		l_rem(t);
 		l_ins(l_tail(&mlist), t);
 	}
-	l_move(&mlist, l1);
+	l_move(l1, &mlist);
 }
 
 
@@ -329,7 +427,7 @@ DECL void l_sort(struct list *l, cmp_f cmp)
 		for ( i = 1 ; i < array_length(arr) && !wasempty ; ++i ) {
 			wasempty = l_isempty(&arr[i]);
 			if ( wasempty ) {
-				l_move(&arr[i-1], &arr[i]);
+				l_move(&arr[i], &arr[i-1]);
 			} else {
 				l_merge(&arr[i], &arr[i-1], cmp);
 			}
@@ -343,7 +441,7 @@ DECL void l_sort(struct list *l, cmp_f cmp)
 		}
 	}
 
-	l_move(&arr[last_non_empty], l);
+	l_move(l, &arr[last_non_empty]);
 }
 
 

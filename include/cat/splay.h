@@ -3,7 +3,7 @@
  *
  * by Christopher Adam Telfer
  *
- * Copyright 2006-2012 -- See accompanying license
+ * Copyright 2006-2017 -- See accompanying license
  *
  */
 
@@ -13,6 +13,7 @@
 #include <cat/cat.h>
 #include <cat/aux.h>
 
+/* Structure for a splay tree node: to be embedded in other structures */
 struct stnode {
 	struct stnode *	p[3];
 	char		pdir;
@@ -25,6 +26,7 @@ struct stnode {
 #define CST_P 1  /* parent node */
 #define CST_N 3  /* Used to denote an exact node when given a (p,dir) pair */
 
+/* Splay tree and root node */
 struct sptree {
 	cmp_f		cmp;
 	struct stnode	root;
@@ -46,20 +48,43 @@ struct sptree {
 #define PTRDECL
 #endif /* CAT_USE_INLINE */
 
-/* main functions */
-DECL void            st_init(struct sptree *t, cmp_f cmp);
-DECL void            st_ninit(struct stnode *n, void *k);
+/* ----- Main Functions ----- */
+
+/* Initialize a splay tree. 'cmp' is the function to compare nodes with. */
+DECL void st_init(struct sptree *t, cmp_f cmp);
+
+/* Initialize a node of an AVL tree.  'k' is the node's key. */
+DECL void st_ninit(struct stnode *n, void *k);
+
+/*
+ * Find a node with key 'key' in 't'.  Returns the node on success or NULL
+ * on failure.
+ */
 DECL struct stnode * st_lkup(struct sptree *t, const void *key);
+
+/* Insert 'node' into 't'. */
 DECL struct stnode * st_ins(struct sptree *t, struct stnode *node);
-DECL void            st_rem(struct stnode *node);
-DECL void            st_apply(struct sptree *t, apply_f func, void * ctx);
-DECL int	     st_isempty(struct sptree *t);
+
+/* Remove 'node' from its tree. */
+DECL void st_rem(struct stnode *node);
+
+/* Apply 'func' to every node in 't' passing 'ctx' as state to 'func' */
+DECL void st_apply(struct sptree *t, apply_f func, void * ctx);
+
+/* Return non-zero if 't' is empty or 0 otherwise */
+DECL int st_isempty(struct sptree *t);
+
+/* Return the root node of the 't' or NULL if the tree is empty. */
 DECL struct stnode * st_getroot(struct sptree *t);
+
+/* Return a pointer to the minimum node in 't' or NULL if the tree is empty */
 DECL struct stnode * st_getmin(struct sptree *t);
+
+/* Return a pointer to the maximum node in 't' or NULL if the tree is empty */
 DECL struct stnode * st_getmax(struct sptree *t);
 
 
-/* Auxiliary (helper) functions (don't use) outside the module */
+/* ----- Auxiliary (helper) functions (don't use) outside the module ----- */
 DECL void st_findloc(struct sptree *t, const void *key, struct stnode **pn,
 		     int *pd);
 DECL void st_fix(struct stnode *par, struct stnode *cld, int dir);
@@ -72,6 +97,7 @@ DECL void st_zrr(struct stnode *n);
 DECL void st_splay(struct stnode *n);
 
 
+/* ----- Implementation ----- */
 #if defined(CAT_SP_DO_DECL) && CAT_SP_DO_DECL
 
 DECL void st_init(struct sptree *t, cmp_f cmp)

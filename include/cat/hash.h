@@ -13,22 +13,25 @@
 #include <cat/cat.h>
 #include <cat/aux.h>
 
+/* pointer to a hash function: takes a 'key' and context */
 typedef uint (*hash_f)(const void *key, void *ctx);
 
+/* A hash table data structure */
 struct htab {
-	struct hnode **	bkts;
-	uint		nbkts;
-	uint		po2mask;
-	cmp_f		cmp;
-	hash_f		hash;
-	void *		hctx;
+	struct hnode **	bkts;    /* pointer to an array of node buckets */
+	uint		nbkts;   /* number of node buckets */
+	uint		po2mask; /* mask to apply to get bucket from hash */
+	cmp_f		cmp;     /* key comparison function */
+	hash_f		hash;    /* hash function */
+	void *		hctx;    /* context for the hash function */
 } ;
 
 
+/* Structure for a node in a hash table */
 struct hnode {
-	struct hnode *	next;
-	struct hnode **	prevp;
-	void *		key;
+	struct hnode *	next;    /* next entry in the bucket */
+	struct hnode **	prevp;   /* pointer pointer of the previous entry */
+	void *		key;     /* pointer to the key of the node */
 } ;
 
 
@@ -44,23 +47,60 @@ struct hnode {
 #endif /* CAT_USE_INLINE */
 
 
-DECL void           ht_init(struct htab *t, struct hnode **bkts, uint nbkts,
+/* 
+ * Initialize hash table 't' with 'bkts' pointing to an array of 'nbkts'
+ * hash node pointers, 'cmp' pointing to a comparison function, 'hashf'
+ * pointing to a hash function and 'hctx' pointing to context for hashf.
+ */
+DECL void ht_init(struct htab *t, struct hnode **bkts, uint nbkts,
 		            cmp_f cmpf, hash_f hashf, void *hctx);
-DECL void           ht_ninit(struct hnode *node, void *key);
-DECL uint	    ht_hash(struct htab *t, const void *key);
+
+/* Initialize a hash node 'node' with 'key' as its key. */
+DECL void ht_ninit(struct hnode *node, void *key);
+
+/* Return the hash value for 'key' using the hash function and context in 't' */
+DECL uint ht_hash(struct htab *t, const void *key);
+
+/* 
+ * Find the node in the hash table 't' with key 'key'.  If found return it,
+ * otherwise return NULL.  Either way, if 'hash' is non-NULL, store the hash
+ * of 'key' in it to allow for fast insertion with ht_ins().
+ */
 DECL struct hnode * ht_lkup(struct htab *t, const void *key, uint *hash);
-DECL void	    ht_ins(struct htab *t, struct hnode *node, uint hash);
-DECL void	    ht_ins_h(struct htab *t, struct hnode *node);
-DECL void           ht_rem(struct hnode *node);
 
-DECL void           ht_apply(struct htab *t, apply_f func, void * ctx);
+/* 
+ * Insert 'node' into 't' with hash 'hash'.  Assumes 'hash' was calculated
+ * by ht_hash() or returned through the third parameter of ht_lkup();
+ */
+DECL void ht_ins(struct htab *t, struct hnode *node, uint hash);
 
-PTRDECL uint        ht_shash(const void *key, void *unused);
-PTRDECL uint        ht_phash(const void *key, void *unused);
-PTRDECL uint        ht_rhash(const void *key, void *unused);
-PTRDECL uint        ht_ihash(const void *key, void *unused);
+/* Insert 'node' into 't' computing the hash for 'node's key first */
+DECL void ht_ins_h(struct htab *t, struct hnode *node);
+
+/* Remove 'node' from its hash table */
+DECL void ht_rem(struct hnode *node);
+
+/* Apply 'func' to every node in 't' passing 'ctx' as state to 'func' */
+DECL void ht_apply(struct htab *t, apply_f func, void * ctx);
+
+/* A hash function that hashes a NULL terminated string */
+PTRDECL uint ht_shash(const void *key, void *unused);
+
+/* 
+ * A hash function that hashes the pointer value 'key'.  Note, 'key'
+ * does not point to the pointer to be hashed; it is the value to
+ * hash.
+ */
+PTRDECL uint ht_phash(const void *key, void *unused);
+
+/* A hash function over a 'struct raw'; ie. key points to a struct raw */
+PTRDECL uint ht_rhash(const void *key, void *unused);
+
+/* A hash function that treats 'key' as an integer */
+PTRDECL uint ht_ihash(const void *key, void *unused);
 
 
+/* ----- Implementation ----- */
 #if defined(CAT_HASH_DO_DECL) && CAT_HASH_DO_DECL
 
 

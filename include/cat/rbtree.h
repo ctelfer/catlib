@@ -3,7 +3,7 @@
  *
  * by Christopher Adam Telfer
  *
- * Copyright 2004-2012 -- See accompanying license
+ * Copyright 2004-2017 -- See accompanying license
  *
  */
 
@@ -13,12 +13,13 @@
 #include <cat/cat.h>
 #include <cat/aux.h>
 
+/* Structure for a Red-Black tree node: to be embedded in other structures */
 struct rbnode {
-	struct rbnode *	p[3];
+	struct rbnode *	p[3];   /* child/parent pointers */
 	char		pdir;	/* on the parent's left or right ? */
-	char		col;
-	struct rbtree *	tree;
-	void *		key;
+	char		col;    /* node color (CRB_RED or CRB_BLACK) */
+	struct rbtree *	tree;   /* the tree that owns this node */
+	void *		key;    /* the key of the node */
 } ;
 
 #define CRB_L 0	/* left node */
@@ -28,9 +29,10 @@ struct rbnode {
 #define CRB_RED 0
 #define CRB_BLACK 1
 
+/* Red-Black tree and root node */
 struct rbtree {
-	cmp_f		cmp;
-	struct rbnode	root;
+	cmp_f		cmp;   /* Comparison function for the tree */
+	struct rbnode	root;  /* Root of the tree.  */
 } ; 
 
 
@@ -49,21 +51,63 @@ struct rbtree {
 #define PTRDECL
 #endif /* CAT_USE_INLINE */
 
-/* main functions */
-DECL void            rb_init(struct rbtree *t, cmp_f cmp);
-DECL void            rb_ninit(struct rbnode *n, void *k);
+/* ----- Main Functions ------ */
+
+/* Initialize a Red-Black tree. 'cmp' is the function to compare nodes with. */
+DECL void rb_init(struct rbtree *t, cmp_f cmp);
+
+/* Initialize a node in a Red-Black tree.  'k' is the node's key. */
+DECL void rb_ninit(struct rbnode *n, void *k);
+
+/*
+ * Find a node in an Red-Black tree 't' with key matching 'key'.  This function
+ * can be used in two modes depending on whether 'dir' is NULL.
+ *
+ * Mode 1:  dir != NULL (lookup before insert)
+ *   - always returns a pointer to an AVL tree node
+ *   - if on return *dir == CA_N, then the return value of the function
+ *     points to the node in the tree whose key matches 'key'.
+ *   - otherwise, returns a node in the tree that would be the parent
+ *     of a new node inserted with a key of 'key' into the tree and 
+ *     *dir is set to the pointer in said node that will point to said node.
+ *   - if *dir != CA_N, and loc = rb_lkup(); then one can call 
+ *     rb_ins(t, n, loc, dir) where 'n' is a new node with a key equal
+ *     to the original search key to insert 'n' into the tree.
+ *
+ * Mode 2: dir == NULL (pure lookup)
+ *   - returns a pointer to the node in the tree that matches 'key' on
+ *     success, or a NULL if 'key' was not found in the tree.
+ */
 DECL struct rbnode * rb_lkup(struct rbtree *t, const void *key, int *dir);
+
+/*
+ * Insert a new node 'n' into a Red-Black tree 't' with 'loc' as the parent,
+ * and dir indicating which pointer in 'loc' will point to 'n'.  See rb_lkup()
+ * for how to find the correct 'loc' and 'dir' values.
+ */
 DECL struct rbnode * rb_ins(struct rbtree *t, struct rbnode *node, 
 			    struct rbnode *loc, int dir);
-DECL void            rb_rem(struct rbnode *node);
-DECL void            rb_apply(struct rbtree *t, apply_f func, void * ctx);
-DECL int             rb_isempty(struct rbtree *t);
+
+/* Remove a node from a Red-Black tree */
+DECL void rb_rem(struct rbnode *node);
+
+/* Apply 'func' to every node in 't' passing 'ctx' as state to func */
+DECL void rb_apply(struct rbtree *t, apply_f func, void * ctx);
+
+/* Returns non-zero if 't' is empty or 0 if 't' is non-empty */
+DECL int rb_isempty(struct rbtree *t);
+
+/* Return the root node of the 't' or NULL if the tree is empty. */
 DECL struct rbnode * rb_getroot(struct rbtree *t);
+
+/* Return a pointer to the minimum node in 't' or NULL if the tree is empty */
 DECL struct rbnode * rb_getmin(struct rbtree *t);
+
+/* Return a pointer to the maximum node in 't' or NULL if the tree is empty */
 DECL struct rbnode * rb_getmax(struct rbtree *t);
 
 
-/* Auxiliary (helper) functions (don't use) */
+/* ----- Auxiliary (helper) functions (don't use) ----- */
 DECL void rb_findloc(struct rbtree *t, const void *key, struct rbnode **p, 
 		     int *dir);
 DECL void rb_ins_at(struct rbtree *t, struct rbnode *node, struct rbnode *par, 
@@ -73,7 +117,7 @@ DECL void rb_rleft(struct rbnode *n);
 DECL void rb_rright(struct rbnode *n);
 
 
-/* actual implementation */
+/* ------ Implementation ----- */
 #if defined(CAT_RB_DO_DECL) && CAT_RB_DO_DECL
 
 DECL void rb_init(struct rbtree *t, cmp_f cmp)

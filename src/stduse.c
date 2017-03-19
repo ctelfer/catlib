@@ -50,7 +50,7 @@ static void * std_eresize(struct memmgr *mm, void *old, size_t newsize)
 {
 	void *m;
 	abort_unless(mm && newsize >= 0);
-	if ( !(m = realloc(old, newsize)) )
+	if ( !(m = realloc(old, newsize)) && (newsize > 0) )
 		errsys("realloc: ");
 	return m;
 }
