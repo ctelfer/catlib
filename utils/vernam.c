@@ -4,9 +4,9 @@
  * Copyright 2003-2012 -- See accompanying license
  *
  */
-#include <cat/stduse.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <cat/stduse.h>
 
 #define MAXLINE	256
 

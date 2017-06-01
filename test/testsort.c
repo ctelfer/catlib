@@ -32,7 +32,7 @@ void test_intarr()
 {
 	int i;
 
-	for ( i = 1 ; i <= ASIZE ; ++i )
+	for ( i = 1 ; i < ASIZE ; ++i )
 		all[i] = i;
 	for ( i = 0; i < ASIZE; ++i ) {
 #if DEBUGGING

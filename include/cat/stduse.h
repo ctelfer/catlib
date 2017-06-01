@@ -12,6 +12,7 @@
 
 #include <cat/cat.h>
 #include <cat/emalloc.h>
+#include <cat/err.h>
 
 /* Memory manager extras */
 #include <cat/mem.h>

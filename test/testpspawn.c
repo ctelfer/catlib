@@ -4,6 +4,9 @@
  * Copyright 2003-2012 -- See accompanying license
  *
  */
+#include <stdio.h>
+#include <unistd.h>
+#include <cat/cat.h>
 #include <cat/pspawn.h>
 #include <cat/err.h>
 

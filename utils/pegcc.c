@@ -1,3 +1,6 @@
+#include <string.h>
+#include <stdlib.h>
+#include <ctype.h>
 #include <cat/cat.h>
 #include <cat/emalloc.h>
 #include <cat/err.h>
@@ -5,8 +8,6 @@
 #include <cat/peg.h>
 #include <cat/cpg.h>
 #include <cat/str.h>
-#include <string.h>
-#include <stdlib.h>
 
 #define NODE(_peg, _i) (&(_peg)->nodes[_i])
 #define NODE_TYPE(_peg, _i) ((_peg)->nodes[_i].pn_type)
@@ -264,7 +265,7 @@ void emit_initializer(struct peg_grammar *peg, int nn)
 		snprintf(buf, sizeof(buf), "__%s_peg_action%d", prefix, nn);
 		fprintf(outfile_c, "%u, \"%s\"}, ", (uint)strlen(buf), buf);
 	} else {
-		fprintf(outfile_c, "0, NULL}, ", pn->pn_type);
+		fprintf(outfile_c, "0, NULL}, ");
 	}
 
 	fprintf(outfile_c, "%d, %d, %d, ", pn->pn_next, pn->pn_subnode,
