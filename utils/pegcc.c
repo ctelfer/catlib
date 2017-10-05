@@ -233,11 +233,12 @@ void emit_action(struct peg_grammar *peg, int nn)
 	struct peg_node *pn = NODE(peg, nn);
 	fprintf(outfile_c,
 		"static int __%s_peg_action%d(int __%s_node, "
-		"struct raw *%s_text, void *%s_ctx)\n",
-		prefix, nn, prefix, prefix, prefix);
+		"struct raw *%s_text, void *%s_ctx)\n"
+		"{ int %s_error = 0;\n",
+		prefix, nn, prefix, prefix, prefix, prefix);
 	fprintf(outfile_c, "#line %u \"%s\"\n", pn->pn_line + hlines, in_fname);
 	fwrite(pn->pp_code.data, 1, pn->pp_code.len, outfile_c);
-	fprintf(outfile_c, "\n\n");
+	fprintf(outfile_c, "\nreturn %s_error; }\n", prefix);
 }
 
 
@@ -251,7 +252,7 @@ void emit_initializer(struct peg_grammar *peg, int nn)
 	fprintf(outfile_c, "{ %d, {", pn->pn_type);
 
 	if ( pn->pn_type == PEG_LITERAL || pn->pn_type == PEG_CLASS ) {
-		fprintf(outfile_c, "%u, \"", (uint)pn->pn_str.len);
+		fprintf(outfile_c, "%u, (byte_t *)\"", (uint)pn->pn_str.len);
 		for ( i = 0; i < pn->pn_str.len; ++i ) {
 			c = pn->pn_str.data[i];
 			if ( isprint(c) && !isspace(c) )
@@ -263,7 +264,7 @@ void emit_initializer(struct peg_grammar *peg, int nn)
 	} else if ( pn->pn_type == PEG_PRIMARY &&
 		    pn->pp_action == PEG_ACT_CODE ) {
 		snprintf(buf, sizeof(buf), "__%s_peg_action%d", prefix, nn);
-		fprintf(outfile_c, "%u, \"%s\"}, ", (uint)strlen(buf), buf);
+		fprintf(outfile_c, "%u, (byte_t *)\"%s\"}, ", (uint)strlen(buf), buf);
 	} else {
 		fprintf(outfile_c, "0, NULL}, ");
 	}

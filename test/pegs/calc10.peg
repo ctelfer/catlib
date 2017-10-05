@@ -1,5 +1,6 @@
 #include <cat/err.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 int stack[256];
 int tos = 0;
