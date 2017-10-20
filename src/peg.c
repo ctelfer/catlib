@@ -149,12 +149,13 @@ static int peg_node_new(struct peg_grammar *peg, int type, uint line)
 	struct peg_node *new_nodes;
 	struct peg_node *pn;
 	size_t osize, nsize;
-	int i;
-	int start;
+	uint i;
+	uint start;
 
 	if ( peg->num_nodes == peg->max_nodes ) {
 		if ( !peg->dynamic )
 			return -1;
+		start = peg->max_nodes;
 		if ( peg->max_nodes == 0 ) {
 			peg->max_nodes = 8;
 			nsize = 16 * sizeof(struct peg_node);
@@ -168,7 +169,6 @@ static int peg_node_new(struct peg_grammar *peg, int type, uint line)
 		if ( new_nodes == NULL )
 			return -1;
 		peg->nodes = new_nodes;
-		start = peg->max_nodes;
 		peg->max_nodes *= 2;
 		for ( i = start; i < peg->max_nodes; ++i )
 			NODE(peg, i)->pn_type = PEG_NONE;
@@ -213,6 +213,9 @@ static int string_match(struct peg_grammar_parser *pgp, const char *pat,
 	uint plen;
 
 	plen = strlen(pat);
+	abort_unless(pgp->input_len >= pc->pos);
+	if ( plen > pgp->input_len - pc->pos )
+		return 0;
 	if ( strncmp(STR(pgp, pc), pat, plen) == 0 ) {
 		pc->pos += plen;
 		skip_space(pgp, pc);
@@ -967,6 +970,8 @@ static int check_unresolved_ids(struct peg_grammar_parser *pgp)
 		     NODE(peg, i)->pi_def < 0 ) {
 			pgp->err = PEG_ERR_UNDEF_ID;
 			pgp->eloc.pos = i;
+			snprintf(pgp->unknown_id, sizeof(pgp->unknown_id), "%s",
+				 NODE(peg, pgp->eloc.pos)->pi_name.data);
 			return -1;
 		}
 	}
@@ -974,6 +979,7 @@ static int check_unresolved_ids(struct peg_grammar_parser *pgp)
 }
 
 
+/* TODO: boundary check str_spn() calls to check against overflows. */
 int peg_parse(struct peg_grammar_parser *pgp, struct peg_grammar *peg,
 	      const char *string, uint len)
 {
@@ -1063,7 +1069,6 @@ void peg_free_nodes(struct peg_grammar *peg)
 
 char *peg_err_string(struct peg_grammar_parser *pgp, char *buf, size_t blen)
 {
-	struct peg_grammar *peg = pgp->peg;
 	static const char *peg_error_strings[] = {
 		"No error",
 		"Ran out of memory during parsing",
@@ -1083,7 +1088,7 @@ char *peg_err_string(struct peg_grammar_parser *pgp, char *buf, size_t blen)
 		str_copy(buf, "Unknown PEG error", blen);
 	} else if ( pgp->err == PEG_ERR_UNDEF_ID ) {
 		snprintf(buf, blen, "Undefined identifier %s",
-			 NODE(peg, pgp->eloc.pos)->pi_name.data);
+			 pgp->unknown_id);
 	} else {
 		snprintf(buf, blen, "%s on line %u / position %u",
 			 peg_error_strings[pgp->err], pgp->eloc.line,

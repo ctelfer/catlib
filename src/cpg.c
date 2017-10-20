@@ -55,19 +55,17 @@ static int cpg_getc(struct cpg_state *state)
 		state->buflen += 4096;
 	}
 
-	if ( state->cur.i >= state->readlen ) {
-		abort_unless(state->cur.i == state->readlen);
+	if ( state->cur.i >= state->readidx ) {
+		abort_unless(state->cur.i == state->readidx);
 		c = (*state->getc)(state->in);
 		if ( c == EOF ) {
 			state->eof = state->cur.i;
 			return EOF;
 		}
-		state->buf[state->readlen++] = c;
+		state->buf[state->readidx++] = c;
 	}
 
-	if ( state->buf[state->cur.i - 1] == '\n' ||
-	     (state->buf[state->cur.i - 1] == '\r' &&
-	      state->buf[state->cur.i] != '\n') )
+	if ( state->buf[state->cur.i - 1] == '\n' )
 		state->cur.line++;
 	return state->buf[state->cur.i++];
 }
@@ -335,7 +333,7 @@ void cpg_reset(struct cpg_state *state)
 		memset(state->buf, '\0', state->buflen);
 	state->cur.i = 1;
 	state->cur.line = 1;
-	state->readlen = 1;
+	state->readidx = 1;
 	state->eof = (uint)-1;
 }
 
@@ -346,7 +344,7 @@ void cpg_fini(struct cpg_state *state)
 	state->buf = NULL;
 	state->buflen = 0;
 	state->in = NULL;
-	state->readlen = 0;
+	state->readidx = 0;
 	state->peg = NULL;
 	state->getc = NULL;
 	state->eof = 0;

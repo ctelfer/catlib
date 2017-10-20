@@ -12,6 +12,11 @@
 #define NODE(_peg, _i) (&(_peg)->nodes[_i])
 #define NODE_TYPE(_peg, _i) ((_peg)->nodes[_i].pn_type)
 #define NODE_ID(_peg, _pn) ((_pn) - ((_peg)->nodes))
+#define HASCALLBACK(_pn) \
+	((_pn)->pn_type == PEG_PRIMARY &&	\
+	 ((_pn)->pp_action == PEG_ACT_CODE ||	\
+	  (_pn)->pp_action == PEG_ACT_LABEL))
+
 
 struct clopt options[] = {
 	CLOPT_I_NOARG('h', NULL, "print help"),
@@ -80,13 +85,13 @@ void get_filenames(void)
 
 	size = sizeof(out_fname_c);
 	if ( str_copy(out_fname_c, out_dname, size) >= size ||
-	     str_cat(out_fname_c, out_froot, size) >= size || 
+	     str_cat(out_fname_c, out_froot, size) >= size ||
 	     str_cat(out_fname_c, ".c", size) >= size )
 		err("Output filename too long");
 
 	size = sizeof(out_fname_h);
 	if ( str_copy(out_fname_h, out_dname, size) >= size ||
-	     str_cat(out_fname_h, out_froot, size) >= size || 
+	     str_cat(out_fname_h, out_froot, size) >= size ||
 	     str_cat(out_fname_h, ".h", size) >= size )
 		err("Output filename too long");
 }
@@ -165,7 +170,7 @@ void read_file(FILE *fp, struct raw *r)
 
 	r->data = NULL;
 	r->len = 0;
-	do { 
+	do {
 		ss += BUFINCR;
 		r->data = erealloc(r->data, ss);
 		n = fread(r->data + r->len, 1, BUFINCR, fp);
@@ -191,9 +196,8 @@ void parse_header(struct raw *fstr, struct raw *head, char **gstrp)
 	s += 3;
 	*gstrp = s;
 
-	hlines = 1;
-	for ( lp = strchr(fstr->data, '\n'); lp != *gstrp - 1;
-	      lp = strchr(lp + 1, '\n') )
+	hlines = 0;
+	for ( lp = strchr(fstr->data, '\n'); lp < s; lp = strchr(lp + 1, '\n') )
 		++hlines;
 }
 
@@ -231,15 +235,29 @@ void parse_grammar_and_tail(struct raw *fstr, char *start,
 void emit_action(struct peg_grammar *peg, int nn)
 {
 	struct peg_node *pn = NODE(peg, nn);
-	fprintf(outfile_c,
-		"static int __%s_peg_action%d(int __%s_node, "
-		"struct raw *%s_text, void *%s_ctx)\n"
-		"{ int %s_error = 0;\n",
-		prefix, nn, prefix, prefix, prefix, prefix);
-	fprintf(outfile_c, "#line %u \"%s\"\n", pn->pn_line + hlines, in_fname);
-	fwrite(pn->pp_code.data, 1, pn->pp_code.len, outfile_c);
-	fprintf(outfile_c, "\nreturn %s_error; }\n", prefix);
+	if ( pn->pp_action == PEG_ACT_CODE ) {
+		fprintf(outfile_c,
+			"static int __%s_peg_action%d(int __%s_node, "
+			"struct raw *%s_text, void *%s_ctx)\n"
+			"{ int %s_error = 0;\n",
+			prefix, nn, prefix, prefix, prefix, prefix);
+		fprintf(outfile_c, "#line %u \"%s\"\n", pn->pn_line + hlines,
+			in_fname);
+		fwrite(pn->pp_code.data, 1, pn->pp_code.len, outfile_c);
+		fprintf(outfile_c, "\nreturn %s_error; }\n", prefix);
+	} else {
+		/* forward declaration for callback */
+		abort_unless(pn->pp_action == PEG_ACT_LABEL);
+		fprintf(outfile_c,
+			"static int %s(int __%s_node, "
+			"struct raw *%s_text, void *%s_ctx);\n",
+			pn->pp_label.data, prefix, prefix, prefix);
+	}
 }
+
+
+#define MUST_ESCAPE(_c) \
+	((_c) == '"' || (_c) == '\\')
 
 
 void emit_initializer(struct peg_grammar *peg, int nn)
@@ -255,16 +273,20 @@ void emit_initializer(struct peg_grammar *peg, int nn)
 		fprintf(outfile_c, "%u, (byte_t *)\"", (uint)pn->pn_str.len);
 		for ( i = 0; i < pn->pn_str.len; ++i ) {
 			c = pn->pn_str.data[i];
-			if ( isprint(c) && !isspace(c) )
+			if ( isprint(c) && !isspace(c) && !MUST_ESCAPE(c) )
 				fputc(c, outfile_c);
 			else
 				fprintf(outfile_c, "\\x%02x", c);
 		}
 		fprintf(outfile_c, "\"}, ");
-	} else if ( pn->pn_type == PEG_PRIMARY &&
-		    pn->pp_action == PEG_ACT_CODE ) {
-		snprintf(buf, sizeof(buf), "__%s_peg_action%d", prefix, nn);
-		fprintf(outfile_c, "%u, (byte_t *)\"%s\"}, ", (uint)strlen(buf), buf);
+	} else if ( HASCALLBACK(pn) ) {
+		if ( pn->pp_action == PEG_ACT_CODE )
+			snprintf(buf, sizeof(buf), "__%s_peg_action%d", prefix,
+				 nn);
+		else
+			str_copy(buf, pn->pp_label.data, sizeof(buf));
+		fprintf(outfile_c, "%u, (byte_t *)\"%s\"}, ", (uint)strlen(buf),
+			buf);
 	} else {
 		fprintf(outfile_c, "0, NULL}, ");
 	}
@@ -272,13 +294,12 @@ void emit_initializer(struct peg_grammar *peg, int nn)
 	fprintf(outfile_c, "%d, %d, %d, ", pn->pn_next, pn->pn_subnode,
 		pn->pn_line + hlines);
 
-	if ( pn->pn_type == PEG_PRIMARY && pn->pp_action == PEG_ACT_CODE ) {
+	if ( HASCALLBACK(pn) )
 		fprintf(outfile_c, "%d, %d, %d, &%s},\n", PEG_ACT_CALLBACK,
-			pn->pn_flag1, pn->pn_flag2, buf); 
-	} else {
+			pn->pn_flag1, pn->pn_flag2, buf);
+	else
 		fprintf(outfile_c, "%d, %d, %d, NULL},\n", pn->pn_status,
 			pn->pn_flag1, pn->pn_flag2);
-	}
 }
 
 
@@ -287,13 +308,9 @@ void emit_prolog(struct peg_grammar *peg)
 	int i;
 
 	/* generate action routines */
-	for ( i = 0; i < peg->num_nodes; ++i ) {
-		if ( NODE_TYPE(peg, i) != PEG_PRIMARY )
-			continue;
-		if ( NODE(peg, i)->pp_action != PEG_ACT_CODE )
-			continue;
-		emit_action(peg, i);
-	}
+	for ( i = 0; i < peg->num_nodes; ++i )
+		if ( HASCALLBACK(NODE(peg, i)) )
+			emit_action(peg, i);
 
 	/* generate static parsing array */
 	fprintf(outfile_c, "struct peg_node __%s_peg_nodes[%d] = {\n",
@@ -368,7 +385,7 @@ void generate_parser(struct raw *head, struct peg_grammar *peg,
 	emit_prolog(peg);
 	emit_parse_functions();
 	if ( tail->len > 0 ) {
-		for ( lp = strchr(head->data, '\n'); lp != tail->data - 1;
+		for ( lp = strchr(head->data, '\n'); lp < tail->data;
 		      lp = strchr(lp + 1, '\n') )
 			tl++;
 		fprintf(outfile_c, "#line %u \"%s\"\n", tl, in_fname);

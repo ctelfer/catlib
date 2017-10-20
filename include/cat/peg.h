@@ -85,6 +85,7 @@ struct peg_grammar_parser {
 	struct peg_grammar *peg;
 	int err;
 	struct peg_cursor eloc;
+	char unknown_id[256];
 };
 
 enum {

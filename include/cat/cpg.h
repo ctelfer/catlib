@@ -16,7 +16,7 @@ struct cpg_state {
 	struct cpg_cursor cur;
 	uchar *buf;
 	uint buflen;
-	uint readlen;
+	uint readidx;
 	uint eof;
 	int (*getc)(void *in);
 	struct peg_grammar *peg;
