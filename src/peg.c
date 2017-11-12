@@ -15,7 +15,7 @@
  * Definition <- Identifier LEFTARROW Expression
  * Expression <- Sequence (SLASH Sequence)*
  * Sequence <- Prefix*
- * Prefix <- (AND / NOT)? Suffix 
+ * Prefix <- (AND / NOT)? Suffix
  *    # XXX Codeblock? added: see below XXX
  * Suffix <- Primary (QUESTION / STAR / PLUS)? (Codeblock / ActionLabel)?
  * Primary <- Identifier !LEFTARROW
@@ -26,7 +26,7 @@
  * # Added for parser generation: contains the C code to run on match
  * #
  * Codeblock <- '{' (Codenonstring / Literal / CComment)* '}'
- * Codenonstring <- !["'] . 
+ * Codenonstring <- !["'] .
  * CComment <- "/ *" (!"* /" .)* "* /"
  *   # No spaces-^----------^------^
  *   # Added to embed in C comments
@@ -191,13 +191,13 @@ static void skip_space(struct peg_grammar_parser *pgp, struct peg_cursor *pc)
 {
 	int in_comment = 0;
 
-	while ( in_comment || CHAR(pgp, pc) == '#' || 
+	while ( in_comment || CHAR(pgp, pc) == '#' ||
 		cset_contains(cs_space, CHAR(pgp, pc)) ) {
 		if ( CHAR(pgp, pc) == '#' ) {
 			in_comment = 1;
 		} else if ( cset_contains(cs_eol, CHAR(pgp, pc)) ) {
 			pc->line += 1;
-			if ( CHAR(pgp, pc) == '\r' && 
+			if ( CHAR(pgp, pc) == '\r' &&
 			     CHARI(pgp, pc, 1) == '\n' )
 				pc->pos += 1;
 			in_comment = 0;
@@ -356,7 +356,7 @@ static int parse_char(struct peg_grammar_parser *pgp, struct peg_cursor *pc,
 		}
 		*cp = c;
 		return 1;
-	} 
+	}
 
 	npc.pos += 1;
 	c = CHAR(pgp, &npc);
@@ -389,10 +389,10 @@ static int parse_char(struct peg_grammar_parser *pgp, struct peg_cursor *pc,
 	}
 
 	if ( cset_contains(cs_digit0to2, c) &&
-	     cset_contains(cs_digit0to7, CHARI(pgp, &npc, 1)) && 
+	     cset_contains(cs_digit0to7, CHARI(pgp, &npc, 1)) &&
 	     cset_contains(cs_digit0to7, CHARI(pgp, &npc, 2)) ) {
 		c = ((c - '0') << 6) |
-		    ((CHARI(pgp, &npc, 1) - '0') << 3) | 
+		    ((CHARI(pgp, &npc, 1) - '0') << 3) |
 		    (CHARI(pgp, &npc, 2) - '0');
 		npc.pos += 3;
 	} else {
@@ -429,7 +429,7 @@ static int parse_literal(struct peg_grammar_parser *pgp, struct peg_cursor *pc,
 	npc.pos += 1;
 
 	value.len = 0;
-	do { 
+	do {
 		rv = parse_char(pgp, &npc, &c);
 		if ( rv < 0 )
 			goto err;
@@ -591,8 +591,8 @@ static int parse_slash_char(struct peg_grammar_parser *pgp,
 			return -1;
 		pc->pos += 1;
 	} else {
-		if ( cset_contains(cs_digit0to2, c) && 
-		     cset_contains(cs_digit0to7, CHARI(pgp, pc, 1)) && 
+		if ( cset_contains(cs_digit0to2, c) &&
+		     cset_contains(cs_digit0to7, CHARI(pgp, pc, 1)) &&
 		     cset_contains(cs_digit0to7, CHARI(pgp, pc, 2)) ) {
 			pc->pos += 3;
 		} else if ( cset_contains(cs_digit0to7, CHARI(pgp, pc, 1)) ) {
@@ -666,7 +666,7 @@ static int parse_code(struct peg_grammar_parser *pgp, struct peg_cursor *pc,
 			}
 			/* parse comment */
 			npc.pos += 2;
-			while ( CHAR(pgp, &npc) != '*' || 
+			while ( CHAR(pgp, &npc) != '*' ||
 			        CHARI(pgp, &npc, 1) != '/' ) {
 				if ( CHAR(pgp, &npc) == '\r' ) {
 					npc.pos += 1;
@@ -906,13 +906,13 @@ err:
 
 
 static int parse_def(struct peg_grammar_parser *pgp, struct peg_cursor *pc,
-		     int *defp)
+		     int *idp)
 {
 	struct peg_grammar *peg = pgp->peg;
 	struct peg_cursor npc = *pc;
 	int id = -1;
 	int expr = -1;
-	int def;
+	int def = -1;
 	struct peg_node *pn;
 	int rv;
 
@@ -954,9 +954,34 @@ static int parse_def(struct peg_grammar_parser *pgp, struct peg_cursor *pc,
 	pn->pi_def = def;
 
 	*pc = npc;
-	if ( defp != NULL )
-		*defp = def;
+	if ( idp != NULL )
+		*idp = id;
 	return 1;
+}
+
+
+static int add_undef_token(struct peg_grammar_parser *pgp, int id)
+{
+	struct peg_grammar *peg = pgp->peg;
+	struct peg_node *pi = NODE(peg, id);
+	int i;
+
+	if ( !(pgp->flags & PEG_GEN_TOKENS) )
+		return -1;
+
+	if ( peg->num_tokens >= PEG_TOK_MAX ) {
+		pgp->err = PEG_ERR_TOO_MANY_TOKENS;
+		return -1;
+	}
+
+	/* idenfitier must be all caps */
+	for ( i = 0; i < pi->pi_name.len; ++i )
+		if ( !isupper(pi->pi_name.data[i]) )
+			return -1;
+
+	pi->pi_def = PEG_TOKEN_IDX(peg->num_tokens++);
+
+	return 0;
 }
 
 
@@ -968,6 +993,10 @@ static int check_unresolved_ids(struct peg_grammar_parser *pgp)
 	for ( i = 0; i < peg->max_nodes; ++i ) {
 		if ( pn_is_type(peg, i, PEG_IDENTIFIER) &&
 		     NODE(peg, i)->pi_def < 0 ) {
+			if ( !add_undef_token(pgp, i) )
+				continue;
+			if ( pgp->err )
+				return -1;
 			pgp->err = PEG_ERR_UNDEF_ID;
 			pgp->eloc.pos = i;
 			snprintf(pgp->unknown_id, sizeof(pgp->unknown_id), "%s",
@@ -981,19 +1010,19 @@ static int check_unresolved_ids(struct peg_grammar_parser *pgp)
 
 /* TODO: boundary check str_spn() calls to check against overflows. */
 int peg_parse(struct peg_grammar_parser *pgp, struct peg_grammar *peg,
-	      const char *string, uint len)
+	      const char *string, uint len, int flags)
 {
 	struct peg_cursor pc = { 0, 1 };
-	int def;
+	int start;
 	int rv;
 
 	if ( !initialized ) {
 		cset_init_accept(cs_space, " \t\r\n");
 		cset_init_accept(cs_eol, "\r\n");
-		cset_init_accept(cs_id_start, 
+		cset_init_accept(cs_id_start,
 			         "abcdefghijklmnopqrstuvwxyz"
 			         "ABCDEFGHIJKLMNOPQRSTUVWXYZ_");
-		cset_init_accept(cs_id_cont, 
+		cset_init_accept(cs_id_cont,
 			         "abcdefghijklmnopqrstuvwxyz"
 			         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 			         "_0123456789");
@@ -1008,6 +1037,7 @@ int peg_parse(struct peg_grammar_parser *pgp, struct peg_grammar *peg,
 	peg->nodes = NULL;
 	peg->max_nodes = 0;
 	peg->num_nodes = 0;
+	peg->num_tokens = 0;
 	peg->start_node = -1;
 	peg->dynamic = 1;
 
@@ -1015,19 +1045,20 @@ int peg_parse(struct peg_grammar_parser *pgp, struct peg_grammar *peg,
 	pgp->input_len = len;
 	pgp->len = 0;
 	pgp->nlines = 1;
+	pgp->flags = flags;
 	pgp->peg = peg;
 	pgp->err = 0;
 	pgp->eloc = pc;
 
 	skip_space(pgp, &pc);
 
-	rv = parse_def(pgp, &pc, &def);
+	rv = parse_def(pgp, &pc, &start);
 	if ( rv <= 0 ) {
 		peg_free_nodes(peg);
 		return rv;
 	}
 
-	peg->start_node = NODE(peg, def)->pd_id;
+	peg->start_node = start;
 
 	while ( pc.pos < len ) {
 		rv = parse_def(pgp, &pc, NULL);
@@ -1083,6 +1114,7 @@ char *peg_err_string(struct peg_grammar_parser *pgp, char *buf, size_t blen)
 		"Erroneous character",
 		"Erroneous character range",
 		"Erroneous code block",
+		"Too many tokens",
 	};
 	if ( pgp->err < PEG_ERR_NONE || pgp->err > PEG_ERR_LAST ) {
 		str_copy(buf, "Unknown PEG error", blen);
@@ -1170,7 +1202,7 @@ static void print_node(struct peg_grammar *peg, int i, int seq,
 	pn = NODE(peg, i);
 	switch ( pn->pn_type ) {
 	case PEG_DEFINITION:
-		fprintf(out, "%s <-\n", NODE(peg, pn->pd_id)->pi_name.data); 
+		fprintf(out, "%s <-\n", NODE(peg, pn->pd_id)->pi_name.data);
 		fprintf(out, "%s", indent(sbuf, sizeof(sbuf), 1));
 		print_node(peg, pn->pd_expr, 0, 1, out);
 		fprintf(out, "\n");
@@ -1191,24 +1223,24 @@ static void print_node(struct peg_grammar *peg, int i, int seq,
 		if ( seq == 0 &&
 		     (NODE(peg, pn->pp_match)->pn_type == PEG_SEQUENCE) )
 			aggregate = 1;
-		fprintf(out, "%s", (pn->pp_prefix == PEG_ATTR_NONE) ? "" : 
-		                   (pn->pp_prefix == PEG_ATTR_AND) ? "&" : 
+		fprintf(out, "%s", (pn->pp_prefix == PEG_ATTR_NONE) ? "" :
+		                   (pn->pp_prefix == PEG_ATTR_AND) ? "&" :
 		                   (pn->pp_prefix == PEG_ATTR_NOT) ? "!" :
-				   "BAD_PREFIX!"); 
+				   "BAD_PREFIX!");
 		if ( aggregate )
 			fprintf(out, "( ");
 		print_node(peg, pn->pp_match, seq, depth, out);
 		if ( aggregate )
 			fprintf(out, " )");
-		fprintf(out, "%s", (pn->pp_suffix == PEG_ATTR_NONE) ? " " : 
-		                   (pn->pp_suffix== PEG_ATTR_QUESTION) ? "? " : 
+		fprintf(out, "%s", (pn->pp_suffix == PEG_ATTR_NONE) ? " " :
+		                   (pn->pp_suffix== PEG_ATTR_QUESTION) ? "? " :
 		                   (pn->pp_suffix == PEG_ATTR_STAR) ? "* " :
 		                   (pn->pp_suffix == PEG_ATTR_PLUS) ? "+ " :
 				   "BAD_SUFFIX!");
 		if ( pn->pp_action != PEG_ACT_NONE ) {
 			if ( pn->pp_action == PEG_ACT_CODE ) {
 				fprintf(out, "\n");
-				fprintf(out, "%s", 
+				fprintf(out, "%s",
 					indent(sbuf, sizeof(sbuf), depth));
 				fprintf(out, "CODE BLOCK:\n");
 				fprintf(out, "%s", indent(sbuf, sizeof(sbuf),

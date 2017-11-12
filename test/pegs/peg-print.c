@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
 		err("usage: %s filename\n", argv[0]);
 	buf = readfile(argv[1], &fsize);
 
-	if ( peg_parse(&pgp, &peg, buf, fsize) < 0 )
+	if ( peg_parse(&pgp, &peg, buf, fsize, 0) < 0 )
 		err("%s\n", peg_err_string(&pgp, estr, sizeof(estr)));
 
 	printf("Successfully parsed %s\n", argv[1]);

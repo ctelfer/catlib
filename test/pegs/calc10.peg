@@ -26,12 +26,12 @@ output   <- spacing expr_list
 
 expr_list <- (add_expr EOL {printf("result = %d\n", pop()); fflush(stdout);} )* 
 
-add_expr <- mul_expr ( PLUS  add_expr { push(pop() + pop()); }
-	  	     / MINUS add_expr { int x = pop(); push(pop() - x); }
+add_expr <- mul_expr ( PLUS  mul_expr { push(pop() + pop()); }
+		     / MINUS mul_expr { int x = pop(); push(pop() - x); }
 		     )*
 
-mul_expr <- un_expr ( TIMES mul_expr { push(pop() * pop()); }
-	  	    / DIV   mul_expr { int x = pop(); push(pop() / x); }
+mul_expr <- un_expr ( TIMES un_expr { push(pop() * pop()); }
+		    / DIV   un_expr { int x = pop(); push(pop() / x); }
 		    )*
 
 un_expr  <- MINUS add_expr { push(-pop()); }

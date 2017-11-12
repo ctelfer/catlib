@@ -51,6 +51,7 @@ struct peg_grammar {
 	struct peg_node *nodes;
 	uint max_nodes;
 	uint num_nodes;
+	uint num_tokens;
 	uint start_node;
 	int dynamic;
 };
@@ -69,7 +70,8 @@ enum {
 	PEG_ERR_BAD_CHAR = 10,
 	PEG_ERR_BAD_RANGE = 11,
 	PEG_ERR_BAD_CODE = 12,
-	PEG_ERR_LAST = PEG_ERR_BAD_CODE
+	PEG_ERR_TOO_MANY_TOKENS = 13,
+	PEG_ERR_LAST = PEG_ERR_TOO_MANY_TOKENS
 };
 
 struct peg_cursor {
@@ -82,10 +84,15 @@ struct peg_grammar_parser {
 	uint input_len;
 	uint len;
 	uint nlines;
+	int flags;
 	struct peg_grammar *peg;
 	int err;
 	struct peg_cursor eloc;
 	char unknown_id[256];
+};
+
+enum {
+	PEG_GEN_TOKENS = (1 << 0)
 };
 
 enum {
@@ -114,8 +121,20 @@ enum {
 	PEG_ACT_CALLBACK
 };
 
+enum {
+	PEG_TOK_FIRST = 128,
+	PEG_TOK_LAST  = 254,
+	PEG_TOK_MAX   = PEG_TOK_LAST - PEG_TOK_FIRST + 1,
+};
+
+#define PEG_TOKEN_IDX(_id)	(-((_id) + PEG_TOK_FIRST))
+#define PEG_TOKEN_ID(_idx)	(-(_idx))
+#define PEG_IDX_IS_TOKEN(_peg, _idx) \
+	(PEG_TOKEN_ID(_idx) >= PEG_TOK_FIRST && \
+	 PEG_TOKEN_ID(_idx) < PEG_TOK_FIRST + (_peg)->num_tokens)
+
 int peg_parse(struct peg_grammar_parser *pgp, struct peg_grammar *peg,
-	      const char *string, uint len);
+	      const char *string, uint len, int flags);
 
 void peg_free_nodes(struct peg_grammar *peg);
 

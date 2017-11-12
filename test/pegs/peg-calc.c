@@ -121,7 +121,7 @@ int main(int argc, char *argv[])
 		err("usage: %s calc-file [expression-file]\n", argv[0]);
 	buf = readfile(argv[1], &fsize);
 
-	if ( peg_parse(&pgp, &peg, buf, fsize) < 0 )
+	if ( peg_parse(&pgp, &peg, buf, fsize, 0) < 0 )
 		err("%s\n", peg_err_string(&pgp, estr, sizeof(estr)));
 	if ( pgp.len != pgp.input_len )
 		err("PEG parser only parsed to position %u of %u / line %u\n",

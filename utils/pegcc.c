@@ -27,6 +27,10 @@ struct clopt options[] = {
 		       "Output directory (defaults to input base path)"),
 	CLOPT_I_STRING('p', NULL, "prefix",
 		       "Output prefix filename (defaults to 'cpeg')"),
+	CLOPT_I_NOARG('t', NULL, 
+		      "Automatically generate tokens for uresolved IDs"),
+	CLOPT_I_STRING('T', NULL, "tokpfx",
+		       "Token prefix (defaults to 'CPEGTOK_')"),
 };
 struct clopt_parser oparse =
 CLOPTPARSER_INIT(options, array_length(options));
@@ -39,11 +43,14 @@ char out_dname[256] = "";
 char out_froot[256] = "cpeg";
 char out_fname_c[256];
 char out_fname_h[256];
+char out_fbase_h[256];
 const char *prefix = "cpeg";
+const char *tokpfx = "CPEGTOK_";
 FILE *infile;
 FILE *outfile_c;
 FILE *outfile_h;
 uint hlines;
+int parse_flags = 0;
 
 
 void usage(const char *estr)
@@ -66,7 +73,7 @@ void usage(const char *estr)
 }
 
 
-void get_filenames(void)
+void build_filenames(void)
 {
 	size_t size;
 	char *s;
@@ -87,13 +94,17 @@ void get_filenames(void)
 	if ( str_copy(out_fname_c, out_dname, size) >= size ||
 	     str_cat(out_fname_c, out_froot, size) >= size ||
 	     str_cat(out_fname_c, ".c", size) >= size )
-		err("Output filename too long");
+		err("Output filename too long\n");
+
+	size = sizeof(out_fbase_h);
+	if ( str_copy(out_fbase_h, out_froot, size) >= size ||
+	     str_cat(out_fbase_h, ".h", size) >= size )
+		err("Output filename too long\n");
 
 	size = sizeof(out_fname_h);
 	if ( str_copy(out_fname_h, out_dname, size) >= size ||
-	     str_cat(out_fname_h, out_froot, size) >= size ||
-	     str_cat(out_fname_h, ".h", size) >= size )
-		err("Output filename too long");
+	     str_cat(out_fname_h, out_fbase_h, size) >= size )
+		err("Output filename too long\n");
 }
 
 
@@ -135,6 +146,12 @@ void parse_args(int argc, char *argv[])
 			if ( strlen(prefix) == 0 )
 				err("Empty parser prefix!");
 			break;
+		case 't':
+			parse_flags |= PEG_GEN_TOKENS;
+			break;
+		case 'T':
+			tokpfx = opt->val.str_val;
+			break;
 		}
 	}
 	if ( rv != argc - 1 )
@@ -142,7 +159,7 @@ void parse_args(int argc, char *argv[])
 
 	in_fname = argv[rv];
 
-	get_filenames();
+	build_filenames();
 
 	infile = fopen(in_fname, "r");
 	if (infile == NULL)
@@ -210,7 +227,7 @@ void parse_grammar_and_tail(struct raw *fstr, char *start,
 	uint hdr_num_chars = (byte_t *)start - fstr->data;
 	char ebuf[256];
 
-	rv = peg_parse(pgp, peg, start, fstr->len - hdr_num_chars);
+	rv = peg_parse(pgp, peg, start, fstr->len - hdr_num_chars, parse_flags);
 	if ( rv < 0 ) {
 		pgp->eloc.pos += hdr_num_chars;
 		pgp->eloc.line += hlines;
@@ -323,49 +340,99 @@ void emit_prolog(struct peg_grammar *peg)
 			   "\t%d,\n"
 			   "\t%d,\n"
 			   "\t%d,\n"
+			   "\t%d,\n"
 			   "\t0,\n"
 			   "};\n\n",
-		prefix, prefix, peg->num_nodes, peg->num_nodes,
+		prefix, prefix, peg->num_nodes, peg->num_nodes, peg->num_tokens,
 		peg->start_node);
 }
 
 
-void write_struct_def(FILE *fp)
+void emit_forward_defs(FILE *fp, struct peg_grammar *peg)
 {
 	fprintf(fp,
-"struct %s_parser {\n"
-"\tstruct cpg_state pstate;\n"
-"};\n\n",
-prefix);
+		"struct %s_parser {\n"
+		"\tstruct cpg_state pstate;\n"
+		"};\n\n",
+		prefix);
+
+	fprintf(fp,
+"int %s_init(struct %s_parser *p, int (*getc)(void *));\n\n",
+prefix, prefix);
+
+	fprintf(fp,
+"int %s_parse(struct %s_parser *p, void *in, void *aux);\n\n",
+prefix, prefix);
+
+	fprintf(fp, "void %s_reset(struct %s_parser *p);\n\n",
+		prefix, prefix);
+
+	fprintf(fp, "void %s_fini(struct %s_parser *p);\n\n",
+		prefix, prefix);
+
+	if ( peg->num_tokens > 0 )
+		fprintf(fp, "const char *%s_tok_to_str(int id);\n\n", prefix);
 }
 
 
-void emit_parse_functions(void)
+int find_token(struct peg_grammar *peg, int idx)
 {
+	int i;
+	for ( i = 0; i < peg->num_nodes; ++i )
+		if ( peg->nodes[i].pn_type == PEG_IDENTIFIER &&
+		     peg->nodes[i].pi_def == PEG_TOKEN_IDX(idx) )
+			return i;
+	return -1;
+}
+
+
+void emit_parse_functions(struct peg_grammar *peg)
+{
+	int i;
+	int id;
+
 	if ( !create_header )
-		write_struct_def(outfile_c);
+		emit_forward_defs(outfile_c, peg);
 
 	fprintf(outfile_c,
-"static int __%s_getc(void *fp) { return fgetc(fp); }\n\n"
-"int %s_init(struct %s_parser *p, int (*getc)(void *)) {\n"
-"  if (getc == NULL) getc = &__%s_getc;\n"
-"  return cpg_init(&p->pstate, &__%s_peg_grammar, getc);\n"
-"}\n\n", prefix, prefix, prefix, prefix, prefix);
+		"static int __%s_getc(void *fp) { return fgetc(fp); }\n\n"
+		"int %s_init(struct %s_parser *p, int (*getc)(void *)) {\n"
+		"  if (getc == NULL) getc = &__%s_getc;\n"
+		"  return cpg_init(&p->pstate, &__%s_peg_grammar, getc);\n"
+		"}\n\n", prefix, prefix, prefix, prefix, prefix);
 
 	fprintf(outfile_c,
-"int %s_parse(struct %s_parser *p, void *in, void *aux) {\n"
-"  return cpg_parse(&p->pstate, in, aux);\n"
-"}\n\n", prefix, prefix);
+		"int %s_parse(struct %s_parser *p, void *in, void *aux) {\n"
+		"  return cpg_parse(&p->pstate, in, aux);\n"
+		"}\n\n", prefix, prefix);
 
 	fprintf(outfile_c,
-"void %s_reset(struct %s_parser *p) {\n"
-"  cpg_reset(&p->pstate);\n"
-"}\n\n", prefix, prefix);
+		"void %s_reset(struct %s_parser *p) {\n"
+		"  cpg_reset(&p->pstate);\n"
+		"}\n\n", prefix, prefix);
 
 	fprintf(outfile_c,
-"void %s_fini(struct %s_parser *p) {\n"
-"  cpg_fini(&p->pstate);\n"
-"}\n\n", prefix, prefix);
+		"void %s_fini(struct %s_parser *p) {\n"
+		"  cpg_fini(&p->pstate);\n"
+		"}\n\n", prefix, prefix);
+
+	if ( peg->num_tokens > 0 ) {
+		fprintf(outfile_c, "\nstatic char *tokstrs[] = {\n");
+		for ( i = 0; i < peg->num_tokens; ++i ) {
+			id = find_token(peg, i);
+			abort_unless(id >= 0);
+			fprintf(outfile_c, "\"%s\",\n",
+				NODE(peg, id)->pi_name.data);
+		}
+		fprintf(outfile_c, "NULL};\n\n");
+		fprintf(outfile_c,
+			"const char *%s_tok_to_str(int id) {\n"
+			"  if ( id >= PEG_TOK_FIRST && id < PEG_TOK_FIRST + %d )\n"
+			"    return tokstrs[id - PEG_TOK_FIRST];\n"
+			"  else\n"
+			"    return \"unknown token\";\n"
+			"}\n\n", prefix, peg->num_tokens);
+	}
 }
 
 
@@ -379,11 +446,11 @@ void generate_parser(struct raw *head, struct peg_grammar *peg,
 			   "#include <stdio.h>\n"
 			   "#include <string.h>\n");
 	if ( create_header )
-		fprintf(outfile_c, "#include \"pp.h\"\n");
+		fprintf(outfile_c, "#include \"%s\"\n", out_fbase_h);
 	fprintf(outfile_c, "#line 0 \"%s\"\n", in_fname);
 	fwrite(head->data, 1, head->len, outfile_c);
 	emit_prolog(peg);
-	emit_parse_functions();
+	emit_parse_functions(peg);
 	if ( tail->len > 0 ) {
 		for ( lp = strchr(head->data, '\n'); lp < tail->data;
 		      lp = strchr(lp + 1, '\n') )
@@ -395,9 +462,29 @@ void generate_parser(struct raw *head, struct peg_grammar *peg,
 }
 
 
-void generate_header(void)
+void emit_token_defs(FILE *fp, struct peg_grammar *peg)
 {
-	/* TODO */
+	int i;
+	struct peg_node *pn;
+
+	for ( i = 0; i < peg->num_nodes; ++i ) {
+		pn = NODE(peg, i);
+		if ( pn->pn_type != PEG_IDENTIFIER ||
+		     !PEG_IDX_IS_TOKEN(peg, pn->pi_def) )
+			continue;
+		fprintf(outfile_h, "#define %s%s %d\n", tokpfx,
+			pn->pi_name.data, PEG_TOKEN_ID(pn->pi_def));
+	}
+}
+
+
+void generate_header(struct peg_grammar *peg)
+{
+	fprintf(outfile_h, "#ifndef __%s_h\n", prefix);
+	fprintf(outfile_h, "#define __%s_h\n", prefix);
+	emit_forward_defs(outfile_h, peg);
+	emit_token_defs(outfile_h, peg);
+	fprintf(outfile_h, "#endif /* __%s_h */\n", prefix);
 	fclose(outfile_h);
 }
 
@@ -418,6 +505,8 @@ int main(int argc, char *argv[])
 	parse_grammar_and_tail(&fstr, gstr, &pgp, &peg, &tail);
 	generate_parser(&head, &peg, &tail);
 	if ( create_header )
-		generate_header();
+		generate_header(&peg);
+	peg_free_nodes(&peg);
+
 	return 0;
 }

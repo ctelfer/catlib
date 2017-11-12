@@ -78,6 +78,7 @@ static int cpg_match_expression(struct cpg_state *state, int expr, void *aux);
 static int cpg_match_sequence(struct cpg_state *state, int seq, void *aux);
 static int cpg_match_primary(struct cpg_state *state, int pri, void *aux);
 static int cpg_match_identifier(struct cpg_state *state, int id, void *aux);
+static int cpg_match_token(struct cpg_state *state, int id, void *aux);
 static int cpg_match_literal(struct cpg_state *state, int lit, void *aux);
 static int cpg_match_class(struct cpg_state *state, int cls, void *aux);
 
@@ -207,14 +208,19 @@ static int cpg_match_identifier(struct cpg_state *state, int id, void *aux)
 	int rv;
 	struct peg_grammar *peg = state->peg;
 	struct peg_node *pn = NODE(state->peg, id);
-	abort_unless(NODE_VALID(peg, pn->pi_def, PEG_DEFINITION));
 	if ( state->debug ) {
 		pad(state);
 		fprintf(stderr, ">:'%s' at <L:%d/P:%d>\n",
 			pn->pn_str.data, state->cur.line, state->cur.i);
 	}
 	++state->depth;
-	rv = cpg_match_expression(state, NODE(peg, pn->pi_def)->pd_expr, aux);
+	if ( PEG_IDX_IS_TOKEN(peg, pn->pi_def) ) {
+		rv = cpg_match_token(state, id, aux);
+	} else {
+		abort_unless(NODE_VALID(peg, pn->pi_def, PEG_DEFINITION));
+		rv = cpg_match_expression(state, NODE(peg, pn->pi_def)->pd_expr,
+					  aux);
+	}
 	--state->depth;
 	if ( state->debug ) {
 		if ( rv < 0 ) {
@@ -233,6 +239,40 @@ static int cpg_match_identifier(struct cpg_state *state, int id, void *aux)
 	}
 
 	return rv;
+}
+
+
+static int cpg_match_token(struct cpg_state *state, int id, void *aux)
+{
+	struct peg_grammar *peg = state->peg;
+	struct cpg_cursor oc = state->cur;
+	int c;
+
+	abort_unless(NODE_VALID(peg, id, PEG_IDENTIFIER));
+
+	if ( state->debug ) {
+		pad(state);
+		fprintf(stderr, "T>:'%d' at <L:%d/P:%d>\n",
+			id, state->cur.line, state->cur.i);
+	}
+
+	c = cpg_getc(state);
+	if ( c != EOF &&  c == PEG_TOKEN_ID(NODE(peg, id)->pi_def) ) {
+		if ( state->debug ) {
+			pad(state);
+			fprintf(stderr, "TS:'%d' at <L:%d/P:%d>\n",
+				id, state->cur.line, state->cur.i);
+		}
+		return 1;
+	} else {
+		state->cur = oc;
+		if ( state->debug ) {
+			pad(state);
+			fprintf(stderr, "TF:'%d' at <L:%d/P:%d>\n",
+				id, state->cur.line, state->cur.i);
+		}
+		return 0;
+	}
 }
 
 
