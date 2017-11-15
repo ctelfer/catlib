@@ -964,6 +964,7 @@ static int add_undef_token(struct peg_grammar_parser *pgp, int id)
 {
 	struct peg_grammar *peg = pgp->peg;
 	struct peg_node *pi = NODE(peg, id);
+	char *name = pi->pi_name.data;
 	int i;
 
 	if ( !(pgp->flags & PEG_GEN_TOKENS) )
@@ -974,9 +975,11 @@ static int add_undef_token(struct peg_grammar_parser *pgp, int id)
 		return -1;
 	}
 
-	/* idenfitier must be all caps */
+	/* idenfitier must be all caps and start with a letter */
+	if ( !isalpha(name[0]) )
+		return -1;
 	for ( i = 0; i < pi->pi_name.len; ++i )
-		if ( !isupper(pi->pi_name.data[i]) )
+		if ( isalpha(name[i]) && !isupper(name[i]) )
 			return -1;
 
 	pi->pi_def = PEG_TOKEN_IDX(peg->num_tokens++);

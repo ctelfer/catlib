@@ -481,7 +481,9 @@ void emit_token_defs(FILE *fp, struct peg_grammar *peg)
 void generate_header(struct peg_grammar *peg)
 {
 	fprintf(outfile_h, "#ifndef __%s_h\n", prefix);
-	fprintf(outfile_h, "#define __%s_h\n", prefix);
+	fprintf(outfile_h, "#define __%s_h\n\n", prefix);
+	fprintf(outfile_h, "#include <cat/peg.h>\n"
+			   "#include <cat/cpg.h>\n\n");
 	emit_forward_defs(outfile_h, peg);
 	emit_token_defs(outfile_h, peg);
 	fprintf(outfile_h, "#endif /* __%s_h */\n", prefix);
