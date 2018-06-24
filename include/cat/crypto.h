@@ -52,13 +52,13 @@ struct siphashctx {
 	ulong v3[2];
 };
 
-void siphash_init(struct siphashctx *shc, ulong key[4]);
+void siphash_init(struct siphashctx *shc, byte_t key[16]);
 void siphash24_add(struct siphashctx *shc, const void *p, ulong len);
 void siphash24_fini(struct siphashctx *shc, byte_t hash[8]);
-void siphash24(ulong key[4], const void *p, ulong len, byte_t hash[8]);
+void siphash24(byte_t key[16], const void *p, ulong len, byte_t hash[8]);
 
 struct ht_sh24_ctx {
-	ulong key[4];
+	byte_t key[16];
 };
 
 void ht_sh24_init(struct ht_sh24_ctx *hsc, const void *k, ulong len);

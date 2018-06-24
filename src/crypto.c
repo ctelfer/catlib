@@ -301,20 +301,26 @@ void sha256(void *in, ulong len, byte_t hash[32])
 }
 
 
-void siphash_init(struct siphashctx *shc, ulong key[4])
+#define U8TOU32LE(_p) \
+	((ulong)((_p)[0]) | ((ulong)((_p)[1]) << 8) | \
+	 ((ulong)((_p)[2]) << 16) | ((ulong)((_p)[3]) << 24))
+
+void siphash_init(struct siphashctx *shc, byte_t key[16])
 {
 	shc->nbytes = 0;
 	shc->state[0] = 0;
 	shc->state[1] = 0;
-	shc->v0[0] = 0x70736575ul ^ key[0];
-	shc->v0[1] = 0x736f6d65ul ^ key[1];
-	shc->v1[0] = 0x6e646f6dul ^ key[2];
-	shc->v1[1] = 0x646f7261ul ^ key[3];
-	shc->v2[0] = 0x6e657261ul ^ key[0];
-	shc->v2[1] = 0x6c796765ul ^ key[1];
-	shc->v3[0] = 0x79746573ul ^ key[2];
-	shc->v3[1] = 0x74656462ul ^ key[3];
+	shc->v0[0] = 0x70736575ul ^ U8TOU32LE(key);
+	shc->v0[1] = 0x736f6d65ul ^ U8TOU32LE(key + 4);
+	shc->v1[0] = 0x6e646f6dul ^ U8TOU32LE(key + 8);
+	shc->v1[1] = 0x646f7261ul ^ U8TOU32LE(key + 12);
+	shc->v2[0] = 0x6e657261ul ^ U8TOU32LE(key);
+	shc->v2[1] = 0x6c796765ul ^ U8TOU32LE(key + 4);
+	shc->v3[0] = 0x79746573ul ^ U8TOU32LE(key + 8);
+	shc->v3[1] = 0x74656462ul ^ U8TOU32LE(key + 12);
 }
+
+#undef U8TOU32LE
 
 
 #define ADD64(_v0, _v1) 						\
@@ -365,11 +371,6 @@ static void siphash_round(struct siphashctx *shc)
 	ROTL64_32(shc->v2);
 }
 
-#undef ADD64
-#undef XOR64
-#undef ROTL64
-#undef ROTL64_32
-
 
 static int siphash_add_bytes(struct siphashctx *shc, const byte_t **bp,
 			     ulong *amt)
@@ -401,7 +402,7 @@ static int siphash_add_bytes(struct siphashctx *shc, const byte_t **bp,
 		toadd = 8 - off;
 		if ( toadd > *amt )
 			toadd = *amt;
-		for ( i = 0; i < toadd; ++i, ++*bp ) {
+		for ( i = 0; i < toadd; ++i, ++*bp, ++off ) {
 			if ( off < 4 ) {
 				shc->state[0] |= **bp << (8 * off);
 			} else {
@@ -420,12 +421,10 @@ void siphash24_add(struct siphashctx *shc, const void *p, ulong len)
 	const byte_t *bp = p;
 	while ( len > 0 ) {
 		if ( siphash_add_bytes(shc, &bp, &len) ) {
-			shc->v3[0] ^= shc->state[0];
-			shc->v3[1] ^= shc->state[1];
+			XOR64(shc->v3, shc->state);
 			siphash_round(shc);
 			siphash_round(shc);
-			shc->v0[0] ^= shc->state[0];
-			shc->v0[1] ^= shc->state[1];
+			XOR64(shc->v0, shc->state);
 		}
 	}
 }
@@ -438,12 +437,10 @@ void siphash24_fini(struct siphashctx *shc, byte_t hash[8])
 		shc->state[1] = 0;
 	}
 	shc->state[1] |= (shc->nbytes % 256) << 24;
-	shc->v3[0] ^= shc->state[0];
-	shc->v3[1] ^= shc->state[1];
+	XOR64(shc->v3, shc->state);
 	siphash_round(shc);
 	siphash_round(shc);
-	shc->v0[0] ^= shc->state[0];
-	shc->v0[1] ^= shc->state[1];
+	XOR64(shc->v0, shc->state);
 
 	/* finalize hash */
 	shc->v2[0] ^= 0xff;
@@ -468,8 +465,13 @@ void siphash24_fini(struct siphashctx *shc, byte_t hash[8])
 	memset(shc, 0, sizeof(*shc));
 }
 
+#undef ADD64
+#undef XOR64
+#undef ROTL64
+#undef ROTL64_32
 
-void siphash24(ulong key[4], const void *p, ulong len, byte_t hash[8])
+
+void siphash24(byte_t key[16], const void *p, ulong len, byte_t hash[8])
 {
 	struct siphashctx shc;
 	siphash_init(&shc, key);
@@ -484,7 +486,7 @@ void ht_sh24_init(struct ht_sh24_ctx *hsc, const void *k, ulong len)
 	ulong i;
 	memset(hsc, 0, sizeof(*hsc));
 	for ( i = 0; i < len; ++i, ++p )
-		hsc->key[(i / 4) % 4] ^= *p << (8 * (i % 4));
+		hsc->key[i % 4] ^= *p;
 }
 
 
