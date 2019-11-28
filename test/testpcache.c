@@ -28,6 +28,7 @@ int main(int argc, char *argv[])
   uint hiwat = 0;
   struct list hold;
   int domalloc = 0;
+  size_t esiz;
 
 
   if ( argc < 4 )
@@ -43,13 +44,14 @@ int main(int argc, char *argv[])
     argv++;
   }
 
+  esiz = atoi(argv[1]);
   psiz = atoi(argv[2]);
   na = atoi(argv[3]);
 
   if ( argc > 4 )
     hiwat = atoi(argv[4]);
 
-  pc_init(&Pcache, atoi(argv[1]), psiz, hiwat, 0, &estdmm);
+  pc_init(&Pcache, esiz, psiz, hiwat, 0, &estdmm);
 
   /* add one page */
   pc_addpg(&Pcache, emalloc(psiz), psiz);
@@ -80,7 +82,7 @@ int main(int argc, char *argv[])
     for ( i = 0 ; i < NCONS; ++i )
     {
       for ( j = 0 ; j < na ; ++j ) 
-        allocs[j] = malloc(psiz);
+        allocs[j] = malloc(esiz);
       for ( j = 0 ; j < na ; ++j ) 
         free(allocs[j]);
     }
@@ -92,7 +94,7 @@ int main(int argc, char *argv[])
     fflush(stdout);
   }
 
-  if ( psiz < sizeof(struct list) ) {
+  if ( esiz < sizeof(struct list) ) {
     printf("Size too small for list test\n");
     return 0;
   }
@@ -120,7 +122,7 @@ int main(int argc, char *argv[])
     for ( i = 0 ; i < NCONS; ++i )
     {
       for ( j = 0 ; j < na ; ++j ) 
-        l_ins(&hold, malloc(psiz));
+        l_ins(&hold, malloc(esiz));
       for ( j = 0 ; j < na ; ++j ) 
         free(l_pop(&hold));
     }

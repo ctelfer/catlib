@@ -37,6 +37,29 @@ unsigned long Memory2[1024 * 1024 * 2];
 struct dynmem Dm;
 struct tlsf Tlsf;
 
+void test_malloc2(size_t siz)
+{
+  struct timeval start, stop;
+  double usec, nspo;
+  int i;
+  void *objs[NREPS];
+  char str[256];
+
+  gettimeofday(&start, NULL);
+  for ( i = 0 ; i < nreps; ++i )
+    objs[i] = malloc(siz);
+  for ( i = 0 ; i < nreps; ++i )
+    free(objs[i]);
+  gettimeofday(&stop, NULL);
+  usec = (stop.tv_sec - start.tv_sec) * 1000000 +
+	 (stop.tv_usec - start.tv_usec);
+  nspo = 1000 * usec / nreps;
+  snprintf(str, sizeof(str), "malloc(%u)/free(%u)", (unsigned)siz,
+	   (unsigned)siz);
+  printf("%-40s\t%f\n", str, nspo);
+  fflush(stdout);
+}
+
 int main(int argc, char *argv[])
 {
   dynmem_init(&Dm);
@@ -61,6 +84,12 @@ int main(int argc, char *argv[])
   TEST(tlsf_free(&Tlsf, tlsf_malloc(&Tlsf, 550)))
   TEST(tlsf_free(&Tlsf, tlsf_malloc(&Tlsf, 65536)))
   TEST(tlsf_free(&Tlsf, tlsf_malloc(&Tlsf, 65586)))
+  test_malloc2(32);
+  test_malloc2(78);
+  test_malloc2(200);
+  test_malloc2(550);
+  test_malloc2(65536);
+  test_malloc2(65586);
 
   return 0;
 }
